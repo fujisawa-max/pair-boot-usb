@@ -6,50 +6,58 @@ LinuxまたはWSL2上で、固定入力の取得から通常ファイルのUSB�
 
 ## 1. 環境を用意する
 
-Python 3.11以降を持つLinux/WSL2、HTTPS通信、64GiB以上の空き容量を用意します。ビルド先はLinuxのファイルシステム上に置き、bubblewrapが非特権user namespaceを利用できる環境を使います。隔離が使えない場合は停止し、隔離を外した構築へ自動で切り替えません。
+x86_64（amd64）のLinux/WSL2、Python **3.11以上（Condaでは3.12を使用）**、HTTPS通信、64GiB以上の空き容量を用意します。ビルド先はLinuxのファイルシステム上に置き、bubblewrapが非特権user namespaceを利用できる環境を使います。隔離が使えない場合は停止し、隔離を外した構築へ自動で切り替えません。
 
-リポジトリを取得し、そのルートで以後のコマンドを実行します。最初に、実際に起動するPythonの版を確認してください。
-
-```sh
-python3 --version
-```
-
-3.11未満ではテスト・構築を進めません。`hashlib.file_digest` はPython 3.11以降の機能です。対応版を別名で導入済みなら、以後のコマンドでもその実行名を指定します。例えば `python3.12 scripts/run-tests.py`、`python3.12 scripts/build-usb.py prepare` のように実行します。構築入口から呼ぶPython処理には選択した実行環境を引き継ぎます。OS標準の `/usr/bin/python3` を置き換えたり、そのリンクを付け替えたりしないでください。
-
-Anaconda/MinicondaをLinux側で利用できる場合は、専用環境を作成して実行できます。既存のbase環境やOS標準Pythonは変更しません。
+リポジトリを取得し、そのルートで以後のコマンドを実行します。Anaconda/MinicondaをLinux側で利用できる場合は、専用環境を作成します。
 
 ```sh
-conda create -n pair-boot-build python=3.12
+conda env create -f environment.yml
 conda activate pair-boot-build
 python --version
-python scripts/run-tests.py
-python scripts/build-usb.py prepare
 ```
 
-この環境では、署名・イメージ生成も同じ `python` で実行してください。Pythonスクリプトは標準ライブラリを使用し、追加のpipパッケージは要求しません。Conda環境はホストのPythonを選ぶもので、構築対象のDebian sysrootやdriverを置き換えるものではありません。別の端末では `conda activate pair-boot-build` を実行し直します。
+既に `pair-boot-build` をPython 3.12で作成済みなら、再作成は不要です。`conda activate pair-boot-build` から進めてください。別の端末でも再度activateします。`environment.yml` はビルド用Python 3.12系列を選ぶ定義で、Conda環境全体の完全な固定lockではありません。構築対象の固定入力は引き続き `inputs/` で管理します。
 
-参照：[Condaの環境作成・切替](https://docs.conda.io/projects/conda/en/stable/user-guide/tasks/manage-environments.html)、[Pythonのfile_digest仕様](https://docs.python.org/3.11/library/hashlib.html#hashlib.file_digest)。
+Condaを使わない場合は、`python3 --version` で3.11以上を確認し、以下の `python` を対応版の `python3` または `python3.12` に読み替えてください。`hashlib.file_digest` を使うため3.10では実行できません。OS標準の `/usr/bin/python3` やそのリンクは変更しません。署名・イメージ生成を含め、同じPythonを使います。構築入口から呼ぶPython処理にも選択した実行環境を引き継ぎます。
 
-Ubuntu/Debian系で他のホストツールがなければ、次を実行します。この依存導入コマンドは、そのOSが配布する `python3` を導入します。OSによっては3.10等のままなので、実行後も使用するPythonの版を確認してください。
+### OSツールを導入する
+
+Ubuntu/Debian系では、利用者本人が次を実行します。先に対象一覧だけを確認できます。
 
 ```sh
-sh scripts/install-build-dependencies.sh
+PYTHON=python sh scripts/install-build-dependencies.sh --print
+PYTHON=python sh scripts/install-build-dependencies.sh
 ```
 
-このコマンドのsudoはホストのビルドツール導入用です。対象kernel・コンパイラ・イメージ操作ツール等は固定したDebianパッケージから別のsysrootへ展開します。ホストのPythonが3.11未満なら、上記の専用環境または対応するビルド用OSを用意してください。
+このコマンドはsudoでAPTを更新し、bubblewrap（`bwrap`）、fakeroot、zstd、Git、GnuPG、OpenSSL、e2fsprogs、kmod等のホストツールを導入します。Ubuntu 22.04のOS標準Pythonが3.10のままでも、activate済みのConda Python 3.12で構築できます。sudoでPythonスクリプトを実行する必要はありません。
+
+ホストツールはOSのAPT配布版を使用します。対象kernel、headers、コンパイラ、イメージ操作用ツール等は `prepare` が固定Debianパッケージから別のsysrootへ展開します。ホストにGPUドライバ、DKMS、kernel、bootloaderを導入しません。非APT環境では同等のコマンドを手動で用意する必要があり、すべてのディストリビューションでの構築を確認したものではありません。
+
+### 環境確認とソース試験を行う
+
+```sh
+python scripts/check-environment.py
+python scripts/run-tests.py
+```
+
+環境確認はPython版、Linux/x86_64、必要なコマンド、リポジトリを置いた領域の空き容量を読み取ります。取得前の空の作業環境で実行でき、target headersや `vendor/` は要求しません。不足するコマンドと対応するAPTパッケージを表示して終了1で停止します。`--json` で機械可読な結果も取得できます。構築入口でも同じ要件を検査します。隔離の実動作や外部入力の検証は後続の構築工程で行い、この確認だけで構築成功を保証しません。
+
+`requirements.txt` は追加のpip導入が不要であることを記載したコメントのみのファイルです。`pip install -r requirements.txt` の実行は不要です。Fedora ISOの展開に使うpycdlibは、`inputs/fedora-tools-inputs.json` の固定wheelを `prepare` が取得・SHA検証して直接読み込みます。手動でpip導入する必要はありません。USB内のPAIR等の依存関係も、ホストのpip環境とは別に固定入力から準備します。
+
+参照：[Condaの環境ファイルと切替](https://docs.conda.io/projects/conda/en/stable/user-guide/tasks/manage-environments.html)、[Pythonのfile_digest仕様](https://docs.python.org/3.11/library/hashlib.html#hashlib.file_digest)。
 
 ## 2. 入力を取得して署名前まで構築する
 
 空の `build/` から次を実行します。通常ファイルの検査用ログは `build/prepare-01.log` 等へ保存されます。
 
 ```sh
-python3 scripts/build-usb.py prepare
+python scripts/build-usb.py prepare
 ```
 
 実行するコマンドだけを見る場合：
 
 ```sh
-python3 scripts/build-usb.py prepare --plan
+python scripts/build-usb.py prepare --plan
 ```
 
 この工程で、以下を順に実行します。
@@ -90,13 +98,13 @@ gpu-unlockのソースは固定commit、PAIR/llama.cpp・firmware元入力・抽
 署名が終わったら次を実行します。
 
 ```sh
-python3 scripts/build-usb.py image
+python scripts/build-usb.py image
 ```
 
 別名の署名束を使う場合：
 
 ```sh
-python3 scripts/build-usb.py image --signed-modules build/signed-modules-update
+python scripts/build-usb.py image --signed-modules build/signed-modules-update
 ```
 
 署名束と元moduleの整合性、payloadの不変、選択した証明書によるCMS署名を検査してから、GUI・空の共有台帳・MOK操作ツール、6GiBのroot.img、initramfs、署名済みEFIを組み合わせます。同じ公開証明書を署名束とGUI・MOKツールで使用します。秘密鍵は入力にもコピー対象にも含めません。
@@ -108,7 +116,7 @@ python3 scripts/build-usb.py image --signed-modules build/signed-modules-update
 既存出力を保持して再組立する場合は、すべて新しい名前を指定します。
 
 ```sh
-python3 scripts/build-usb.py image \
+python scripts/build-usb.py image \
   --appliance-output build/appliance-next \
   --tools-output build/shared-usb-tools-next \
   --fedora-output build/fedora-live-tools-next \
@@ -120,7 +128,7 @@ python3 scripts/build-usb.py image \
 ## ソース試験と実機試験
 
 ```sh
-python3 scripts/run-tests.py
+python scripts/run-tests.py
 ```
 
 合成fixtureとシェル構文を検査します。スキップは成功と区別し、環境不足による未検証範囲として扱います。構築・署名検査の成功だけでは、対象PCのMOK登録、Secure Boot起動、GPUのNormal/Unlock、PAIR参加、正常終了の実機確認にはなりません。

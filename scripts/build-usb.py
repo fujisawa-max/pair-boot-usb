@@ -5,7 +5,6 @@ import json
 from pathlib import Path
 import runpy
 import shlex
-import shutil
 import subprocess
 import sys
 
@@ -14,8 +13,6 @@ VERSION = '0.8.0-shared'
 PREPARED = ('debian-root', 'appliance-root', 'nvidia-runtime-615.71.10', 'pair-v1.0.0-headless',
             'pair-llamacpp-b11146', 'candidate-network-overlay-v1', 'pair-runtime-overlay-v1',
             'efi-inputs', 'assets', 'fedora-live', 'runtime-root')
-TOOLS = ('git', 'dpkg-deb', 'apt-get', 'apt-cache', 'gpg', 'gpgv', 'openssl', 'bwrap',
-         'fakeroot', 'mke2fs', 'e2fsck', 'debugfs', 'depmod', 'modinfo', 'zstd')
 
 
 def python(script, *args):
@@ -71,15 +68,10 @@ def image_commands(args):
 
 
 def check_host():
-    if sys.version_info < (3, 11):
-        raise ValueError('Python >=3.11 is required; running '
-                         + '.'.join(map(str, sys.version_info[:3]))
-                         + '. Run with python3.11 or newer; see docs/build.md.')
-    missing = [name for name in TOOLS if not shutil.which(name)]
-    if missing:
-        raise ValueError('Missing build prerequisites: ' + ', '.join(missing))
-    if shutil.disk_usage(ROOT).free < 64 * 1024**3:
-        raise ValueError('At least 64 GiB of free build storage is required')
+    check = runpy.run_path(str(ROOT / 'scripts/check-environment.py'))
+    report = check['inspect_environment'](ROOT)
+    if not report['build_prerequisites_present']:
+        raise ValueError('\n'.join(report['missing']))
 
 
 def validate_image_outputs(args):
