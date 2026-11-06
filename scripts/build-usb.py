@@ -71,9 +71,11 @@ def image_commands(args):
 
 
 def check_host():
-    missing = [name for name in TOOLS if not shutil.which(name)]
     if sys.version_info < (3, 11):
-        missing.append('Python >=3.11')
+        raise ValueError('Python >=3.11 is required; running '
+                         + '.'.join(map(str, sys.version_info[:3]))
+                         + '. Run with python3.11 or newer; see docs/build.md.')
+    missing = [name for name in TOOLS if not shutil.which(name)]
     if missing:
         raise ValueError('Missing build prerequisites: ' + ', '.join(missing))
     if shutil.disk_usage(ROOT).free < 64 * 1024**3:

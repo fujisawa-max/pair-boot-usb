@@ -8,13 +8,35 @@ LinuxまたはWSL2上で、固定入力の取得から通常ファイルのUSB�
 
 Python 3.11以降を持つLinux/WSL2、HTTPS通信、64GiB以上の空き容量を用意します。ビルド先はLinuxのファイルシステム上に置き、bubblewrapが非特権user namespaceを利用できる環境を使います。隔離が使えない場合は停止し、隔離を外した構築へ自動で切り替えません。
 
-リポジトリを取得し、そのルートで以後のコマンドを実行します。Ubuntu/Debian系で必要なホストツールがなければ、利用者が次を実行します。
+リポジトリを取得し、そのルートで以後のコマンドを実行します。最初に、実際に起動するPythonの版を確認してください。
+
+```sh
+python3 --version
+```
+
+3.11未満ではテスト・構築を進めません。`hashlib.file_digest` はPython 3.11以降の機能です。対応版を別名で導入済みなら、以後のコマンドでもその実行名を指定します。例えば `python3.12 scripts/run-tests.py`、`python3.12 scripts/build-usb.py prepare` のように実行します。構築入口から呼ぶPython処理には選択した実行環境を引き継ぎます。OS標準の `/usr/bin/python3` を置き換えたり、そのリンクを付け替えたりしないでください。
+
+Anaconda/MinicondaをLinux側で利用できる場合は、専用環境を作成して実行できます。既存のbase環境やOS標準Pythonは変更しません。
+
+```sh
+conda create -n pair-boot-build python=3.12
+conda activate pair-boot-build
+python --version
+python scripts/run-tests.py
+python scripts/build-usb.py prepare
+```
+
+この環境では、署名・イメージ生成も同じ `python` で実行してください。Pythonスクリプトは標準ライブラリを使用し、追加のpipパッケージは要求しません。Conda環境はホストのPythonを選ぶもので、構築対象のDebian sysrootやdriverを置き換えるものではありません。別の端末では `conda activate pair-boot-build` を実行し直します。
+
+参照：[Condaの環境作成・切替](https://docs.conda.io/projects/conda/en/stable/user-guide/tasks/manage-environments.html)、[Pythonのfile_digest仕様](https://docs.python.org/3.11/library/hashlib.html#hashlib.file_digest)。
+
+Ubuntu/Debian系で他のホストツールがなければ、次を実行します。この依存導入コマンドは、そのOSが配布する `python3` を導入します。OSによっては3.10等のままなので、実行後も使用するPythonの版を確認してください。
 
 ```sh
 sh scripts/install-build-dependencies.sh
 ```
 
-このコマンドのsudoはホストのビルドツール導入用です。対象kernel・コンパイラ・イメージ操作ツール等は固定したDebianパッケージから別のsysrootへ展開します。ホストのPythonが3.11未満なら、対応するビルド用OSを用意してください。
+このコマンドのsudoはホストのビルドツール導入用です。対象kernel・コンパイラ・イメージ操作ツール等は固定したDebianパッケージから別のsysrootへ展開します。ホストのPythonが3.11未満なら、上記の専用環境または対応するビルド用OSを用意してください。
 
 ## 2. 入力を取得して署名前まで構築する
 

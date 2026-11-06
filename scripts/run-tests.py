@@ -1,5 +1,14 @@
 #!/usr/bin/env python3
 """Run isolated source fixtures and shell syntax checks; no real device writes."""
+import sys
+
+if sys.version_info < (3, 11):
+    raise SystemExit(
+        'Tests require Python 3.11 or newer; running '
+        + '.'.join(map(str, sys.version_info[:3]))
+        + '. No tests were executed. Run this script with python3.11 or newer; '
+          'see docs/build.md. Do not replace the operating system Python.')
+
 import importlib.util
 from pathlib import Path
 import subprocess
