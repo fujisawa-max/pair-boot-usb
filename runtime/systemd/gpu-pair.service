@@ -1,0 +1,25 @@
+[Unit]
+Description=PAIR startup and power menu on the local console
+Requires=gpu-root-storage-guard.service gpu-root-identity.service
+After=gpu-root-storage-guard.service gpu-root-identity.service gpu-root-usb-ready.service systemd-user-sessions.service network.target
+Conflicts=getty@tty1.service
+ConditionPathExists=/run/gpu-root/state.json
+StartLimitIntervalSec=60
+StartLimitBurst=3
+
+[Service]
+Type=simple
+Environment=TERM=linux
+ExecStart=/usr/bin/python3 /usr/lib/gpu-root/pair-console.py
+WorkingDirectory=/home/gpu
+Restart=on-failure
+RestartSec=5
+StandardInput=tty-force
+StandardOutput=tty
+StandardError=journal
+TTYPath=/dev/tty1
+TTYReset=yes
+TTYVHangup=yes
+
+[Install]
+WantedBy=multi-user.target

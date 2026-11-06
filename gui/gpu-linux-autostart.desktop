@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=GPU Linux ランチャー設定
+Exec=/usr/bin/python3 /run/initramfs/live/gui/install-fedora-launcher.py
+Terminal=false
+NoDisplay=true
+X-GNOME-Autostart-enabled=true

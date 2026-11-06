@@ -1,0 +1,23 @@
+[Unit]
+Description=Local maintenance console for the experimental appliance
+Requires=gpu-root-storage-guard.service gpu-root-identity.service
+After=gpu-root-storage-guard.service gpu-root-identity.service gpu-root-usb-ready.service systemd-user-sessions.service
+Conflicts=getty@tty2.service
+ConditionPathExists=/run/gpu-root/state.json
+
+[Service]
+Type=simple
+ExecStart=/bin/bash --login
+# Interactive bash ignores SIGTERM; SIGHUP lets shutdown stop this console.
+KillSignal=SIGHUP
+Restart=always
+RestartSec=1
+StandardInput=tty-force
+StandardOutput=tty
+StandardError=tty
+TTYPath=/dev/tty2
+TTYReset=yes
+TTYVHangup=yes
+
+[Install]
+WantedBy=multi-user.target

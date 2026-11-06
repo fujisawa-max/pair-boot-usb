@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=GPU Linux 管理
+Comment=保存先登録・台帳管理・MOK申請
+Exec=/usr/bin/bash /run/initramfs/live/gui/start-fedora-gui.sh
+Icon=preferences-system
+Terminal=false
+Categories=System;Settings;
+StartupNotify=true

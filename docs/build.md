@@ -1,0 +1,108 @@
+# 構築手順
+
+LinuxまたはWSL2上で、固定入力の取得から通常ファイルのUSBイメージを作ります。ホストへのGPUドライバ・kernel・bootloaderの導入や、実USBへの書込みは行いません。
+
+構築入口は `scripts/build-usb.py` です。`prepare` が署名前の入力・module・中間ツリーを準備し、利用者が署名した後に `image` が組立と検査を行います。固定入力から署名済みイメージ生成・検査までの試行を確認済みで、生成USBからの実機起動確認の報告もあります。全機種・全起動モード・PAIR運用の確認とは区別します。
+
+## 1. 環境を用意する
+
+Python 3.11以降を持つLinux/WSL2、HTTPS通信、64GiB以上の空き容量を用意します。ビルド先はLinuxのファイルシステム上に置き、bubblewrapが非特権user namespaceを利用できる環境を使います。隔離が使えない場合は停止し、隔離を外した構築へ自動で切り替えません。
+
+リポジトリを取得し、そのルートで以後のコマンドを実行します。Ubuntu/Debian系で必要なホストツールがなければ、利用者が次を実行します。
+
+```sh
+sh scripts/install-build-dependencies.sh
+```
+
+このコマンドのsudoはホストのビルドツール導入用です。対象kernel・コンパイラ・イメージ操作ツール等は固定したDebianパッケージから別のsysrootへ展開します。ホストのPythonが3.11未満なら、対応するビルド用OSを用意してください。
+
+## 2. 入力を取得して署名前まで構築する
+
+空の `build/` から次を実行します。通常ファイルの検査用ログは `build/prepare-01.log` 等へ保存されます。
+
+```sh
+python3 scripts/build-usb.py prepare
+```
+
+実行するコマンドだけを見る場合：
+
+```sh
+python3 scripts/build-usb.py prepare --plan
+```
+
+この工程で、以下を順に実行します。
+
+1. `inputs/` のURL・版・SHA-256に従って、パッケージ、archive、Fedora ISO、公式公開鍵、抽出ツールを `.cache/` へ取得する。
+2. fingerprintを照合した公式鍵で署名付きDebian/NVIDIA APT情報を検証し、固定したパッケージの版・SHA・公開パス等を照合する。ホストのAPT設定・鍵・インストール状態は変更しない。
+3. `vendor/gpu-unlock` に固定commitを取得し、commit・作業ツリー・Gitオブジェクトを検査する。
+4. Debianのビルド用sysrootとruntime baseを別々に展開し、対象kernel用の6つの未署名moduleを隔離環境で構築・検査する。
+5. NVIDIA、PAIR、llama.cpp、ネットワーク、gzip/公開CA、署名済みshim/GRUBを展開する。ホストの私有CAやネットワーク設定はコピーしない。
+6. 固定した上流generatorでfirmwareを生成し、出力のハッシュと帰属表示を確認する。
+7. Fedoraの公式CHECKSUM署名とISOのSHAを確認し、固定したpycdlib wheelでLiveツリーを展開する。
+8. 空のPC登録状態で使うruntime中間ツリーを `build/runtime-root` へまとめる。
+
+kernelとheadersは版名付きのパッケージで固定し、追従用のkernel headersメタパッケージには依存しません。上流のinstallターゲットは実行しません。
+
+検証済みcacheは再利用できます。破損cacheは自動上書きせず、取得失敗や固定版の消失時には停止します。途中のダウンロードは再実行時に最初から取得し直します。途中まで生成された出力は自動で削除・再使用しません。`prepare` が既存出力を理由に停止した場合はログを保持し、新しいソース作業環境で再試行してください。
+
+### 検証の範囲
+
+Debian/NVIDIAパッケージには、公式署名付きAPT情報からパッケージSHAへ至る照合を行います。Fedoraには公式鍵・CHECKSUM署名・ISOの照合を行います。これらの鍵の取得元とfingerprintは `inputs/public-keys.json` に記録しています。
+
+gpu-unlockのソースは固定commit、PAIR/llama.cpp・firmware元入力・抽出wheelは固定SHAとHTTPS配布元で確認します。これらすべてに作者の電子署名を検証している、という意味ではありません。APT情報は有効期限を確認するためネットワークで更新します。固定版が署名付きindexから消えた場合も、別版への自動更新は行いません。
+
+参照：[Debianの署名鍵](https://ftp-master.debian.org/keys.html)、[Fedoraの検証方法と署名鍵](https://fedoraproject.org/security/)。
+
+## 3. 利用者の鍵で署名する
+
+[署名鍵の作成とmodule署名](secure-boot.md)を、利用者自身の端末で実行します。
+
+- 初回はrepo・USBの外に暗号化秘密鍵と公開DER証明書を作る。
+- 既存鍵を使う更新では、鍵を作り直さず署名する。
+- 署名先は既定で `build/signed-modules`。入力moduleは保持する。
+
+エージェントへ秘密鍵やパスフレーズを渡す必要はありません。
+
+## 4. USBイメージを生成・検査する
+
+署名が終わったら次を実行します。
+
+```sh
+python3 scripts/build-usb.py image
+```
+
+別名の署名束を使う場合：
+
+```sh
+python3 scripts/build-usb.py image --signed-modules build/signed-modules-update
+```
+
+署名束と元moduleの整合性、payloadの不変、選択した証明書によるCMS署名を検査してから、GUI・空の共有台帳・MOK操作ツール、6GiBのroot.img、initramfs、署名済みEFIを組み合わせます。同じ公開証明書を署名束とGUI・MOKツールで使用します。秘密鍵は入力にもコピー対象にも含めません。
+
+最終出力は `build/usb-image/gpu-linux-usb.img` と `SHA256SUMS`、検査レポートです。GPT、FAT/ext4、initramfs、イメージ内部の内容、パーティションの読戻しを検査します。ログは `build/image-01.log` 等です。
+
+生成イメージは約12.1GBです。実USBへ書くときは、このファイル以上の実容量を持つ媒体を利用者が選びます。実デバイスへの書込みコマンドは構築入口に含めません。最終イメージができた後、[利用開始](quick-start.md)に進みます。
+
+既存出力を保持して再組立する場合は、すべて新しい名前を指定します。
+
+```sh
+python3 scripts/build-usb.py image \
+  --appliance-output build/appliance-next \
+  --tools-output build/shared-usb-tools-next \
+  --fedora-output build/fedora-live-tools-next \
+  --output build/usb-image-next
+```
+
+これらの出力は `build/` 内の、互いに重ならない新規ディレクトリに限定します。
+
+## ソース試験と実機試験
+
+```sh
+python3 scripts/run-tests.py
+```
+
+合成fixtureとシェル構文を検査します。スキップは成功と区別し、環境不足による未検証範囲として扱います。構築・署名検査の成功だけでは、対象PCのMOK登録、Secure Boot起動、GPUのNormal/Unlock、PAIR参加、正常終了の実機確認にはなりません。
+
+秘密鍵、生成日時、ファイルシステムUUID等が異なるため、別の利用者の完成USBと全体SHAが一致することは合格条件にしません。固定入力、処理、署名、内部内容、動作を検証します。新規インストールは過去のrootイメージに依存せず、回復が必要なときは元を保持したコピー上でfsckする設計です。
+
+`.cache/`、`vendor/`、`build/`、鍵・証明書やPC登録情報は公開Gitへ追加しません。

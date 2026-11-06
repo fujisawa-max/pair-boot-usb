@@ -1,0 +1,8 @@
+{
+  "schema": 1,
+  "version": "1.0.0",
+  "source_commit": "85f523d3624cf1596bdda6e36c28eb8ad3969737",
+  "url": "https://github.com/NVIDIA/Personal-AI-Router/releases/download/v1.0.0/service-binaries-linux-x64.zip",
+  "sha256": "94a7d86805c9297fd0dd07b288176955273e8c98ab65fa8848f520e8081f2c54",
+  "archive_file": ".cache/service-binaries-linux-x64-v1.0.0.zip"
+}

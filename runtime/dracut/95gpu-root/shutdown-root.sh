@@ -1,0 +1,32 @@
+#!/bin/sh
+# Dracut 106 moved the previous /run to /oldsys/run before invoking hooks.
+gpu_state=/oldsys/run/gpu-root
+[ -f "$gpu_state/state.json" ] || gpu_state=/run/gpu-root
+gpu_shutdown_fail() {
+  warn "GPU-ROOT: $*; no force/lazy unmount or automatic repair"
+  if [ "${final:-}" = final ]; then
+    warn 'GPU-ROOT: refusing automatic poweroff with storage still busy; manual intervention required'
+    while :; do sleep 60; done
+  fi
+  return 1
+}
+if [ -f "$gpu_state/state.json" ]; then
+  if ismounted /oldroot/models; then
+    umount /oldroot/models || { gpu_shutdown_fail 'models busy'; return 1; }
+  fi
+  sync
+  if ismounted /oldroot; then
+    umount /oldroot || { gpu_shutdown_fail 'root still busy; keeping loop and NTFS'; return 1; }
+  fi
+  gpu_loop=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["loop"])' "$gpu_state/state.json") || return 1
+  case "$gpu_loop" in /dev/loop[0-9]*) ;; *) gpu_shutdown_fail 'invalid loop state'; return 1 ;; esac
+  if losetup "$gpu_loop" >/dev/null 2>&1; then
+    losetup -d "$gpu_loop" || { gpu_shutdown_fail 'loop detach failed'; return 1; }
+  fi
+  if ismounted "$gpu_state/ntfs"; then
+    sync -f "$gpu_state/ntfs" || { gpu_shutdown_fail 'NTFS sync failed'; return 1; }
+    umount "$gpu_state/ntfs" || { gpu_shutdown_fail 'NTFS still busy'; return 1; }
+  fi
+  rm "$gpu_state/state.json"
+fi
+unset gpu_loop gpu_state

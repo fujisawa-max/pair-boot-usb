@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "upstream_commit": "af28cbbfd3d922a659227ecfb7369adfd924cf03",
+  "archives": [
+    {
+      "name": "NVIDIA open kernel modules source archive",
+      "url": "https://download.nvidia.com/XFree86/NVIDIA-kernel-module-source/NVIDIA-kernel-module-source-610.43.03.tar.xz",
+      "sha256": "7e118923c7a23edc36114d63273a46e3e04e9af98695a42203e7ac2dfe9fc1dc",
+      "file": ".cache/firmware/NVIDIA-kernel-module-source-610.43.03.tar.xz"
+    },
+    {
+      "name": "nvidia-utils binary package used for exact firmware extraction",
+      "url": "https://archive.cachyos.org/archive/cachyos-v3/nvidia-utils-610.43.03-1-x86_64_v3.pkg.tar.zst",
+      "sha256": "e17e7c92eeffa178b0fe1f40eb17a47095f8fc3ce4a77bf115cf5bd5a4df86e9",
+      "file": ".cache/firmware/nvidia-utils-610.43.03-1-x86_64_v3.pkg.tar.zst"
+    }
+  ],
+  "source": "gpu-unlock firmware/artifacts-610.43.03.json at the pinned commit; see upstream firmware/NOTICE.md"
+}

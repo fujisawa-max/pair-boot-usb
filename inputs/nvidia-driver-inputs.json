@@ -1,0 +1,1480 @@
+{
+  "schema": 1,
+  "kernel_release": "6.12.113+deb13-amd64",
+  "nvidia_driver_version": "615.71.10-1",
+  "root_packages": [
+    "nvidia-driver-cuda=615.71.10-1",
+    "nvidia-kernel-open-dkms=615.71.10-1",
+    "linux-headers-6.12.113+deb13-amd64"
+  ],
+  "repository_verification": "APT InRelease signatures and package SHA256 checked in workspace",
+  "packages": [
+    {
+      "package": "adduser",
+      "version": "3.152",
+      "architecture": "all",
+      "filename": "adduser_3.152_all.deb",
+      "url": "https://deb.debian.org/debian/pool/main/a/adduser/adduser_3.152_all.deb",
+      "sha256": "e50984d2e1ef6300e3fd51303839842189a077b10cb5cadff1923df10c61c493",
+      "size": 190932
+    },
+    {
+      "package": "base-passwd",
+      "version": "3.6.7",
+      "architecture": "amd64",
+      "filename": "base-passwd_3.6.7_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/b/base-passwd/base-passwd_3.6.7_amd64.deb",
+      "sha256": "cf31c6956ab5f65815d9d9ea1615c4f78ecd2893c31119658248a4756cee83e7",
+      "size": 53712
+    },
+    {
+      "package": "binutils-common",
+      "version": "2.44-3",
+      "architecture": "amd64",
+      "filename": "binutils-common_2.44-3_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/b/binutils/binutils-common_2.44-3_amd64.deb",
+      "sha256": "002da5d23f8757dee97a2c0a40e0e1d4d85a43da094488ee2ee7068d4d3691f9",
+      "size": 2508768
+    },
+    {
+      "package": "binutils-x86-64-linux-gnu",
+      "version": "2.44-3",
+      "architecture": "amd64",
+      "filename": "binutils-x86-64-linux-gnu_2.44-3_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/b/binutils/binutils-x86-64-linux-gnu_2.44-3_amd64.deb",
+      "sha256": "e6741ce95ff0f7a131c8d9faa3528ccbbc453078bbc62a97da81340ed7462c53",
+      "size": 1013844
+    },
+    {
+      "package": "binutils",
+      "version": "2.44-3",
+      "architecture": "amd64",
+      "filename": "binutils_2.44-3_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/b/binutils/binutils_2.44-3_amd64.deb",
+      "sha256": "6bc08c02539ba53b5e748142397144c499f9b20b5fa9bb56431545db124addeb",
+      "size": 265400
+    },
+    {
+      "package": "bzip2",
+      "version": "1.0.8-6",
+      "architecture": "amd64",
+      "filename": "bzip2_1.0.8-6_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/b/bzip2/bzip2_1.0.8-6_amd64.deb",
+      "sha256": "6b5fbe71f0fc41e85919bc4b3c514e6c47577c5005dbf1f5af6e4a49cc221aab",
+      "size": 40520
+    },
+    {
+      "package": "coreutils",
+      "version": "9.7-3",
+      "architecture": "amd64",
+      "filename": "coreutils_9.7-3_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/c/coreutils/coreutils_9.7-3_amd64.deb",
+      "sha256": "1299ab6f9389a288eb2f5f3dd222c26cc777b9a2d5ecb6ee4cbd340cebcdada2",
+      "size": 3023556
+    },
+    {
+      "package": "cpio",
+      "version": "2.15+dfsg-2",
+      "architecture": "amd64",
+      "filename": "cpio_2.15+dfsg-2_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/c/cpio/cpio_2.15+dfsg-2_amd64.deb",
+      "sha256": "d8faece250bcf72e91ac15a5fef198be173af18c9f48bae257e7ee937fbc6cdc",
+      "size": 252116
+    },
+    {
+      "package": "cpp-14-x86-64-linux-gnu",
+      "version": "14.2.0-19",
+      "architecture": "amd64",
+      "filename": "cpp-14-x86-64-linux-gnu_14.2.0-19_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/g/gcc-14/cpp-14-x86-64-linux-gnu_14.2.0-19_amd64.deb",
+      "sha256": "ef274b5379f5f97fc71619d39ecc84d039d3e184570d207b909c90afaa5d79e0",
+      "size": 11047460
+    },
+    {
+      "package": "cpp-14",
+      "version": "14.2.0-19",
+      "architecture": "amd64",
+      "filename": "cpp-14_14.2.0-19_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/g/gcc-14/cpp-14_14.2.0-19_amd64.deb",
+      "sha256": "3bae5fe03c56c6d021900ab4fb79e35c6f75eee72a73fccc6f28a39db559d6a0",
+      "size": 1280
+    },
+    {
+      "package": "cpp-x86-64-linux-gnu",
+      "version": "4:14.2.0-1",
+      "architecture": "amd64",
+      "filename": "cpp-x86-64-linux-gnu_4%3a14.2.0-1_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/g/gcc-defaults/cpp-x86-64-linux-gnu_14.2.0-1_amd64.deb",
+      "sha256": "d902f484e38bce59e82efc0df2fe20139a0932ca759ecafdfe6e5b6c72238eb8",
+      "size": 4840
+    },
+    {
+      "package": "cpp",
+      "version": "4:14.2.0-1",
+      "architecture": "amd64",
+      "filename": "cpp_4%3a14.2.0-1_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/g/gcc-defaults/cpp_14.2.0-1_amd64.deb",
+      "sha256": "a6ba40550aadec80437813e0fce5516574945ff40e72306a5b378c03af3a6544",
+      "size": 1568
+    },
+    {
+      "package": "debconf",
+      "version": "1.5.91",
+      "architecture": "all",
+      "filename": "debconf_1.5.91_all.deb",
+      "url": "https://deb.debian.org/debian/pool/main/d/debconf/debconf_1.5.91_all.deb",
+      "sha256": "1ddc7e6c5925f748eefb7ca811d98e049f18c158bb21fbc7e122262ce6011e49",
+      "size": 121088
+    },
+    {
+      "package": "dkms",
+      "version": "3.4.4-1",
+      "architecture": "all",
+      "filename": "dkms_3.4.4-1_all.deb",
+      "url": "https://developer.download.nvidia.com/compute/cuda/repos/debian13/x86_64/dkms_3.4.4-1_all.deb",
+      "sha256": "cd9f1a34e032c12ce69b73c4326c357ab32e2a7ae83dd331d4297f6c1bb6465b",
+      "size": 56872
+    },
+    {
+      "package": "dpkg-dev",
+      "version": "1.22.22",
+      "architecture": "all",
+      "filename": "dpkg-dev_1.22.22_all.deb",
+      "url": "https://deb.debian.org/debian/pool/main/d/dpkg/dpkg-dev_1.22.22_all.deb",
+      "sha256": "6d4020421740a70e1fb9c41b07f8bb8306d93aef6fea1a8ce11a1f839921f414",
+      "size": 1337268
+    },
+    {
+      "package": "dpkg",
+      "version": "1.22.22",
+      "architecture": "amd64",
+      "filename": "dpkg_1.22.22_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/d/dpkg/dpkg_1.22.22_amd64.deb",
+      "sha256": "3e800c6d75e8e709007ed1c356e5fa8509a75c1694fb0a1183709abc9cfdc1f3",
+      "size": 1537216
+    },
+    {
+      "package": "dracut-install",
+      "version": "106-6",
+      "architecture": "amd64",
+      "filename": "dracut-install_106-6_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/d/dracut/dracut-install_106-6_amd64.deb",
+      "sha256": "5ef87c15510db933d4ec7617b88012b436b0ebfc248e4c7d3b6baf9aa5acbc76",
+      "size": 37784
+    },
+    {
+      "package": "firmware-nvidia-gsp",
+      "version": "615.71.10-1",
+      "architecture": "amd64",
+      "filename": "firmware-nvidia-gsp_615.71.10-1_amd64.deb",
+      "url": "https://developer.download.nvidia.com/compute/cuda/repos/debian13/x86_64/firmware-nvidia-gsp_615.71.10-1_amd64.deb",
+      "sha256": "6ec3ec29acdbc8ca24ba940e4ff4ffedd849b0feff09f0c32541238b96e9a8b3",
+      "size": 75697202
+    },
+    {
+      "package": "g++-14-x86-64-linux-gnu",
+      "version": "14.2.0-19",
+      "architecture": "amd64",
+      "filename": "g++-14-x86-64-linux-gnu_14.2.0-19_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/g/gcc-14/g++-14-x86-64-linux-gnu_14.2.0-19_amd64.deb",
+      "sha256": "c66b009fedd340520279d1af2f91d0668e9f64f0c08fe62179ca1c75e556be58",
+      "size": 12114812
+    },
+    {
+      "package": "g++-14",
+      "version": "14.2.0-19",
+      "architecture": "amd64",
+      "filename": "g++-14_14.2.0-19_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/g/gcc-14/g++-14_14.2.0-19_amd64.deb",
+      "sha256": "4706ab29eab3d81e93582b45b229fdedc71f1eec3071996a448cf2c8beb83f3a",
+      "size": 22544
+    },
+    {
+      "package": "g++-x86-64-linux-gnu",
+      "version": "4:14.2.0-1",
+      "architecture": "amd64",
+      "filename": "g++-x86-64-linux-gnu_4%3a14.2.0-1_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/g/gcc-defaults/g++-x86-64-linux-gnu_14.2.0-1_amd64.deb",
+      "sha256": "15e10fc3948ec76be8d51b23e75ad9df9c39588c94f1f47059cee02c117c7583",
+      "size": 1200
+    },
+    {
+      "package": "g++",
+      "version": "4:14.2.0-1",
+      "architecture": "amd64",
+      "filename": "g++_4%3a14.2.0-1_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/g/gcc-defaults/g++_14.2.0-1_amd64.deb",
+      "sha256": "f86661c021ab2acb39ceb87315e7c2d4d420fdadc19945d5d589f3953410445c",
+      "size": 1344
+    },
+    {
+      "package": "gcc-14-base",
+      "version": "14.2.0-19",
+      "architecture": "amd64",
+      "filename": "gcc-14-base_14.2.0-19_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/g/gcc-14/gcc-14-base_14.2.0-19_amd64.deb",
+      "sha256": "5b6825de4263824b78c4c51f6476414f3b4e89c2ab63e81dc8b9b5501e867cf6",
+      "size": 49432
+    },
+    {
+      "package": "gcc-14-x86-64-linux-gnu",
+      "version": "14.2.0-19",
+      "architecture": "amd64",
+      "filename": "gcc-14-x86-64-linux-gnu_14.2.0-19_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/g/gcc-14/gcc-14-x86-64-linux-gnu_14.2.0-19_amd64.deb",
+      "sha256": "a17ef039f1ba482051c3efb5c2c24070002e60dd0bd09fd456ec31481a11b725",
+      "size": 21389968
+    },
+    {
+      "package": "gcc-14",
+      "version": "14.2.0-19",
+      "architecture": "amd64",
+      "filename": "gcc-14_14.2.0-19_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/g/gcc-14/gcc-14_14.2.0-19_amd64.deb",
+      "sha256": "21500408b5019d8d29f70ce58488e2eea469a1adb4b5fd7db45e819b5efcac4e",
+      "size": 540064
+    },
+    {
+      "package": "gcc-x86-64-linux-gnu",
+      "version": "4:14.2.0-1",
+      "architecture": "amd64",
+      "filename": "gcc-x86-64-linux-gnu_4%3a14.2.0-1_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/g/gcc-defaults/gcc-x86-64-linux-gnu_14.2.0-1_amd64.deb",
+      "sha256": "04c28c2760b0094b3d7758154ac095303dd00599b63ebad4086a325b607308b7",
+      "size": 1436
+    },
+    {
+      "package": "gcc",
+      "version": "4:14.2.0-1",
+      "architecture": "amd64",
+      "filename": "gcc_4%3a14.2.0-1_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/g/gcc-defaults/gcc_14.2.0-1_amd64.deb",
+      "sha256": "eee65c41a441c57c05f754ced1b9d093956966a1c7da9938c3ec00d3dc2f905d",
+      "size": 5136
+    },
+    {
+      "package": "initramfs-tools-bin",
+      "version": "0.148.4",
+      "architecture": "amd64",
+      "filename": "initramfs-tools-bin_0.148.4_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/i/initramfs-tools/initramfs-tools-bin_0.148.4_amd64.deb",
+      "sha256": "e4cbca64522133f8a9e23810029b217f496a40dc6d98a6082fc2eece8a95d69b",
+      "size": 17516
+    },
+    {
+      "package": "initramfs-tools-core",
+      "version": "0.148.4",
+      "architecture": "all",
+      "filename": "initramfs-tools-core_0.148.4_all.deb",
+      "url": "https://deb.debian.org/debian/pool/main/i/initramfs-tools/initramfs-tools-core_0.148.4_all.deb",
+      "sha256": "03cb11b8acd188e3b441526698536694f515ea6f2f5a20aef5ae70e5eb485a7a",
+      "size": 50668
+    },
+    {
+      "package": "initramfs-tools",
+      "version": "0.148.4",
+      "architecture": "all",
+      "filename": "initramfs-tools_0.148.4_all.deb",
+      "url": "https://deb.debian.org/debian/pool/main/i/initramfs-tools/initramfs-tools_0.148.4_all.deb",
+      "sha256": "4c65a6c385a3815aa65706066ae3a35395bf4ae7e13c9d4df4c655bd1d1ef956",
+      "size": 17400
+    },
+    {
+      "package": "klibc-utils",
+      "version": "2.0.14-1",
+      "architecture": "amd64",
+      "filename": "klibc-utils_2.0.14-1_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/k/klibc/klibc-utils_2.0.14-1_amd64.deb",
+      "sha256": "6d4d6b154f3147771709e47ac2fca84c38d9bd57407cf0bc1f806f9fc082b9fc",
+      "size": 95068
+    },
+    {
+      "package": "kmod",
+      "version": "34.2-2",
+      "architecture": "amd64",
+      "filename": "kmod_34.2-2_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/k/kmod/kmod_34.2-2_amd64.deb",
+      "sha256": "d56f9311beb17cd15447d11d91fd4de94d23a47d4619e8806b1b807b40c72e53",
+      "size": 95704
+    },
+    {
+      "package": "libacl1",
+      "version": "2.3.2-2+b1",
+      "architecture": "amd64",
+      "filename": "libacl1_2.3.2-2+b1_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/a/acl/libacl1_2.3.2-2+b1_amd64.deb",
+      "sha256": "08074f01e384bc07c0c2d79a58cf4a6523f71cf75d1808101c79617656c9a39d",
+      "size": 32860
+    },
+    {
+      "package": "libapparmor1",
+      "version": "4.1.0-1",
+      "architecture": "amd64",
+      "filename": "libapparmor1_4.1.0-1_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/a/apparmor/libapparmor1_4.1.0-1_amd64.deb",
+      "sha256": "4158976c77038b93021967f425b4cc505df18c4f5e3f444732399e7ed4af4419",
+      "size": 43688
+    },
+    {
+      "package": "libasan8",
+      "version": "14.2.0-19",
+      "architecture": "amd64",
+      "filename": "libasan8_14.2.0-19_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/g/gcc-14/libasan8_14.2.0-19_amd64.deb",
+      "sha256": "771899ade7310fe31aa538a509354c33d62bbe4e408b4e5fc1e513988dc42645",
+      "size": 2725272
+    },
+    {
+      "package": "libatomic1",
+      "version": "14.2.0-19",
+      "architecture": "amd64",
+      "filename": "libatomic1_14.2.0-19_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/g/gcc-14/libatomic1_14.2.0-19_amd64.deb",
+      "sha256": "212b399aae2f7299203d261a57e49372e09565a9a5ea971905f94a3960366c05",
+      "size": 9308
+    },
+    {
+      "package": "libattr1",
+      "version": "1:2.5.2-3",
+      "architecture": "amd64",
+      "filename": "libattr1_1%3a2.5.2-3_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/a/attr/libattr1_2.5.2-3_amd64.deb",
+      "sha256": "606b5ee12ea2786be607a17f40c1fb5e65c76ceaff66665bdf8f8c6c1b71d1fb",
+      "size": 22876
+    },
+    {
+      "package": "libaudit-common",
+      "version": "1:4.0.2-2+deb13u1",
+      "architecture": "all",
+      "filename": "libaudit-common_1%3a4.0.2-2+deb13u1_all.deb",
+      "url": "https://deb.debian.org/debian/pool/main/a/audit/libaudit-common_4.0.2-2+deb13u1_all.deb",
+      "sha256": "b9d32e5ff04fd747aacb7d6b3ebbbbf734ddefb2f1695f0b1b2a4b5e51b1052e",
+      "size": 12812
+    },
+    {
+      "package": "libaudit1",
+      "version": "1:4.0.2-2+deb13u1",
+      "architecture": "amd64",
+      "filename": "libaudit1_1%3a4.0.2-2+deb13u1_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/a/audit/libaudit1_4.0.2-2+deb13u1_amd64.deb",
+      "sha256": "3d1dd3f031a56f01b747e2acc0e14575212580e6fa63d800c44cb0a31f1edfd7",
+      "size": 57680
+    },
+    {
+      "package": "libbinutils",
+      "version": "2.44-3",
+      "architecture": "amd64",
+      "filename": "libbinutils_2.44-3_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/b/binutils/libbinutils_2.44-3_amd64.deb",
+      "sha256": "4f4664c8a8f0ad0c8631c39fab02e3d8d86ccc6f4436a1d59f059dbcb0492679",
+      "size": 534440
+    },
+    {
+      "package": "libblkid1",
+      "version": "2.41.5-0+deb13u1",
+      "architecture": "amd64",
+      "filename": "libblkid1_2.41.5-0+deb13u1_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/u/util-linux/libblkid1_2.41.5-0+deb13u1_amd64.deb",
+      "sha256": "81535f3c2c0efc732965907c8749103a0a26377c761622c9ce39b4c92dcde52f",
+      "size": 171612
+    },
+    {
+      "package": "libbpf1",
+      "version": "1:1.5.0-3",
+      "architecture": "amd64",
+      "filename": "libbpf1_1%3a1.5.0-3_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/libb/libbpf/libbpf1_1.5.0-3_amd64.deb",
+      "sha256": "04c96ead3024888d80d08c8d08cc8cf4589f4614627acc69519f87ffb5adc1c2",
+      "size": 168832
+    },
+    {
+      "package": "libbsd0",
+      "version": "0.12.2-2",
+      "architecture": "amd64",
+      "filename": "libbsd0_0.12.2-2_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/libb/libbsd/libbsd0_0.12.2-2_amd64.deb",
+      "sha256": "e5a85986fa6bec3307ab1bc860736b478b331882bc45e17675a7bdf88eecb43a",
+      "size": 130968
+    },
+    {
+      "package": "libbz2-1.0",
+      "version": "1.0.8-6",
+      "architecture": "amd64",
+      "filename": "libbz2-1.0_1.0.8-6_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/b/bzip2/libbz2-1.0_1.0.8-6_amd64.deb",
+      "sha256": "cba4cda04244b5e481bb15524bc3c983a7d1b6f330013b9b381706a2fcb65310",
+      "size": 37912
+    },
+    {
+      "package": "libc-dev-bin",
+      "version": "2.41-12+deb13u4",
+      "architecture": "amd64",
+      "filename": "libc-dev-bin_2.41-12+deb13u4_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/g/glibc/libc-dev-bin_2.41-12+deb13u4_amd64.deb",
+      "sha256": "2c21175d6a8283ed566d154c0c0bc06f60836e53b0b9e1f74c14eac586b68c24",
+      "size": 59960
+    },
+    {
+      "package": "libc6-dev",
+      "version": "2.41-12+deb13u4",
+      "architecture": "amd64",
+      "filename": "libc6-dev_2.41-12+deb13u4_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/g/glibc/libc6-dev_2.41-12+deb13u4_amd64.deb",
+      "sha256": "1fda734dabcd80b77266a09ab62b0f1e3e16d8091db62899890b2200745632a2",
+      "size": 1994660
+    },
+    {
+      "package": "libc6",
+      "version": "2.41-12+deb13u4",
+      "architecture": "amd64",
+      "filename": "libc6_2.41-12+deb13u4_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/g/glibc/libc6_2.41-12+deb13u4_amd64.deb",
+      "sha256": "967aa62605721081c3eb2a17650611a792aa802d76a6511d1840242623d204c9",
+      "size": 2846580
+    },
+    {
+      "package": "libcap-ng0",
+      "version": "0.8.5-4+b1",
+      "architecture": "amd64",
+      "filename": "libcap-ng0_0.8.5-4+b1_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/libc/libcap-ng/libcap-ng0_0.8.5-4+b1_amd64.deb",
+      "sha256": "20a9e4b0619a3eb2566338223bed135dde5a601eaa2f8fdd5f20b94506addcac",
+      "size": 17584
+    },
+    {
+      "package": "libcap2",
+      "version": "1:2.75-10+deb13u1+b3",
+      "architecture": "amd64",
+      "filename": "libcap2_1%3a2.75-10+deb13u1+b3_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/libc/libcap2/libcap2_2.75-10+deb13u1+b3_amd64.deb",
+      "sha256": "89fc4d34fc7a28ad6f0fcd0c561ab253b9dedf6f77f5a000b47c276c8295bf67",
+      "size": 28988
+    },
+    {
+      "package": "libcc1-0",
+      "version": "14.2.0-19",
+      "architecture": "amd64",
+      "filename": "libcc1-0_14.2.0-19_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/g/gcc-14/libcc1-0_14.2.0-19_amd64.deb",
+      "sha256": "2d587e3bfba4aec701946b7ba0c1640b97b6d8dd0a34ba1c70ae85261ecedefa",
+      "size": 42796
+    },
+    {
+      "package": "libcom-err2",
+      "version": "1.47.2-3+b12",
+      "architecture": "amd64",
+      "filename": "libcom-err2_1.47.2-3+b12_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/e/e2fsprogs/libcom-err2_1.47.2-3+b12_amd64.deb",
+      "sha256": "bd43e020b8fed399db3eebf098111f10fba4c436fff99ccad72cc7e27c9764ec",
+      "size": 25036
+    },
+    {
+      "package": "libcrypt-dev",
+      "version": "1:4.4.38-1",
+      "architecture": "amd64",
+      "filename": "libcrypt-dev_1%3a4.4.38-1_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/libx/libxcrypt/libcrypt-dev_4.4.38-1_amd64.deb",
+      "sha256": "98e2333aea8d64ca68f9b75c16256d3a05492fd8f9e6dba96adbc6f19e4f5a09",
+      "size": 119040
+    },
+    {
+      "package": "libcrypt1",
+      "version": "1:4.4.38-1",
+      "architecture": "amd64",
+      "filename": "libcrypt1_1%3a4.4.38-1_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/libx/libxcrypt/libcrypt1_4.4.38-1_amd64.deb",
+      "sha256": "0ebc144d662e3197982d1bf3a7b8b35ca845e54c68811de0328b1f0d7c67585c",
+      "size": 90072
+    },
+    {
+      "package": "libctf-nobfd0",
+      "version": "2.44-3",
+      "architecture": "amd64",
+      "filename": "libctf-nobfd0_2.44-3_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/b/binutils/libctf-nobfd0_2.44-3_amd64.deb",
+      "sha256": "e280b2be3db6e584500e865c251605b95c346767d87ccb2524e44992048fc657",
+      "size": 155672
+    },
+    {
+      "package": "libctf0",
+      "version": "2.44-3",
+      "architecture": "amd64",
+      "filename": "libctf0_2.44-3_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/b/binutils/libctf0_2.44-3_amd64.deb",
+      "sha256": "120cafcd93132a276fa92a8fb4cf39b23d14e5a3e348f4f5580638d71ca95ac5",
+      "size": 88616
+    },
+    {
+      "package": "libcuda1",
+      "version": "615.71.10-1",
+      "architecture": "amd64",
+      "filename": "libcuda1_615.71.10-1_amd64.deb",
+      "url": "https://developer.download.nvidia.com/compute/cuda/repos/debian13/x86_64/libcuda1_615.71.10-1_amd64.deb",
+      "sha256": "1ac1bee69eae90c5b4e02bbc61f0b4646b683fe8129b4986b9d6741beceb3ff0",
+      "size": 8191078
+    },
+    {
+      "package": "libcudadebugger1",
+      "version": "615.71.10-1",
+      "architecture": "amd64",
+      "filename": "libcudadebugger1_615.71.10-1_amd64.deb",
+      "url": "https://developer.download.nvidia.com/compute/cuda/repos/debian13/x86_64/libcudadebugger1_615.71.10-1_amd64.deb",
+      "sha256": "81796eea393ae7d357905734cba6a051a51c744f727ce0e41383a0b1ba81b898",
+      "size": 3353080
+    },
+    {
+      "package": "libdb5.3t64",
+      "version": "5.3.28+dfsg2-9",
+      "architecture": "amd64",
+      "filename": "libdb5.3t64_5.3.28+dfsg2-9_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/d/db5.3/libdb5.3t64_5.3.28+dfsg2-9_amd64.deb",
+      "sha256": "18d02510ee78b67e4504ba050176797a200ff24214a7cd318082ab60ad7bf3fc",
+      "size": 703676
+    },
+    {
+      "package": "libdebconfclient0",
+      "version": "0.280",
+      "architecture": "amd64",
+      "filename": "libdebconfclient0_0.280_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/c/cdebconf/libdebconfclient0_0.280_amd64.deb",
+      "sha256": "25acadc8b394bc86d05df16e70975e523f8f839a7d8d6d5e22c1cafdcef741aa",
+      "size": 10632
+    },
+    {
+      "package": "libdpkg-perl",
+      "version": "1.22.22",
+      "architecture": "all",
+      "filename": "libdpkg-perl_1.22.22_all.deb",
+      "url": "https://deb.debian.org/debian/pool/main/d/dpkg/libdpkg-perl_1.22.22_all.deb",
+      "sha256": "b41eaeb4879091023f8c1a058510844a244d3d0bd0f437e0e05d58213e36fd9f",
+      "size": 650808
+    },
+    {
+      "package": "libdw1t64",
+      "version": "0.192-4",
+      "architecture": "amd64",
+      "filename": "libdw1t64_0.192-4_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/e/elfutils/libdw1t64_0.192-4_amd64.deb",
+      "sha256": "6b41d3895b40eff429dd8013f0c13b6e26371a26491f414dbf66ba86c4c2c3f1",
+      "size": 254872
+    },
+    {
+      "package": "libelf1t64",
+      "version": "0.192-4",
+      "architecture": "amd64",
+      "filename": "libelf1t64_0.192-4_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/e/elfutils/libelf1t64_0.192-4_amd64.deb",
+      "sha256": "94497b7e17b6f574a0605b380d454e20d3f01a9c63b70c2a2263f679d30053e1",
+      "size": 189408
+    },
+    {
+      "package": "libgcc-14-dev",
+      "version": "14.2.0-19",
+      "architecture": "amd64",
+      "filename": "libgcc-14-dev_14.2.0-19_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/g/gcc-14/libgcc-14-dev_14.2.0-19_amd64.deb",
+      "sha256": "ca6f2d36d96b19b3eb71405b0b80134d8c89380b02204a2512e5c58ceb090628",
+      "size": 2672328
+    },
+    {
+      "package": "libgcc-s1",
+      "version": "14.2.0-19",
+      "architecture": "amd64",
+      "filename": "libgcc-s1_14.2.0-19_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/g/gcc-14/libgcc-s1_14.2.0-19_amd64.deb",
+      "sha256": "3c71917b490d1a17aed43196a2787a256ecf060526cdb20216a74bedc061b150",
+      "size": 72772
+    },
+    {
+      "package": "libgdbm-compat4t64",
+      "version": "1.24-2",
+      "architecture": "amd64",
+      "filename": "libgdbm-compat4t64_1.24-2_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/g/gdbm/libgdbm-compat4t64_1.24-2_amd64.deb",
+      "sha256": "2cbd43cf2dfbf57ff48188b5d79d29cf7ea8f0dedaa61ab0bcc02eceff50ea01",
+      "size": 50280
+    },
+    {
+      "package": "libgdbm6t64",
+      "version": "1.24-2",
+      "architecture": "amd64",
+      "filename": "libgdbm6t64_1.24-2_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/g/gdbm/libgdbm6t64_1.24-2_amd64.deb",
+      "sha256": "e7b42c68c391e278733adb3c1efdacd24d660862bd7bac0efbc10a91e5696dfc",
+      "size": 75176
+    },
+    {
+      "package": "libgmp10",
+      "version": "2:6.3.0+dfsg-3",
+      "architecture": "amd64",
+      "filename": "libgmp10_2%3a6.3.0+dfsg-3_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/g/gmp/libgmp10_6.3.0+dfsg-3_amd64.deb",
+      "sha256": "d0d0265eb01770f17afd0f7c8c0622f80479dcfbbe13653a0debeec61464e622",
+      "size": 560220
+    },
+    {
+      "package": "libgomp1",
+      "version": "14.2.0-19",
+      "architecture": "amd64",
+      "filename": "libgomp1_14.2.0-19_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/g/gcc-14/libgomp1_14.2.0-19_amd64.deb",
+      "sha256": "72b7a1a33c48f3195efeb044111b34ae684b1e640bb6495c832443b798601cd5",
+      "size": 137148
+    },
+    {
+      "package": "libgprofng0",
+      "version": "2.44-3",
+      "architecture": "amd64",
+      "filename": "libgprofng0_2.44-3_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/b/binutils/libgprofng0_2.44-3_amd64.deb",
+      "sha256": "0d36d0bde85c467ac6735dded08e19dd30ae1369e3908b9eb48ccc0d6ff66648",
+      "size": 807764
+    },
+    {
+      "package": "libgssapi-krb5-2",
+      "version": "1.21.3-5+deb13u1",
+      "architecture": "amd64",
+      "filename": "libgssapi-krb5-2_1.21.3-5+deb13u1_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/k/krb5/libgssapi-krb5-2_1.21.3-5+deb13u1_amd64.deb",
+      "sha256": "30847c1fde4240567d7ed3aeab4f655dd591203758b857e85e824045aae70299",
+      "size": 138356
+    },
+    {
+      "package": "libhwasan0",
+      "version": "14.2.0-19",
+      "architecture": "amd64",
+      "filename": "libhwasan0_14.2.0-19_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/g/gcc-14/libhwasan0_14.2.0-19_amd64.deb",
+      "sha256": "2cdaf797cad8ac30a964ab081370682dd065ae1b0305a0be9d8e0e14cd0657d7",
+      "size": 1487768
+    },
+    {
+      "package": "libisl23",
+      "version": "0.27-1",
+      "architecture": "amd64",
+      "filename": "libisl23_0.27-1_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/i/isl/libisl23_0.27-1_amd64.deb",
+      "sha256": "ac8518042e81c00de1effb72bba7e88ac4ecd488f7ea8b9e3ebc63159cb53b35",
+      "size": 659152
+    },
+    {
+      "package": "libitm1",
+      "version": "14.2.0-19",
+      "architecture": "amd64",
+      "filename": "libitm1_14.2.0-19_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/g/gcc-14/libitm1_14.2.0-19_amd64.deb",
+      "sha256": "febdb3c528cde1a3abe952e17a1d3cfa7ccaca5b6f506d983d34385dad199490",
+      "size": 25956
+    },
+    {
+      "package": "libjansson4",
+      "version": "2.14-2+b3",
+      "architecture": "amd64",
+      "filename": "libjansson4_2.14-2+b3_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/j/jansson/libjansson4_2.14-2+b3_amd64.deb",
+      "sha256": "60707a62fe6c1228c3389b12a13ca4efd76defc5532473e547a29e99cf7d2a6e",
+      "size": 39792
+    },
+    {
+      "package": "libk5crypto3",
+      "version": "1.21.3-5+deb13u1",
+      "architecture": "amd64",
+      "filename": "libk5crypto3_1.21.3-5+deb13u1_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/k/krb5/libk5crypto3_1.21.3-5+deb13u1_amd64.deb",
+      "sha256": "7da07ee674b47f1f0be7cc89317c25310086a1f1761217d0f72e6ae2c5a69b84",
+      "size": 81152
+    },
+    {
+      "package": "libkeyutils1",
+      "version": "1.6.3-6",
+      "architecture": "amd64",
+      "filename": "libkeyutils1_1.6.3-6_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/k/keyutils/libkeyutils1_1.6.3-6_amd64.deb",
+      "sha256": "0b11ad17be0300b63ad4eeb4c6450fed24d34b7b740f23e5363dcb29ee6d5eba",
+      "size": 9456
+    },
+    {
+      "package": "libklibc",
+      "version": "2.0.14-1",
+      "architecture": "amd64",
+      "filename": "libklibc_2.0.14-1_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/k/klibc/libklibc_2.0.14-1_amd64.deb",
+      "sha256": "8c71660ca790ef06f46a4e64febc6ad515499a7364aa9aa98c88b5655f9c5bda",
+      "size": 44760
+    },
+    {
+      "package": "libkmod2",
+      "version": "34.2-2",
+      "architecture": "amd64",
+      "filename": "libkmod2_34.2-2_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/k/kmod/libkmod2_34.2-2_amd64.deb",
+      "sha256": "ee6c50ebac79aa9795e8bf9aa01d94c99984d09d22598c66be0f8ba917b62179",
+      "size": 63196
+    },
+    {
+      "package": "libkrb5-3",
+      "version": "1.21.3-5+deb13u1",
+      "architecture": "amd64",
+      "filename": "libkrb5-3_1.21.3-5+deb13u1_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/k/krb5/libkrb5-3_1.21.3-5+deb13u1_amd64.deb",
+      "sha256": "47d71d6a7f2e59b9bae5f89602397594805113b95889ad18fa703cd53abafc97",
+      "size": 326056
+    },
+    {
+      "package": "libkrb5support0",
+      "version": "1.21.3-5+deb13u1",
+      "architecture": "amd64",
+      "filename": "libkrb5support0_1.21.3-5+deb13u1_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/k/krb5/libkrb5support0_1.21.3-5+deb13u1_amd64.deb",
+      "sha256": "3a0acd8b37955c0e102c756b52c97df2a31f67b96453c35dab70df218d309117",
+      "size": 33124
+    },
+    {
+      "package": "liblsan0",
+      "version": "14.2.0-19",
+      "architecture": "amd64",
+      "filename": "liblsan0_14.2.0-19_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/g/gcc-14/liblsan0_14.2.0-19_amd64.deb",
+      "sha256": "a0df07da76287a45e665d584363dc2a6a1c4e240aee41b8bbc0f67cdff97cd68",
+      "size": 1204164
+    },
+    {
+      "package": "liblzma5",
+      "version": "5.8.1-1+deb13u2",
+      "architecture": "amd64",
+      "filename": "liblzma5_5.8.1-1+deb13u2_amd64.deb",
+      "url": "https://security.debian.org/debian-security/pool/updates/main/x/xz-utils/liblzma5_5.8.1-1+deb13u2_amd64.deb",
+      "sha256": "b38acab30f295bf1066a6632e31cbd0a1980f2924b38040cda131d5dea5384ec",
+      "size": 309696
+    },
+    {
+      "package": "libmd0",
+      "version": "1.1.0-2+b1",
+      "architecture": "amd64",
+      "filename": "libmd0_1.1.0-2+b1_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/libm/libmd/libmd0_1.1.0-2+b1_amd64.deb",
+      "sha256": "7244ec3839b61fac0c1884fe08aaa040f26e8f1f35f1f5d3482eacefd30d1b44",
+      "size": 36272
+    },
+    {
+      "package": "libmount1",
+      "version": "2.41.5-0+deb13u1",
+      "architecture": "amd64",
+      "filename": "libmount1_2.41.5-0+deb13u1_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/u/util-linux/libmount1_2.41.5-0+deb13u1_amd64.deb",
+      "sha256": "6d00f45f2e80e078e906e3eedecd3ba6913e39fef49bff361ee583f17f00ec05",
+      "size": 210408
+    },
+    {
+      "package": "libmpc3",
+      "version": "1.3.1-1+b3",
+      "architecture": "amd64",
+      "filename": "libmpc3_1.3.1-1+b3_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/m/mpclib3/libmpc3_1.3.1-1+b3_amd64.deb",
+      "sha256": "2af0a5c128e03694a41c0b011bd8a958b7297436cdb3a15ddad7866dae8c300b",
+      "size": 52244
+    },
+    {
+      "package": "libmpfr6",
+      "version": "4.2.2-1",
+      "architecture": "amd64",
+      "filename": "libmpfr6_4.2.2-1_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/m/mpfr4/libmpfr6_4.2.2-1_amd64.deb",
+      "sha256": "75dddce11dabc7fc543712c33dc27b7f2ee66a111763eb5eac654d010b42cd92",
+      "size": 729320
+    },
+    {
+      "package": "libnvcuvid1",
+      "version": "615.71.10-1",
+      "architecture": "amd64",
+      "filename": "libnvcuvid1_615.71.10-1_amd64.deb",
+      "url": "https://developer.download.nvidia.com/compute/cuda/repos/debian13/x86_64/libnvcuvid1_615.71.10-1_amd64.deb",
+      "sha256": "7019cb9c358cdd28488805833d12f20d34b6e851db78dba4d3e9eb008ab1fd65",
+      "size": 2660772
+    },
+    {
+      "package": "libnvidia-cfg1",
+      "version": "615.71.10-1",
+      "architecture": "amd64",
+      "filename": "libnvidia-cfg1_615.71.10-1_amd64.deb",
+      "url": "https://developer.download.nvidia.com/compute/cuda/repos/debian13/x86_64/libnvidia-cfg1_615.71.10-1_amd64.deb",
+      "sha256": "14073d22d86509b5cf9b40d9b36f7e289bcd47ec11fa20762905ef5957d93cfd",
+      "size": 272272
+    },
+    {
+      "package": "libnvidia-encode1",
+      "version": "615.71.10-1",
+      "architecture": "amd64",
+      "filename": "libnvidia-encode1_615.71.10-1_amd64.deb",
+      "url": "https://developer.download.nvidia.com/compute/cuda/repos/debian13/x86_64/libnvidia-encode1_615.71.10-1_amd64.deb",
+      "sha256": "ad5d00541177f638b6cfc5279fb3c1e01bfc63af9f7cb27701e8b938f3ebd376",
+      "size": 229240
+    },
+    {
+      "package": "libnvidia-fbc1",
+      "version": "615.71.10-1",
+      "architecture": "amd64",
+      "filename": "libnvidia-fbc1_615.71.10-1_amd64.deb",
+      "url": "https://developer.download.nvidia.com/compute/cuda/repos/debian13/x86_64/libnvidia-fbc1_615.71.10-1_amd64.deb",
+      "sha256": "410c5f66599ed00dc8e0e23b153927551cd6dc995b3c9d742f3771bd3401b6e3",
+      "size": 220556
+    },
+    {
+      "package": "libnvidia-gpucomp",
+      "version": "615.71.10-1",
+      "architecture": "amd64",
+      "filename": "libnvidia-gpucomp_615.71.10-1_amd64.deb",
+      "url": "https://developer.download.nvidia.com/compute/cuda/repos/debian13/x86_64/libnvidia-gpucomp_615.71.10-1_amd64.deb",
+      "sha256": "71c0b6753a8c6914b33042007dcb3fd9337d89ffaa659509240c41306d181194",
+      "size": 27715246
+    },
+    {
+      "package": "libnvidia-ml1",
+      "version": "615.71.10-1",
+      "architecture": "amd64",
+      "filename": "libnvidia-ml1_615.71.10-1_amd64.deb",
+      "url": "https://developer.download.nvidia.com/compute/cuda/repos/debian13/x86_64/libnvidia-ml1_615.71.10-1_amd64.deb",
+      "sha256": "2d3a19d22dbcf50da5d64ffd1b8b4a958355f40ea16098e0d47a808b0d4e2a53",
+      "size": 793608
+    },
+    {
+      "package": "libnvidia-nvvm4",
+      "version": "615.71.10-1",
+      "architecture": "amd64",
+      "filename": "libnvidia-nvvm4_615.71.10-1_amd64.deb",
+      "url": "https://developer.download.nvidia.com/compute/cuda/repos/debian13/x86_64/libnvidia-nvvm4_615.71.10-1_amd64.deb",
+      "sha256": "b50ebb11aecd3cabb54402622c80afb3e7cb9bfae4f0e443799b9bac1b37b4fd",
+      "size": 20248530
+    },
+    {
+      "package": "libnvidia-nvvm704",
+      "version": "615.71.10-1",
+      "architecture": "amd64",
+      "filename": "libnvidia-nvvm704_615.71.10-1_amd64.deb",
+      "url": "https://developer.download.nvidia.com/compute/cuda/repos/debian13/x86_64/libnvidia-nvvm704_615.71.10-1_amd64.deb",
+      "sha256": "0c054be611f8303de8c56f1314e578a0ae4ebfbe7c5fe0ccde2d9feeb84d2a7c",
+      "size": 7678428
+    },
+    {
+      "package": "libnvidia-opticalflow1",
+      "version": "615.71.10-1",
+      "architecture": "amd64",
+      "filename": "libnvidia-opticalflow1_615.71.10-1_amd64.deb",
+      "url": "https://developer.download.nvidia.com/compute/cuda/repos/debian13/x86_64/libnvidia-opticalflow1_615.71.10-1_amd64.deb",
+      "sha256": "d645c2e32c79b51b7b960c769ea301c0b9a4701524f3cd75d5550a7a7b805078",
+      "size": 149644
+    },
+    {
+      "package": "libnvidia-pkcs11-openssl3",
+      "version": "615.71.10-1",
+      "architecture": "amd64",
+      "filename": "libnvidia-pkcs11-openssl3_615.71.10-1_amd64.deb",
+      "url": "https://developer.download.nvidia.com/compute/cuda/repos/debian13/x86_64/libnvidia-pkcs11-openssl3_615.71.10-1_amd64.deb",
+      "sha256": "c44f91e57a4b6100a709132564fbccd64eb45c71b31b148bc6012df63c6fc755",
+      "size": 134508
+    },
+    {
+      "package": "libnvidia-present",
+      "version": "615.71.10-1",
+      "architecture": "amd64",
+      "filename": "libnvidia-present_615.71.10-1_amd64.deb",
+      "url": "https://developer.download.nvidia.com/compute/cuda/repos/debian13/x86_64/libnvidia-present_615.71.10-1_amd64.deb",
+      "sha256": "3a0e37fa798c845e9c223d0ee0a2e251610d9c90eea3c674f15cfb8d3a2b6181",
+      "size": 2930044
+    },
+    {
+      "package": "libnvidia-ptxjitcompiler1",
+      "version": "615.71.10-1",
+      "architecture": "amd64",
+      "filename": "libnvidia-ptxjitcompiler1_615.71.10-1_amd64.deb",
+      "url": "https://developer.download.nvidia.com/compute/cuda/repos/debian13/x86_64/libnvidia-ptxjitcompiler1_615.71.10-1_amd64.deb",
+      "sha256": "6c457004173771f767e1dd5cf482f06f947e83719b0d51ac81f66b6f35c9b871",
+      "size": 9080844
+    },
+    {
+      "package": "libnvidia-sandboxutils",
+      "version": "615.71.10-1",
+      "architecture": "amd64",
+      "filename": "libnvidia-sandboxutils_615.71.10-1_amd64.deb",
+      "url": "https://developer.download.nvidia.com/compute/cuda/repos/debian13/x86_64/libnvidia-sandboxutils_615.71.10-1_amd64.deb",
+      "sha256": "9a05aa5bc1e189e156db7fbcb42b1ce12b785d2a30475539220457fee999e2a0",
+      "size": 154124
+    },
+    {
+      "package": "libnvidia-tileiras",
+      "version": "615.71.10-1",
+      "architecture": "amd64",
+      "filename": "libnvidia-tileiras_615.71.10-1_amd64.deb",
+      "url": "https://developer.download.nvidia.com/compute/cuda/repos/debian13/x86_64/libnvidia-tileiras_615.71.10-1_amd64.deb",
+      "sha256": "eda0628f9c7689d68b00e056d9c2bcab7e65581b7525894d5bdb0f2563d93f29",
+      "size": 28838526
+    },
+    {
+      "package": "libnvoptix1",
+      "version": "615.71.10-1",
+      "architecture": "amd64",
+      "filename": "libnvoptix1_615.71.10-1_amd64.deb",
+      "url": "https://developer.download.nvidia.com/compute/cuda/repos/debian13/x86_64/libnvoptix1_615.71.10-1_amd64.deb",
+      "sha256": "529cc1f6c1a42052e54429f599b72e00b97f2a99c099fd16d1c71f7b6669a8a0",
+      "size": 72688482
+    },
+    {
+      "package": "libpam-modules-bin",
+      "version": "1.7.0-5",
+      "architecture": "amd64",
+      "filename": "libpam-modules-bin_1.7.0-5_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/p/pam/libpam-modules-bin_1.7.0-5_amd64.deb",
+      "sha256": "cc72066d008444317738e8e931d6131b301466b4e2dd5ef5baa75fb1a45d61a7",
+      "size": 49116
+    },
+    {
+      "package": "libpam-modules",
+      "version": "1.7.0-5",
+      "architecture": "amd64",
+      "filename": "libpam-modules_1.7.0-5_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/p/pam/libpam-modules_1.7.0-5_amd64.deb",
+      "sha256": "9679ade117f8775ac0471f48a92652ab8e8dcda4e2ff06de75158cded9cfd83c",
+      "size": 178696
+    },
+    {
+      "package": "libpam0g",
+      "version": "1.7.0-5",
+      "architecture": "amd64",
+      "filename": "libpam0g_1.7.0-5_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/p/pam/libpam0g_1.7.0-5_amd64.deb",
+      "sha256": "4f5bde27d8df2de6ea8990319b42d9974f56a3ba9907ce7296fd0f8964fc9fb1",
+      "size": 69880
+    },
+    {
+      "package": "libpcre2-8-0",
+      "version": "10.46-1~deb13u3",
+      "architecture": "amd64",
+      "filename": "libpcre2-8-0_10.46-1~deb13u3_amd64.deb",
+      "url": "https://security.debian.org/debian-security/pool/updates/main/p/pcre2/libpcre2-8-0_10.46-1~deb13u3_amd64.deb",
+      "sha256": "e226f661d918f04daf38cdbc4806b7ed7d6ef95c7eb0ade692fc350e31970040",
+      "size": 299148
+    },
+    {
+      "package": "libperl5.40",
+      "version": "5.40.1-6+deb13u1",
+      "architecture": "amd64",
+      "filename": "libperl5.40_5.40.1-6+deb13u1_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/p/perl/libperl5.40_5.40.1-6+deb13u1_amd64.deb",
+      "sha256": "e44777ff47ad248d1debd57e1f96ab5e89061a341008ae39880ba3b5fc15f273",
+      "size": 4325996
+    },
+    {
+      "package": "libquadmath0",
+      "version": "14.2.0-19",
+      "architecture": "amd64",
+      "filename": "libquadmath0_14.2.0-19_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/g/gcc-14/libquadmath0_14.2.0-19_amd64.deb",
+      "sha256": "f5b51cf0ece3ec3bb7494d0cdbff3ce715ae00cfb2b6ed787f7db91319d64a7b",
+      "size": 145068
+    },
+    {
+      "package": "libseccomp2",
+      "version": "2.6.0-2",
+      "architecture": "amd64",
+      "filename": "libseccomp2_2.6.0-2_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/libs/libseccomp/libseccomp2_2.6.0-2_amd64.deb",
+      "sha256": "89d5138e05fb6a86b9afd8b54dc0fb4b14f4c27c05e6c5f767c2132bdf808531",
+      "size": 51712
+    },
+    {
+      "package": "libselinux1",
+      "version": "3.8.1-1",
+      "architecture": "amd64",
+      "filename": "libselinux1_3.8.1-1_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/libs/libselinux/libselinux1_3.8.1-1_amd64.deb",
+      "sha256": "68bb8d32bd8d6d7d2f5952a169db03d1484b46ae1e52abccdec42a19dccea5d5",
+      "size": 84680
+    },
+    {
+      "package": "libsemanage-common",
+      "version": "3.8.1-1",
+      "architecture": "all",
+      "filename": "libsemanage-common_3.8.1-1_all.deb",
+      "url": "https://deb.debian.org/debian/pool/main/libs/libsemanage/libsemanage-common_3.8.1-1_all.deb",
+      "sha256": "65375d886749c236bd1da4d9990b7c2469d2fe66019a28e5614f6814376d3dcb",
+      "size": 7812
+    },
+    {
+      "package": "libsemanage2",
+      "version": "3.8.1-1",
+      "architecture": "amd64",
+      "filename": "libsemanage2_3.8.1-1_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/libs/libsemanage/libsemanage2_3.8.1-1_amd64.deb",
+      "sha256": "f97da7505d17ad3bdd8fc56302256df7e158e5e0d8b02cb766654199cbc406a9",
+      "size": 95284
+    },
+    {
+      "package": "libsepol2",
+      "version": "3.8.1-1",
+      "architecture": "amd64",
+      "filename": "libsepol2_3.8.1-1_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/libs/libsepol/libsepol2_3.8.1-1_amd64.deb",
+      "sha256": "3595d2d3a6d24695e7953f4f00cdfe6974c9242d9a8dfee8998e77fbf7b2ba09",
+      "size": 295588
+    },
+    {
+      "package": "libsframe1",
+      "version": "2.44-3",
+      "architecture": "amd64",
+      "filename": "libsframe1_2.44-3_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/b/binutils/libsframe1_2.44-3_amd64.deb",
+      "sha256": "38f625dfdc582717029ac3a3e97c51d994ec2e7a0e9b230c6b44e40d1276311f",
+      "size": 78360
+    },
+    {
+      "package": "libsmartcols1",
+      "version": "2.41.5-0+deb13u1",
+      "architecture": "amd64",
+      "filename": "libsmartcols1_2.41.5-0+deb13u1_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/u/util-linux/libsmartcols1_2.41.5-0+deb13u1_amd64.deb",
+      "sha256": "d96bac9c8805685f2734885098a214b82950da6ebb182c27a6b7a124a0323392",
+      "size": 143216
+    },
+    {
+      "package": "libssl3t64",
+      "version": "3.5.7-1~deb13u3",
+      "architecture": "amd64",
+      "filename": "libssl3t64_3.5.7-1~deb13u3_amd64.deb",
+      "url": "https://security.debian.org/debian-security/pool/updates/main/o/openssl/libssl3t64_3.5.7-1~deb13u3_amd64.deb",
+      "sha256": "ff16bc048bcd7d1b256094450b79c77947d8e76fe2a24bd99b91021d591fa074",
+      "size": 2458176
+    },
+    {
+      "package": "libstdc++-14-dev",
+      "version": "14.2.0-19",
+      "architecture": "amd64",
+      "filename": "libstdc++-14-dev_14.2.0-19_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/g/gcc-14/libstdc++-14-dev_14.2.0-19_amd64.deb",
+      "sha256": "4b962fac5f1af0bd8b1b3f97e0f47b9d8e9a79e88802143f00ebfbd78ad87a7b",
+      "size": 2375760
+    },
+    {
+      "package": "libstdc++6",
+      "version": "14.2.0-19",
+      "architecture": "amd64",
+      "filename": "libstdc++6_14.2.0-19_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/g/gcc-14/libstdc++6_14.2.0-19_amd64.deb",
+      "sha256": "ab1fa05837aa7a92aae748fd07a18a35f7d18bb4a71c4724fe2bbf0e32089de0",
+      "size": 713628
+    },
+    {
+      "package": "libsystemd-shared",
+      "version": "257.13-1~deb13u1",
+      "architecture": "amd64",
+      "filename": "libsystemd-shared_257.13-1~deb13u1_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/s/systemd/libsystemd-shared_257.13-1~deb13u1_amd64.deb",
+      "sha256": "2d349824e57f88507e2a33360610d8afc143a4ad5e80ee4bf8f37b826d6f37f9",
+      "size": 2154616
+    },
+    {
+      "package": "libsystemd0",
+      "version": "257.13-1~deb13u1",
+      "architecture": "amd64",
+      "filename": "libsystemd0_257.13-1~deb13u1_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/s/systemd/libsystemd0_257.13-1~deb13u1_amd64.deb",
+      "sha256": "ab0d4127b5e46e6f8c015a1db15a62ba9ae274cdefa150083adf90ada0600ea1",
+      "size": 454648
+    },
+    {
+      "package": "libtirpc-common",
+      "version": "1.3.6+ds-1",
+      "architecture": "all",
+      "filename": "libtirpc-common_1.3.6+ds-1_all.deb",
+      "url": "https://deb.debian.org/debian/pool/main/libt/libtirpc/libtirpc-common_1.3.6+ds-1_all.deb",
+      "sha256": "300f582e2c9151a8d329568c705cadc76252c417147312fe331c4560d2c7a6c3",
+      "size": 11004
+    },
+    {
+      "package": "libtirpc3t64",
+      "version": "1.3.6+ds-1",
+      "architecture": "amd64",
+      "filename": "libtirpc3t64_1.3.6+ds-1_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/libt/libtirpc/libtirpc3t64_1.3.6+ds-1_amd64.deb",
+      "sha256": "ef4536c09bf5063554310e22d586ae90990100ba66d2fe7c35660e9e658913b6",
+      "size": 83300
+    },
+    {
+      "package": "libtsan2",
+      "version": "14.2.0-19",
+      "architecture": "amd64",
+      "filename": "libtsan2_14.2.0-19_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/g/gcc-14/libtsan2_14.2.0-19_amd64.deb",
+      "sha256": "529d7f68227d16975076c5f842e8b687faea1b5df8e0dcf62e436d5402844ca5",
+      "size": 2460216
+    },
+    {
+      "package": "libubsan1",
+      "version": "14.2.0-19",
+      "architecture": "amd64",
+      "filename": "libubsan1_14.2.0-19_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/g/gcc-14/libubsan1_14.2.0-19_amd64.deb",
+      "sha256": "9205a1bef7d6a52ffc06548e0cde169ff303e688c12d9be3a98f734449077e22",
+      "size": 1074340
+    },
+    {
+      "package": "libudev1",
+      "version": "257.13-1~deb13u1",
+      "architecture": "amd64",
+      "filename": "libudev1_257.13-1~deb13u1_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/s/systemd/libudev1_257.13-1~deb13u1_amd64.deb",
+      "sha256": "5d41c284f5a93b05bc7d648b61a02dd2bb9ff05b2261ad1a8b7d96044a0cfa88",
+      "size": 152300
+    },
+    {
+      "package": "libx11-6",
+      "version": "2:1.8.12-1",
+      "architecture": "amd64",
+      "filename": "libx11-6_2%3a1.8.12-1_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/libx/libx11/libx11-6_1.8.12-1_amd64.deb",
+      "sha256": "b5a3fd3bf8c8fd0364bfb9bea00dcba7fc301229bd02dded084632d31f5b0fb3",
+      "size": 815292
+    },
+    {
+      "package": "libx11-data",
+      "version": "2:1.8.12-1",
+      "architecture": "all",
+      "filename": "libx11-data_2%3a1.8.12-1_all.deb",
+      "url": "https://deb.debian.org/debian/pool/main/libx/libx11/libx11-data_1.8.12-1_all.deb",
+      "sha256": "c54f87069888f80ba4da586da6147d74c7598ccdd8b90906dbc4271fa414c738",
+      "size": 343072
+    },
+    {
+      "package": "libxau6",
+      "version": "1:1.0.11-1",
+      "architecture": "amd64",
+      "filename": "libxau6_1%3a1.0.11-1_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/libx/libxau/libxau6_1.0.11-1_amd64.deb",
+      "sha256": "689a9f0e0ba3e2c65431f864871e303ee904de69dd28abfc462663fae030227f",
+      "size": 20392
+    },
+    {
+      "package": "libxcb1",
+      "version": "1.17.0-2+b1",
+      "architecture": "amd64",
+      "filename": "libxcb1_1.17.0-2+b1_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/libx/libxcb/libxcb1_1.17.0-2+b1_amd64.deb",
+      "sha256": "5c222a72d11b866447da31693254f738430726e3e065a384e82687b2fd2f978b",
+      "size": 144340
+    },
+    {
+      "package": "libxdmcp6",
+      "version": "1:1.1.5-1",
+      "architecture": "amd64",
+      "filename": "libxdmcp6_1%3a1.1.5-1_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/libx/libxdmcp/libxdmcp6_1.1.5-1_amd64.deb",
+      "sha256": "0740dc760916b2008b45417a42a8fd7dd5de370fb57d31373f15034cda8acf0b",
+      "size": 27756
+    },
+    {
+      "package": "libxext6",
+      "version": "2:1.3.4-1+b3",
+      "architecture": "amd64",
+      "filename": "libxext6_2%3a1.3.4-1+b3_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/libx/libxext/libxext6_1.3.4-1+b3_amd64.deb",
+      "sha256": "fc618ec40465e5ce48622606299cb47833efc3fb235ba15543b81f850722f443",
+      "size": 50448
+    },
+    {
+      "package": "libzstd1",
+      "version": "1.5.7+dfsg-1",
+      "architecture": "amd64",
+      "filename": "libzstd1_1.5.7+dfsg-1_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/libz/libzstd/libzstd1_1.5.7+dfsg-1_amd64.deb",
+      "sha256": "2f6a2aeacfc925eba8b00ac9139bc4bfccf8cacb09eb93de067074b26948eef9",
+      "size": 303836
+    },
+    {
+      "package": "linux-base",
+      "version": "4.12.1",
+      "architecture": "all",
+      "filename": "linux-base_4.12.1_all.deb",
+      "url": "https://deb.debian.org/debian/pool/main/l/linux-base/linux-base_4.12.1_all.deb",
+      "sha256": "d86e703aff81f404f2104af9411fd2acbae5fdb65f9264e488bb276a77a562be",
+      "size": 25544
+    },
+    {
+      "package": "linux-headers-6.12.113+deb13-amd64",
+      "version": "6.12.113-1",
+      "architecture": "amd64",
+      "filename": "linux-headers-6.12.113+deb13-amd64_6.12.113-1_amd64.deb",
+      "url": "https://security.debian.org/debian-security/pool/updates/main/l/linux/linux-headers-6.12.113+deb13-amd64_6.12.113-1_amd64.deb",
+      "sha256": "99762af0e483c3309d3ab12bc755d017c7f4c4d126725b4d41a03c6cb95f88b3",
+      "size": 3225196
+    },
+    {
+      "package": "linux-headers-6.12.113+deb13-common",
+      "version": "6.12.113-1",
+      "architecture": "all",
+      "filename": "linux-headers-6.12.113+deb13-common_6.12.113-1_all.deb",
+      "url": "https://security.debian.org/debian-security/pool/updates/main/l/linux/linux-headers-6.12.113+deb13-common_6.12.113-1_all.deb",
+      "sha256": "fa8f7b1eaa63d5c87141c9244131b5ae56f92272ee2971dfe22a81442a15ae5d",
+      "size": 11326108
+    },
+    {
+      "package": "linux-image-6.12.113+deb13-amd64",
+      "version": "6.12.113-1",
+      "architecture": "amd64",
+      "filename": "linux-image-6.12.113+deb13-amd64_6.12.113-1_amd64.deb",
+      "url": "https://security.debian.org/debian-security/pool/updates/main/l/linux-signed-amd64/linux-image-6.12.113+deb13-amd64_6.12.113-1_amd64.deb",
+      "sha256": "a4ad0bf9f084b199dd2b12cb8a2ed918abb442da467f40b772166a267c784a5b",
+      "size": 108403888
+    },
+    {
+      "package": "linux-kbuild-6.12.113+deb13",
+      "version": "6.12.113-1",
+      "architecture": "amd64",
+      "filename": "linux-kbuild-6.12.113+deb13_6.12.113-1_amd64.deb",
+      "url": "https://security.debian.org/debian-security/pool/updates/main/l/linux/linux-kbuild-6.12.113+deb13_6.12.113-1_amd64.deb",
+      "sha256": "f7a65a8f794fc2cd70e35749e212da654bc5157ea525f7bf67412f417cd5d0c9",
+      "size": 1899400
+    },
+    {
+      "package": "linux-libc-dev",
+      "version": "6.12.113-1",
+      "architecture": "all",
+      "filename": "linux-libc-dev_6.12.113-1_all.deb",
+      "url": "https://security.debian.org/debian-security/pool/updates/main/l/linux/linux-libc-dev_6.12.113-1_all.deb",
+      "sha256": "b2d475e01aaf0030c72bd3a0300d311f8be64aa9e82d82eae5da1a04f4010071",
+      "size": 3021244
+    },
+    {
+      "package": "login.defs",
+      "version": "1:4.17.4-2",
+      "architecture": "all",
+      "filename": "login.defs_1%3a4.17.4-2_all.deb",
+      "url": "https://deb.debian.org/debian/pool/main/s/shadow/login.defs_4.17.4-2_all.deb",
+      "sha256": "b4bbb8242cbf5588de7aafeb9d578a3dee1db2891f444ab454fd30bd80ccf2b4",
+      "size": 186124
+    },
+    {
+      "package": "logsave",
+      "version": "1.47.2-3+b12",
+      "architecture": "amd64",
+      "filename": "logsave_1.47.2-3+b12_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/e/e2fsprogs/logsave_1.47.2-3+b12_amd64.deb",
+      "sha256": "aa028720743b79bd054749af34c501c093f0ab5e044e4dc44273765be5e95de5",
+      "size": 24864
+    },
+    {
+      "package": "lsb-release",
+      "version": "12.1-1",
+      "architecture": "all",
+      "filename": "lsb-release_12.1-1_all.deb",
+      "url": "https://deb.debian.org/debian/pool/main/l/lsb-release-minimal/lsb-release_12.1-1_all.deb",
+      "sha256": "f81c836ce58d50c37039567ee85bbd76c0b6048c0b8f207e55529433694338ae",
+      "size": 5912
+    },
+    {
+      "package": "make",
+      "version": "4.4.1-2",
+      "architecture": "amd64",
+      "filename": "make_4.4.1-2_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/m/make-dfsg/make_4.4.1-2_amd64.deb",
+      "sha256": "70a9709e665383b06068ccd423d62ea191b65355f318a25565dbf324b254cec6",
+      "size": 463104
+    },
+    {
+      "package": "mount",
+      "version": "2.41.5-0+deb13u1",
+      "architecture": "amd64",
+      "filename": "mount_2.41.5-0+deb13u1_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/u/util-linux/mount_2.41.5-0+deb13u1_amd64.deb",
+      "sha256": "eb70a615114ac40123768beb20e302554d5cb7edb33290be7e418ebe1075c878",
+      "size": 163208
+    },
+    {
+      "package": "nvidia-driver-cuda",
+      "version": "615.71.10-1",
+      "architecture": "amd64",
+      "filename": "nvidia-driver-cuda_615.71.10-1_amd64.deb",
+      "url": "https://developer.download.nvidia.com/compute/cuda/repos/debian13/x86_64/nvidia-driver-cuda_615.71.10-1_amd64.deb",
+      "sha256": "4f4a5aa1257e2dfc8d69f8960c552b97b43a0b0855cae45f315798490eb356fd",
+      "size": 749796
+    },
+    {
+      "package": "nvidia-kernel-open-dkms",
+      "version": "615.71.10-1",
+      "architecture": "amd64",
+      "filename": "nvidia-kernel-open-dkms_615.71.10-1_amd64.deb",
+      "url": "https://developer.download.nvidia.com/compute/cuda/repos/debian13/x86_64/nvidia-kernel-open-dkms_615.71.10-1_amd64.deb",
+      "sha256": "542369ff53e43fa6b7415d67be68c22b70ec4cfe89d492c08886c67b1204bb1c",
+      "size": 16473512
+    },
+    {
+      "package": "nvidia-kernel-support",
+      "version": "615.71.10-1",
+      "architecture": "amd64",
+      "filename": "nvidia-kernel-support_615.71.10-1_amd64.deb",
+      "url": "https://developer.download.nvidia.com/compute/cuda/repos/debian13/x86_64/nvidia-kernel-support_615.71.10-1_amd64.deb",
+      "sha256": "4bc8cd761f61000e205eda86bf9848136ff664a4baee2fbdba9a7b220f0227c5",
+      "size": 170580
+    },
+    {
+      "package": "nvidia-modprobe",
+      "version": "615.71.10-1",
+      "architecture": "amd64",
+      "filename": "nvidia-modprobe_615.71.10-1_amd64.deb",
+      "url": "https://developer.download.nvidia.com/compute/cuda/repos/debian13/x86_64/nvidia-modprobe_615.71.10-1_amd64.deb",
+      "sha256": "9955778c4843ad4fda623e0af42db633a0d35788e9c9a1b115936effc7a941ca",
+      "size": 21542
+    },
+    {
+      "package": "nvidia-opencl-icd",
+      "version": "615.71.10-1",
+      "architecture": "amd64",
+      "filename": "nvidia-opencl-icd_615.71.10-1_amd64.deb",
+      "url": "https://developer.download.nvidia.com/compute/cuda/repos/debian13/x86_64/nvidia-opencl-icd_615.71.10-1_amd64.deb",
+      "sha256": "3041cfa0520f2a31aea3024175f0e16be0c454011bccfc6e7fd66fd2e62a8d15",
+      "size": 7986106
+    },
+    {
+      "package": "nvidia-persistenced",
+      "version": "615.71.10-1",
+      "architecture": "amd64",
+      "filename": "nvidia-persistenced_615.71.10-1_amd64.deb",
+      "url": "https://developer.download.nvidia.com/compute/cuda/repos/debian13/x86_64/nvidia-persistenced_615.71.10-1_amd64.deb",
+      "sha256": "dd91d87d1e62fc0aee00a50375c6e641773b21b7fccbf8563d3fcc3bc8ade403",
+      "size": 27104
+    },
+    {
+      "package": "nvidia-powerd",
+      "version": "615.71.10-1",
+      "architecture": "amd64",
+      "filename": "nvidia-powerd_615.71.10-1_amd64.deb",
+      "url": "https://developer.download.nvidia.com/compute/cuda/repos/debian13/x86_64/nvidia-powerd_615.71.10-1_amd64.deb",
+      "sha256": "ae269e9e572d7805d112b77c340929d4589a973326f7d4677513127e10e390e4",
+      "size": 1201690
+    },
+    {
+      "package": "ocl-icd-libopencl1",
+      "version": "2.3.3-1",
+      "architecture": "amd64",
+      "filename": "ocl-icd-libopencl1_2.3.3-1_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/o/ocl-icd/ocl-icd-libopencl1_2.3.3-1_amd64.deb",
+      "sha256": "99dfd409ae92505ee56742feea4e82a1e052818c5b0036ee618a371b5e28c9d1",
+      "size": 42896
+    },
+    {
+      "package": "openssl-provider-legacy",
+      "version": "3.5.7-1~deb13u3",
+      "architecture": "amd64",
+      "filename": "openssl-provider-legacy_3.5.7-1~deb13u3_amd64.deb",
+      "url": "https://security.debian.org/debian-security/pool/updates/main/o/openssl/openssl-provider-legacy_3.5.7-1~deb13u3_amd64.deb",
+      "sha256": "c12e0266c4780749a4702b8959ac979689f4182e18eed85a8a5eb90ed0e16eab",
+      "size": 316452
+    },
+    {
+      "package": "pahole",
+      "version": "1.30-1",
+      "architecture": "amd64",
+      "filename": "pahole_1.30-1_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/d/dwarves/pahole_1.30-1_amd64.deb",
+      "sha256": "08b8b559ab1707dc146880d329f1e96f011788a18d6d3dc7159accd488ae2712",
+      "size": 258892
+    },
+    {
+      "package": "passwd",
+      "version": "1:4.17.4-2",
+      "architecture": "amd64",
+      "filename": "passwd_1%3a4.17.4-2_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/s/shadow/passwd_4.17.4-2_amd64.deb",
+      "sha256": "c5eaef41c6947d2888fa3462f787a7e02158b997bd0119154283f425ba57b8b8",
+      "size": 1228860
+    },
+    {
+      "package": "patch",
+      "version": "2.8-2",
+      "architecture": "amd64",
+      "filename": "patch_2.8-2_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/p/patch/patch_2.8-2_amd64.deb",
+      "sha256": "80c46a0085b33acc74bf451fddb6a70cb43d4ebcc4a873aec04d8d0a63ffc630",
+      "size": 134328
+    },
+    {
+      "package": "perl-base",
+      "version": "5.40.1-6+deb13u1",
+      "architecture": "amd64",
+      "filename": "perl-base_5.40.1-6+deb13u1_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/p/perl/perl-base_5.40.1-6+deb13u1_amd64.deb",
+      "sha256": "b795464137a0f4d443fc9284f4b93e883fb83883cb533adf300ac660807a352a",
+      "size": 1666320
+    },
+    {
+      "package": "perl-modules-5.40",
+      "version": "5.40.1-6+deb13u1",
+      "architecture": "all",
+      "filename": "perl-modules-5.40_5.40.1-6+deb13u1_all.deb",
+      "url": "https://deb.debian.org/debian/pool/main/p/perl/perl-modules-5.40_5.40.1-6+deb13u1_all.deb",
+      "sha256": "4c46cdd8f3135aa1c95f07e817f8e5d9be590687441ac1c27e3a8c49400f35ce",
+      "size": 3013728
+    },
+    {
+      "package": "perl",
+      "version": "5.40.1-6+deb13u1",
+      "architecture": "amd64",
+      "filename": "perl_5.40.1-6+deb13u1_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/p/perl/perl_5.40.1-6+deb13u1_amd64.deb",
+      "sha256": "ef145c247787d6f40dcdefd5b417502484827cde0d555998c17fd5b27ec1e1dd",
+      "size": 267736
+    },
+    {
+      "package": "rpcsvc-proto",
+      "version": "1.4.3-1",
+      "architecture": "amd64",
+      "filename": "rpcsvc-proto_1.4.3-1_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/r/rpcsvc-proto/rpcsvc-proto_1.4.3-1_amd64.deb",
+      "sha256": "32ac0692694f8a34cc90c895f4fc739680fb2ef0e2d4870a68833682bf1c81a3",
+      "size": 63268
+    },
+    {
+      "package": "systemd",
+      "version": "257.13-1~deb13u1",
+      "architecture": "amd64",
+      "filename": "systemd_257.13-1~deb13u1_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/s/systemd/systemd_257.13-1~deb13u1_amd64.deb",
+      "sha256": "ee81302a1d5b7434762b6e784a572854d4b6cf6235e33e2d104ad4e1cae71ab4",
+      "size": 3093632
+    },
+    {
+      "package": "tar",
+      "version": "1.35+dfsg-3.1",
+      "architecture": "amd64",
+      "filename": "tar_1.35+dfsg-3.1_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/t/tar/tar_1.35+dfsg-3.1_amd64.deb",
+      "sha256": "214c02e1aa291076a3147b8a4c4cae02fadf4c67df629186e3e313726faef1de",
+      "size": 814968
+    },
+    {
+      "package": "udev",
+      "version": "257.13-1~deb13u1",
+      "architecture": "amd64",
+      "filename": "udev_257.13-1~deb13u1_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/s/systemd/udev_257.13-1~deb13u1_amd64.deb",
+      "sha256": "a9d751b4d73a489120ef68a21caedf0b58fba80598fb22a17f85060f308bfe7e",
+      "size": 1418624
+    },
+    {
+      "package": "xz-utils",
+      "version": "5.8.1-1+deb13u2",
+      "architecture": "amd64",
+      "filename": "xz-utils_5.8.1-1+deb13u2_amd64.deb",
+      "url": "https://security.debian.org/debian-security/pool/updates/main/x/xz-utils/xz-utils_5.8.1-1+deb13u2_amd64.deb",
+      "sha256": "66b060ef2f09722c947ba019da5e9a63f6bac9d7bf90b32339a72c0390acc53f",
+      "size": 659760
+    },
+    {
+      "package": "zlib1g",
+      "version": "1:1.3.dfsg+really1.3.1-1+b1",
+      "architecture": "amd64",
+      "filename": "zlib1g_1%3a1.3.dfsg+really1.3.1-1+b1_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/z/zlib/zlib1g_1.3.dfsg+really1.3.1-1+b1_amd64.deb",
+      "sha256": "015be740d6236ad114582dea500c1d907f29e16d6db00566ca32fb68d71ac90d",
+      "size": 88892
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "schema": 1,
+  "archives": [
+    {
+      "name": "debian-archive",
+      "url": "https://ftp-master.debian.org/keys/archive-key-13.asc",
+      "fingerprint": "04B54C3CDCA79751B16BC6B5225629DF75B188BD",
+      "sha256": "6f1d277429dd7ffedcc6f8688a7ad9a458859b1139ffa026d1eeaadcbffb0da7",
+      "size": 11861,
+      "file": ".cache/public-keys/debian-archive.asc"
+    },
+    {
+      "name": "debian-security",
+      "url": "https://ftp-master.debian.org/keys/archive-key-13-security.asc",
+      "fingerprint": "5E04A1E3223A19A20706E20F9904613D4CCE68C6",
+      "sha256": "844c07d242db37f283afab9d5531270a0550841e90f9f1a9c3bd599722b808b7",
+      "size": 11873,
+      "file": ".cache/public-keys/debian-security.asc"
+    },
+    {
+      "name": "nvidia",
+      "url": "https://developer.download.nvidia.com/compute/cuda/repos/debian13/x86_64/8793F200.pub",
+      "fingerprint": "02182E60104FCDC26EAE1B8597A5D4CB8793F200",
+      "sha256": "09edb5196bca272c091633d4e04dd6c8f3a07278834868220aa669c895f6cfd7",
+      "size": 1656,
+      "file": ".cache/public-keys/nvidia.asc"
+    },
+    {
+      "name": "fedora",
+      "url": "https://fedoraproject.org/fedora.gpg",
+      "fingerprint": "36F612DCF27F7D1A48A835E4DBFCF71C6D9F90A6",
+      "sha256": "3b8a3660cca4851a67f67f56819e37e2f6b37ac8e905cb571b25d2127d1b7618",
+      "size": 4704,
+      "file": ".cache/public-keys/fedora.asc"
+    }
+  ],
+  "references": [
+    "https://ftp-master.debian.org/keys.html",
+    "https://fedoraproject.org/security/",
+    "https://developer.download.nvidia.com/compute/cuda/repos/debian13/x86_64/8793F200.pub"
+  ]
+}

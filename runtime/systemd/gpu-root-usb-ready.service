@@ -1,0 +1,14 @@
+[Unit]
+Description=Show verified USB removal status on the console
+DefaultDependencies=no
+After=local-fs.target gpu-root-storage-guard.service
+Requires=gpu-root-storage-guard.service
+Before=getty.target getty@tty1.service serial-getty@ttyS0.service
+ConditionPathExists=/run/gpu-root/state.json
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /usr/lib/gpu-root/announce-usb-ready.py
+
+[Install]
+WantedBy=multi-user.target

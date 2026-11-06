@@ -1,0 +1,17 @@
+[Unit]
+Description=Prepare RAM shutdown environment before starting workloads
+DefaultDependencies=no
+After=local-fs.target
+Before=multi-user.target gpu-root-identity.service network-pre.target
+OnFailure=emergency.target
+OnFailureJobMode=replace-irreversibly
+ConditionPathExists=/run/gpu-root/state.json
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /usr/lib/gpu-root/prepare-shutdown.py
+ExecStart=/usr/bin/test -x /run/initramfs/shutdown
+RemainAfterExit=yes
+
+[Install]
+RequiredBy=multi-user.target

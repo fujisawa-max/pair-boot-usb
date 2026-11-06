@@ -1,0 +1,56 @@
+{
+  "schema": 1,
+  "metadata_verification": "Selected exact versions from workspace APT indices after official InRelease verification; run verify-repository-inputs.py to recheck",
+  "packages": [
+    {
+      "package": "gzip",
+      "version": "1.13-1+deb13u1",
+      "architecture": "amd64",
+      "filename": "gzip_1.13-1+deb13u1_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/g/gzip/gzip_1.13-1+deb13u1_amd64.deb",
+      "sha256": "74cf12212beee4ab8d473bdc0107abf9e8cef737492198e2f4944a19f142b0ac",
+      "size": 138608,
+      "role": "pair-runtime"
+    },
+    {
+      "package": "ca-certificates",
+      "version": "20250419+deb13u1",
+      "architecture": "all",
+      "filename": "ca-certificates_20250419+deb13u1_all.deb",
+      "url": "https://security.debian.org/debian-security/pool/updates/main/c/ca-certificates/ca-certificates_20250419+deb13u1_all.deb",
+      "sha256": "c10585ac22c7f617a73d394eea29ba71d0356f350ae973b19043d1b017f80f54",
+      "size": 160720,
+      "role": "pair-runtime"
+    },
+    {
+      "package": "shim-signed",
+      "version": "1.51~1+deb13u1+16.1-2~deb13u1",
+      "architecture": "amd64",
+      "filename": "shim-signed_1.51~1+deb13u1+16.1-2~deb13u1_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/s/shim-signed/shim-signed_1.51~1+deb13u1+16.1-2~deb13u1_amd64.deb",
+      "sha256": "3c802fa303c0e6bf126adee74028d1042e3120360d159c2c05181dc9b2f61005",
+      "size": 346976,
+      "role": "signed-efi"
+    },
+    {
+      "package": "shim-helpers-amd64-signed",
+      "version": "1+16.1+2~deb13u1",
+      "architecture": "amd64",
+      "filename": "shim-helpers-amd64-signed_1+16.1+2~deb13u1_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/s/shim-helpers-amd64-signed/shim-helpers-amd64-signed_1+16.1+2~deb13u1_amd64.deb",
+      "sha256": "7e950d75d5a40ecc0a99f727452ce35780b47a04d9a2cc3b1ff7c2bb316c033e",
+      "size": 301476,
+      "role": "signed-efi"
+    },
+    {
+      "package": "grub-efi-amd64-signed",
+      "version": "1+2.12+9+deb13u2",
+      "architecture": "amd64",
+      "filename": "grub-efi-amd64-signed_1+2.12+9+deb13u2_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/g/grub-efi-amd64-signed/grub-efi-amd64-signed_1+2.12+9+deb13u2_amd64.deb",
+      "sha256": "da8bb31308a3682a7d9343fc42bf7f603ad85bb5483eeb3ece23e2f1be2e9bbd",
+      "size": 1363392,
+      "role": "signed-efi"
+    }
+  ]
+}

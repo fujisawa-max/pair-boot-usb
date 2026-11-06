@@ -1,0 +1,8 @@
+{
+  "schema": 1,
+  "repositories": [
+    {"key": "debian-archive", "source": "https://deb.debian.org/debian", "suite": "trixie", "components": "main contrib"},
+    {"key": "debian-security", "source": "https://security.debian.org/debian-security", "suite": "trixie-security", "components": "main contrib"},
+    {"key": "nvidia", "source": "https://developer.download.nvidia.com/compute/cuda/repos/debian13/x86_64/", "suite": "/", "components": ""}
+  ]
+}

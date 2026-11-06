@@ -1,0 +1,16 @@
+[Unit]
+Description=Initialize this PC's Linux identity and SSH host keys
+DefaultDependencies=no
+After=local-fs.target systemd-machine-id-commit.service gpu-root-storage-guard.service
+Requires=gpu-root-storage-guard.service
+Before=network-pre.target systemd-networkd.service ssh.service
+Wants=network-pre.target
+ConditionPathExists=/run/gpu-root/state.json
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /usr/lib/gpu-root/initialize-identity.py
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

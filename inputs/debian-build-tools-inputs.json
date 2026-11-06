@@ -1,0 +1,41 @@
+{
+  "schema": 1,
+  "purpose": "Additional tools for the isolated NVIDIA module build",
+  "packages": [
+    {
+      "package": "g++-14-x86-64-linux-gnu",
+      "version": "14.2.0-19",
+      "architecture": "amd64",
+      "filename": "g++-14-x86-64-linux-gnu_14.2.0-19_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/g/gcc-14/g++-14-x86-64-linux-gnu_14.2.0-19_amd64.deb",
+      "sha256": "c66b009fedd340520279d1af2f91d0668e9f64f0c08fe62179ca1c75e556be58",
+      "size": 12114812
+    },
+    {
+      "package": "hostname",
+      "version": "3.25",
+      "architecture": "amd64",
+      "filename": "hostname_3.25_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/h/hostname/hostname_3.25_amd64.deb",
+      "sha256": "9c2a27e5d4d87137211fe46631b05b2ee8892ec76aae926304e4485ba02e1015"
+    },
+    {
+      "package": "libstdc++-14-dev",
+      "version": "14.2.0-19",
+      "architecture": "amd64",
+      "filename": "libstdc++-14-dev_14.2.0-19_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/g/gcc-14/libstdc++-14-dev_14.2.0-19_amd64.deb",
+      "sha256": "4b962fac5f1af0bd8b1b3f97e0f47b9d8e9a79e88802143f00ebfbd78ad87a7b",
+      "size": 2375760
+    },
+    {
+      "package": "xz-utils",
+      "version": "5.8.1-1+deb13u2",
+      "architecture": "amd64",
+      "filename": "xz-utils_5.8.1-1+deb13u2_amd64.deb",
+      "url": "https://security.debian.org/debian-security/pool/updates/main/x/xz-utils/xz-utils_5.8.1-1+deb13u2_amd64.deb",
+      "sha256": "66b060ef2f09722c947ba019da5e9a63f6bac9d7bf90b32339a72c0390acc53f",
+      "size": 659760
+    }
+  ]
+}
