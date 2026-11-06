@@ -20,7 +20,7 @@ USBから起動し、対応するNVIDIA GPUをPAIRの推論ノードとして使
 3. [USBの利用開始](docs/quick-start.md)
 4. [運用・モデル・終了・回復](docs/user-guide.md)
 
-構築環境はx86_64 Linux/WSL2、Python 3.11以上、空き容量64GiB以上です。Conda用の [environment.yml](environment.yml) はPython 3.12を選びます。追加のpip導入は不要で、[requirements.txt](requirements.txt) に依存関係の扱いを記載しています。OSツール導入・環境確認・テストを済ませてから構築に進んでください：[環境準備の手順](docs/build.md#1-環境を用意する)。
+構築環境はx86_64 Linux/WSL2、Python 3.11以上、空き容量64GiB以上です。Conda用の [environment.yml](environment.yml) はPython 3.11を選びます。追加のpip導入は不要で、[requirements.txt](requirements.txt) に依存関係の扱いを記載しています。OSツール導入・環境確認・テストを済ませてから構築に進んでください：[環境準備の手順](docs/build.md#1-環境を用意する)。
 
 ## 対応範囲
 

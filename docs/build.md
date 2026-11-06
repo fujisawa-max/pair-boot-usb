@@ -6,7 +6,7 @@ LinuxまたはWSL2上で、固定入力の取得から通常ファイルのUSB�
 
 ## 1. 環境を用意する
 
-x86_64（amd64）のLinux/WSL2、Python **3.11以上（Condaでは3.12を使用）**、HTTPS通信、64GiB以上の空き容量を用意します。ビルド先はLinuxのファイルシステム上に置き、bubblewrapが非特権user namespaceを利用できる環境を使います。隔離が使えない場合は停止し、隔離を外した構築へ自動で切り替えません。
+x86_64（amd64）のLinux/WSL2、Python **3.11以上（Condaでは3.11を使用）**、HTTPS通信、64GiB以上の空き容量を用意します。ビルド先はLinuxのファイルシステム上に置き、bubblewrapが非特権user namespaceを利用できる環境を使います。隔離が使えない場合は停止し、隔離を外した構築へ自動で切り替えません。
 
 リポジトリを取得し、そのルートで以後のコマンドを実行します。Anaconda/MinicondaをLinux側で利用できる場合は、専用環境を作成します。
 
@@ -16,9 +16,9 @@ conda activate pair-boot-build
 python --version
 ```
 
-既に `pair-boot-build` をPython 3.12で作成済みなら、再作成は不要です。`conda activate pair-boot-build` から進めてください。別の端末でも再度activateします。`environment.yml` はビルド用Python 3.12系列を選ぶ定義で、Conda環境全体の完全な固定lockではありません。構築対象の固定入力は引き続き `inputs/` で管理します。
+既に `pair-boot-build` をPython 3.11以上で作成済みなら、再作成は不要です。`conda activate pair-boot-build` から進めてください。別の端末でも再度activateします。`environment.yml` はビルド用Python 3.11系列を選ぶ定義で、Conda環境全体の完全な固定lockではありません。構築対象の固定入力は引き続き `inputs/` で管理します。
 
-Condaを使わない場合は、`python3 --version` で3.11以上を確認し、以下の `python` を対応版の `python3` または `python3.12` に読み替えてください。`hashlib.file_digest` を使うため3.10では実行できません。OS標準の `/usr/bin/python3` やそのリンクは変更しません。署名・イメージ生成を含め、同じPythonを使います。構築入口から呼ぶPython処理にも選択した実行環境を引き継ぎます。
+Condaを使わない場合は、`python3 --version` で3.11以上を確認し、以下の `python` を対応版の `python3` または `python3.11` に読み替えてください。`hashlib.file_digest` を使うため3.10では実行できません。OS標準の `/usr/bin/python3` やそのリンクは変更しません。署名・イメージ生成を含め、同じPythonを使います。構築入口から呼ぶPython処理にも選択した実行環境を引き継ぎます。
 
 ### OSツールを導入する
 
@@ -29,7 +29,7 @@ PYTHON=python sh scripts/install-build-dependencies.sh --print
 PYTHON=python sh scripts/install-build-dependencies.sh
 ```
 
-このコマンドはsudoでAPTを更新し、bubblewrap（`bwrap`）、fakeroot、zstd、Git、GnuPG、OpenSSL、e2fsprogs、kmod等のホストツールを導入します。Ubuntu 22.04のOS標準Pythonが3.10のままでも、activate済みのConda Python 3.12で構築できます。sudoでPythonスクリプトを実行する必要はありません。
+このコマンドはsudoでAPTを更新し、bubblewrap（`bwrap`）、fakeroot、zstd、Git、GnuPG、OpenSSL、e2fsprogs、kmod等のホストツールを導入します。Ubuntu 22.04のOS標準Pythonが3.10のままでも、activate済みのConda Python 3.11で構築できます。sudoでPythonスクリプトを実行する必要はありません。
 
 ホストツールはOSのAPT配布版を使用します。対象kernel、headers、コンパイラ、イメージ操作用ツール等は `prepare` が固定Debianパッケージから別のsysrootへ展開します。ホストにGPUドライバ、DKMS、kernel、bootloaderを導入しません。非APT環境では同等のコマンドを手動で用意する必要があり、すべてのディストリビューションでの構築を確認したものではありません。
 

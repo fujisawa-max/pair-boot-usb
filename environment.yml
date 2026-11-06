@@ -1,4 +1,4 @@
 # Build-host Python selection; target USB inputs are pinned separately in inputs/.
 name: pair-boot-build
 dependencies:
-  - python=3.12
+  - python=3.11

@@ -1,4 +1,4 @@
-# Python >=3.11 is required; environment.yml selects Python 3.12 for the build host.
+# Python >=3.11 is required; environment.yml selects Python 3.11 for the build host.
 # No packages need to be installed with pip for the build commands or source tests.
 # Fedora extraction uses the wheel pinned in inputs/fedora-tools-inputs.json;
 # prepare fetches and verifies it before loading it directly from the cache.
