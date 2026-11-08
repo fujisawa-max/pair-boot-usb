@@ -14,6 +14,18 @@ if [ -f "$gpu_state/state.json" ]; then
   if ismounted /oldroot/models; then
     umount /oldroot/models || { gpu_shutdown_fail 'models busy'; return 1; }
   fi
+  for gpu_bind in var/cache/gpu-inference etc/hostname etc/machine-id var/lib/gpu-root home/gpu persist; do
+    if ismounted "/oldroot/$gpu_bind"; then
+      umount "/oldroot/$gpu_bind" || { gpu_shutdown_fail "state mount $gpu_bind busy"; return 1; }
+    fi
+  done
+  gpu_state_loop=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("state_loop", ""))' "$gpu_state/state.json") || return 1
+  case "$gpu_state_loop" in
+    '') ;;
+    /dev/loop[0-9]*)
+      losetup -d "$gpu_state_loop" || { gpu_shutdown_fail 'state loop detach failed'; return 1; } ;;
+    *) gpu_shutdown_fail 'invalid state loop'; return 1 ;;
+  esac
   sync
   if ismounted /oldroot; then
     umount /oldroot || { gpu_shutdown_fail 'root still busy; keeping loop and NTFS'; return 1; }

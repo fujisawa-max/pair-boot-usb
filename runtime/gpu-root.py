@@ -27,6 +27,25 @@ def require_gpu_unlock_loaded(module_root=Path("/sys/module")):
         raise SafetyError("gpu_unlock was not loaded before storage; check MOK enrollment and kernel log")
 
 
+def require_no_nvidia(pci_root=Path('/sys/bus/pci/devices')):
+    # Read failures are fatal; absence of a driver is not absence of hardware.
+    for entry in pci_root.iterdir():
+        if (entry / 'vendor').read_text().strip().lower() == '0x10de':
+            raise SafetyError('No-GPU test is restricted to PCs without NVIDIA hardware')
+
+
+def check_boot_mode(config, profile):
+    test = config.get('gpu_root.no_gpu_test') == '1'
+    if 'gpu_root.no_gpu_test' in config and not test:
+        raise SafetyError('Invalid no-GPU test option')
+    if test != (profile.get('boot_mode') == 'no-gpu-test'):
+        raise SafetyError('Boot menu mode and registered PC mode differ')
+    if test and (config.get('gpu_root.shared_registry') != '1' or
+                 'storage_target' not in profile or 'gpu_unlock.targets' in config):
+        raise SafetyError('No-GPU test requires shared registration, USB storage and no Unlock target')
+    return test
+
+
 def run(*args, **kwargs):
     return subprocess.run(list(args), check=True, text=True, capture_output=True, **kwargs).stdout.strip()
 
@@ -140,7 +159,7 @@ def validate_ext4(path):
     run("e2fsck", "-f", "-n", str(path))
 
 
-def provision(master, parent, manifest, free_bytes=None, copy_hook=None, maintenance=None):
+def provision(master, parent, manifest, free_bytes=None, copy_hook=None, maintenance=None, prepare_new=None):
     """Parent is on an already checked dedicated NTFS mount; fixtures use tmpdirs."""
     if not parent.is_dir() or parent.is_symlink():
         raise SafetyError("Unsafe GPU-Linux directory")
@@ -155,7 +174,10 @@ def provision(master, parent, manifest, free_bytes=None, copy_hook=None, mainten
         fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
         if marker.exists() or temporary.exists():
             raise SafetyError("Incomplete copy transaction; manual review required; no auto cleanup")
-        for name in ('.root-maintenance.json', '.root-maintenance.img', '.root-maintenance-receipt.json'):
+        for name in ('.root-maintenance.json', '.root-maintenance.img', '.root-maintenance-receipt.json',
+                     '.root-replace.json', '.root-replace.img', '.root-replace-receipt.json',
+                     '.state-copy-in-progress', '.state.img.partial', '.state-maintenance.json',
+                     '.state-maintenance.img', '.state-maintenance-receipt.json'):
             if safe_child(parent, name).exists():
                 raise SafetyError('Interrupted root maintenance; preserve files and review from Fedora')
         if target.exists():
@@ -193,10 +215,13 @@ def provision(master, parent, manifest, free_bytes=None, copy_hook=None, mainten
             os.fsync(output.fileno())
         if temporary.stat().st_size != manifest["size"] or digest(temporary) != manifest["sha256"]:
             raise SafetyError("Copy size/SHA-256 mismatch; transaction retained")
+        if prepare_new is not None:
+            prepare_new()
         atomic_new(temporary, target)
         sync_directory(parent)
         new_json(receipt, {"schema": 1, "version": manifest["version"], "size": manifest["size"],
-                           "original_sha256": manifest["sha256"]})
+                           "original_sha256": manifest["sha256"],
+                           **({"state_schema": 1} if manifest.get("persistent_state") else {})})
         marker.unlink()
         sync_directory(parent)
         return target, True
@@ -227,7 +252,7 @@ def device(uuid):
 def cmdline(text):
     values = {}
     for token in text.split():
-        if token.startswith("gpu_root.") and "=" in token:
+        if (token.startswith("gpu_root.") or token.startswith('gpu_unlock.targets=')) and "=" in token:
             key, value = token.split("=", 1)
             if key in values:
                 raise SafetyError(f"Duplicate boot option: {key}")
@@ -385,7 +410,11 @@ def boot(config):
         raise SafetyError("Controller must be invoked by dracut, not as PID 1")
     if not Path("/etc/initrd-release").exists() or config.get("gpu_root.allow_ntfs_write") != "1":
         raise SafetyError("Only dedicated initramfs with explicit gpu_root.allow_ntfs_write=1 may run")
-    require_gpu_unlock_loaded()
+    test = config.get('gpu_root.no_gpu_test') == '1'
+    if test:
+        require_no_nvidia()
+    else:
+        require_gpu_unlock_loaded()
     usb = device(config.get("gpu_root.usb_uuid", ""))
     state = Path("/run/gpu-root")
     state.mkdir(mode=0o700, exist_ok=True)
@@ -396,6 +425,8 @@ def boot(config):
     loop = None
     root_mounted = False
     models_mounted = False
+    persistent_mounts = []
+    state_loop = None
     try:
         # ext4 USB data partition: noload prevents even journal replay to the master volume.
         if run("blkid", "-p", "-s", "TYPE", "-o", "value", usb) != "ext4":
@@ -409,6 +440,7 @@ def boot(config):
             profile = shared_host_profile(usb, manifest, hardware, state)
         else:
             profile = host_profile(usb_mount, hardware)
+        check_boot_mode(config, profile)
         configured_uuid = config.get("gpu_root.ntfs_uuid", profile["ntfs_uuid"])
         if configured_uuid.upper() != profile["ntfs_uuid"].upper():
             raise SafetyError("Explicit NTFS UUID conflicts with this PC inventory")
@@ -421,7 +453,7 @@ def boot(config):
             raise SafetyError("NTFS is already mounted; refusing reuse")
         selected = [word.split("=", 1)[1] for word in Path("/proc/cmdline").read_text().split()
                     if word.startswith("gpu_unlock.targets=")]
-        if manifest.get('automatic_root_recovery') is True:
+        if manifest.get('automatic_root_recovery') is True and not test:
             import runpy
             policy = runpy.run_path('/usr/lib/fleet-registry.py')
             gpu = Path('/sys/bus/pci/devices') / profile['gpu_bdf']
@@ -437,6 +469,15 @@ def boot(config):
         if digest(master) != manifest["sha256"]:
             raise SafetyError("Master SHA-256 mismatch before NTFS mount")
         validate_ext4(master)
+        import runpy
+        import types
+        state_api = types.SimpleNamespace(**globals())
+        template = runpy.run_path('/usr/lib/persistent-state.py')['metadata'](state_api, manifest)
+        state_master = usb_mount / 'gpu-linux/state.img'
+        regular(state_master)
+        if state_master.stat().st_size != template['size'] or digest(state_master) != template['sha256']:
+            raise SafetyError('State master hash/size mismatch before NTFS mount')
+        validate_ext4(state_master)
         storage_state = verify_root_storage(profile, ntfs, usb)
         # The readwrite probe opens NTFS with write capability. Run it only
         # after the inventory, device, mount-state, target and master guards.
@@ -444,16 +485,28 @@ def boot(config):
         check_volume(kind, probe)
         mount_readwrite(ntfs, ntfs_mount)
         parent, models = storage_paths(ntfs_mount, profile.get("storage_directory", "GPU-Linux"))
-        maintenance = None
-        if manifest.get('automatic_root_recovery') is True:
-            import runpy
-            import types
-            helper = runpy.run_path('/usr/lib/root-maintenance.py')['maintain']
-            api = types.SimpleNamespace(**globals())
-            def maintenance(target, receipt):
-                return helper(api, target, receipt, manifest,
-                              usb_mount / 'gpu-linux/upgrade-v0.7.8.tar', state)
-        image, created = provision(master, parent, manifest, maintenance=maintenance)
+        import runpy
+        import types
+        api = types.SimpleNamespace(**globals())
+        helper = runpy.run_path('/usr/lib/root-maintenance.py')['maintain']
+        persistent = runpy.run_path('/usr/lib/persistent-state.py')
+        state_meta = persistent['metadata'](api, manifest)
+        state_master = usb_mount / 'gpu-linux/state.img'
+        def create_state():
+            persistent['create'](api, state_master, parent, state_meta, hardware)
+        def maintenance(target, receipt):
+            if receipt.get('state_schema') != 1:
+                raise SafetyError('0.8 and earlier require a fresh installation in a new storage folder')
+            state_image, state_receipt = persistent['inspect'](api, parent, hardware)
+            if receipt.get('version') != manifest['version'] or receipt.get('original_sha256') != manifest['sha256']:
+                replacement = runpy.run_path('/usr/lib/replace-root.py')['replace']
+                return replacement(api, master, target, receipt, manifest)
+            return helper(api, target, receipt, manifest, None, state)
+        image, created = provision(master, parent, manifest, maintenance=maintenance, prepare_new=create_state)
+        state_image, state_receipt = persistent['inspect'](api, parent, hardware)
+        state_release = {'version': 'state-v1', 'sha256': state_receipt['original_sha256']}
+        helper(api, state_image, state_receipt, state_release, None, state, prefix='state')
+        validate_ext4(state_image)
         validate_ext4(image)
         # Inspect release inside the filesystem without mounting it writable.
         inside = run("debugfs", "-R", "cat /usr/lib/gpu-root/image.json", str(image))
@@ -463,17 +516,25 @@ def boot(config):
         loop = run("losetup", "--find", "--show", "--nooverlap", str(image))
         run("mount", "-t", "ext4", "-o", "rw,noatime", loop, "/sysroot")
         root_mounted = True
+        if test:
+            runpy.run_path('/usr/lib/no-gpu-test.py')['install'](Path('/sysroot'), state)
+        state_loop = persistent['attach'](api, state_image, hardware, Path('/sysroot'), persistent_mounts)
         run("mount", "--bind", str(models), "/sysroot/models")
         models_mounted = True
         run("mount", "-o", "remount,bind,ro,nodev,nosuid,noexec", "/sysroot/models")
         run("umount", str(usb_mount))
         new_json(state / "state.json", {"loop": loop, "created": created,
-                                        "version": manifest["version"],
+                                        "version": manifest["version"], "state_schema": 1, "state_loop": state_loop,
+                                        "mode": "TEST" if test else ("Unlock" if selected else "Normal"),
                                         "usb_device": usb, "usb_unmounted": True, **storage_state})
         # /run survives switch_root; shutdown hook tears down root -> loop -> NTFS.
     except BaseException:
         if models_mounted:
             run("umount", "/sysroot/models")
+        for path in reversed(persistent_mounts):
+            run("umount", str(path))
+        if state_loop:
+            run("losetup", "--detach", state_loop)
         if root_mounted:
             run("umount", "/sysroot")
         if loop:

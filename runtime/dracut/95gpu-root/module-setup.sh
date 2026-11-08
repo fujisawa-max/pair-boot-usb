@@ -31,6 +31,9 @@ install() {
   inst_simple "$moddir/gpu-root.py" /usr/lib/gpu-root.py
   inst_simple "$moddir/fleet-registry.py" /usr/lib/fleet-registry.py
   inst_simple "$moddir/storage-target.py" /usr/lib/storage-target.py
+  inst_simple "$moddir/persistent-state.py" /usr/lib/persistent-state.py
+  inst_simple "$moddir/replace-root.py" /usr/lib/replace-root.py
+  inst_simple "$moddir/no-gpu-test.py" /usr/lib/no-gpu-test.py
   inst_simple "$moddir/root-maintenance.py" /usr/lib/root-maintenance.py
   inst_simple "$moddir/gpu-diagnostic.py" /usr/lib/gpu-diagnostic.py
   inst_simple "$moddir/gpu-unlock-diagnostic.py" /usr/lib/gpu-unlock-diagnostic.py

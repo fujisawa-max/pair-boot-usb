@@ -37,11 +37,22 @@ def symlink(stage, path, target):
     destination.symlink_to(target)
 
 
+def require_empty_home(source):
+    for relative in ('home', 'home/gpu'):
+        path = source / relative
+        if path.is_symlink():
+            raise ValueError('Source user home must not be linked')
+    home = source / 'home/gpu'
+    if home.exists() and (not home.is_dir() or any(home.iterdir())):
+        raise ValueError('Source user home must be empty; user state is not a build input')
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--source-root", type=Path, default=ROOT / "build/appliance-root")
     parser.add_argument("--output", type=Path, default=ROOT / "build/appliance-v0.2.0")
-    parser.add_argument("--version", default="0.2.1-prototype")
+    parser.add_argument("--version", default="0.9.0-shared")
+    parser.add_argument("--state-size-mib", type=int, default=1024)
     parser.add_argument("--size-mib", type=int, default=2048)
     parser.add_argument("--profiles", type=Path, default=ROOT / "config/gpu-profiles.example.json")
     parser.add_argument("--hosts", type=Path, help="reviewed Windows inventory JSON directory")
@@ -55,6 +66,8 @@ def main():
     parser.add_argument("--fedora-tree", type=Path, help="verified Fedora Live tree under build/")
     parser.add_argument("--pair-runtime", action="store_true", help="stage verified PAIR-managed backend, CA/gzip/PAM and models defaults")
     args = parser.parse_args()
+    if not 64 <= args.state_size_mib <= 8192:
+        parser.error("state size must be 64-8192 MiB")
     storage_spec = importlib.util.spec_from_file_location('storage_policy', ROOT / 'runtime/fleet-registry.py')
     storage_policy = importlib.util.module_from_spec(storage_spec)
     storage_spec.loader.exec_module(storage_policy)
@@ -114,6 +127,7 @@ def main():
         if copied % 1000 == 0:
             print(f"Staged {copied} input files", flush=True)
         return result
+    require_empty_home(args.source_root)
     shutil.copytree(args.source_root, stage, symlinks=True, copy_function=copy_stage_file)
     if args.network_overlay:
         overlay = args.network_overlay.resolve()
@@ -125,7 +139,7 @@ def main():
         shutil.copytree(overlay, stage, symlinks=True, dirs_exist_ok=True)
     # All changes below affect this generated staging tree only.
     for path in ("dev", "proc", "sys", "run", "tmp", "work", "out", "models", "home/gpu", "root", "usr/local/bin",
-                 "var/lib/gpu-root", "var/lib/gpu-bench", "var/cache/gpu-inference", "var/tmp/gpu-inference"):
+                 "persist", "var/lib/gpu-root", "var/lib/gpu-bench", "var/cache/gpu-inference", "var/tmp/gpu-inference"):
         (stage / path).mkdir(parents=True, exist_ok=True)
     for path in ("tmp", "var/tmp"):
         (stage / path).chmod(0o1777)
@@ -151,7 +165,7 @@ def main():
     if pilot and pilot.get("kernel_release") != KERNEL:
         raise ValueError("Pilot driver modules target a different kernel")
     image_info = {"schema": 1, "version": args.version, "kernel_release": KERNEL,
-                  "gpu_unlock_commit": "af28cbbfd3d922a659227ecfb7369adfd924cf03",
+                  "state_schema": 1, "gpu_unlock_commit": "af28cbbfd3d922a659227ecfb7369adfd924cf03",
                   "nvidia_driver_installed": bool(pilot), "torch_installed": False,
                   "status": "pilot-components-staged-not-hardware-qualified" if pilot else
                             "storage-and-benchmark-prototype-not-hardware-qualified"}
@@ -170,13 +184,14 @@ def main():
     write(stage, "/usr/lib/gpu-root/image.json", json.dumps(image_info, indent=2) + "\n")
     shutil.copy2(ROOT / "runtime/initialize-identity.py", stage / "usr/lib/gpu-root/initialize-identity.py")
     shutil.copy2(ROOT / "runtime/announce-usb-ready.py", stage / "usr/lib/gpu-root/announce-usb-ready.py")
-    shutil.copy2(ROOT / "runtime/pair-console.py", stage / "usr/lib/gpu-root/pair-console.py")
+    for helper in ("pair-console.py", "boot-banner.py", "pair-session.py"):
+        shutil.copy2(ROOT / "runtime" / helper, stage / "usr/lib/gpu-root" / helper)
     shutil.copy2(ROOT / "runtime/prepare-shutdown.py", stage / "usr/lib/gpu-root/prepare-shutdown.py")
     if args.pair_runtime:
         runpy.run_path(str(ROOT / "scripts/stage-pair-runtime.py"))["stage"](stage)
     # PAIR downloads into its user's llama.cpp cache. Keep it on the Linux root,
     # separate from the read-only Windows-managed model directory.
-    (stage / "home/gpu/.llamacpp").mkdir()
+
     shutil.copytree(ROOT / "config", stage / "usr/share/gpu-root/examples", dirs_exist_ok=True)
     shutil.copy2(ROOT / "runtime/llama-local.sh", stage / "usr/local/bin/llama-local.sh")
     (stage / "usr/local/bin/llama-local.sh").chmod(0o755)
@@ -229,7 +244,8 @@ def main():
     shutil.copy2(ROOT / "runtime/gpu-root.py", moddir / "gpu-root.py")
     shutil.copy2(ROOT / "runtime/fleet-registry.py", moddir / "fleet-registry.py")
     shutil.copy2(ROOT / "runtime/storage-target.py", moddir / "storage-target.py")
-    shutil.copy2(ROOT / "runtime/root-maintenance.py", moddir / "root-maintenance.py")
+    for helper in ("root-maintenance.py", "persistent-state.py", "replace-root.py", "no-gpu-test.py"):
+        shutil.copy2(ROOT / "runtime" / helper, moddir / helper)
     shutil.copy2(ROOT / "runtime/gpu-diagnostic.py", moddir / "gpu-diagnostic.py")
     shutil.copy2(ROOT / "runtime/gpu-unlock-diagnostic.py", moddir / "gpu-unlock-diagnostic.py")
     for helper in ("diagnostic-nvidia.sh", "diagnostic-finish.sh", "diagnostic-unlock.sh"):
@@ -290,6 +306,30 @@ def main():
             value = {**value, "storage_directory": args.storage_directory}
             hardware = value["hardware_uuid"].lower()
             (tree / "gpu-linux/hosts" / (hardware + ".json")).write_text(json.dumps(value, indent=2) + "\n")
+    # Seed state separately. The root contains no mutable user configuration.
+    state_tree = output / 'state-tree'
+    shutil.copytree(stage / 'home/gpu', state_tree / 'home/gpu')
+    for child in (stage / 'home/gpu').iterdir():
+        if child.is_dir() and not child.is_symlink():
+            shutil.rmtree(child)
+        else:
+            child.unlink()
+    for relative in ('system/gpu-root', 'cache/gpu-inference'):
+        (state_tree / relative).mkdir(parents=True)
+    for name in ('machine-id', 'hostname'):
+        (state_tree / 'system' / name).write_text('')
+    (state_tree / 'layout.json').write_text(json.dumps({'schema': 1, 'kind': 'pair-boot-state'}) + '\n')
+    (state_tree / 'system').chmod(0o700)
+    (state_tree / 'home/gpu').chmod(0o700)
+    state_master = tree / 'gpu-linux/state.img'
+    with state_master.open('xb') as stream:
+        stream.truncate(args.state_size_mib * 1024**2)
+    run('env', 'FAKEROOTDONTTRYCHOWN=1', 'fakeroot', 'sh', '-eu', '-c',
+        'chown -hR 0:0 "$1"; chown -R 1000:1000 "$1/home/gpu" "$1/cache/gpu-inference"; '
+        'mke2fs -q -t ext4 -F -L PAIR-STATE -d "$1" "$2"', 'state-build', state_tree, state_master)
+    run('e2fsck', '-f', '-n', state_master)
+    with state_master.open('rb') as stream:
+        state_sha = hashlib.file_digest(stream, 'sha256').hexdigest()
     master = tree / "gpu-linux/root.img"
     with master.open("xb") as stream:
         stream.truncate(args.size_mib * 1024 * 1024)
@@ -304,10 +344,11 @@ def main():
     manifest = {"schema": 1, "version": args.version, "kernel_release": KERNEL,
                 "size": master.stat().st_size, "sha256": sha, "usb_data_uuid": data_uuid,
                 "production_ready": False, "secure_boot_signed_artifacts": bool(signed),
-                "shared_registry": args.shared_registry}
-    if args.version == '0.8.0-shared':
-        manifest['automatic_root_recovery'] = True
-        # New installations do not depend on an unpublished earlier master.
+                "shared_registry": args.shared_registry,
+                "persistent_state": {"schema": 1, "filename": "state.img",
+                                     "size": state_master.stat().st_size, "sha256": state_sha}}
+    manifest['automatic_root_recovery'] = True
+    state_master.chmod(0o444)
     (tree / "gpu-linux/master.json").write_text(json.dumps(manifest, indent=2) + "\n")
     master.chmod(0o444)
     (tree / "gpu-linux/master.json").chmod(0o444)

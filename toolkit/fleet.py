@@ -249,7 +249,7 @@ def resolve_candidate(value, hardware, evidence):
     return complete_candidate(value, hardware, partition, ntfs_uuid, secure_boot_state(), evidence, usb_verification=usb_verification)
 
 
-def registration_context(inventory, gpu_bdf, mount, bitlocker_evidence=None):
+def registration_context(inventory, gpu_bdf, mount, bitlocker_evidence=None, no_gpu_test=False):
     config_device = live_config(mount)
     value = read_input(inventory)
     original_inventory = value
@@ -271,14 +271,23 @@ def registration_context(inventory, gpu_bdf, mount, bitlocker_evidence=None):
         parent = run('lsblk', '-dn', '-o', 'PKNAME', devices[0])
         if not parent or run('lsblk', '-dn', '-o', 'TRAN', '/dev/' + parent) not in ('nvme', 'sata'):
             raise ValueError('USB target requires a new explicit Windows USB candidate and Fedora review')
-    if not re.fullmatch(r'[a-f0-9]{4}:[a-f0-9]{2}:[a-f0-9]{2}\.[0-7]', gpu_bdf):
-        raise ValueError('Invalid GPU BDF')
-    gpu = Path('/sys/bus/pci/devices') / gpu_bdf
-    if not (gpu / 'vendor').is_file() or (gpu / 'vendor').read_text().strip() != '0x10de':
-        raise ValueError('GPU BDF does not identify NVIDIA hardware')
-    pci_id = '10de:' + (gpu / 'device').read_text().strip().removeprefix('0x').lower()
-    if pci_id not in fleet.GPU_NORMAL_IDS:
-        raise ValueError('GPU BDF is not an RTX30 PCI ID supported by this release')
+    if no_gpu_test:
+        if gpu_bdf is not None or 'storage_target' not in value:
+            raise ValueError('No-GPU test requires USB storage and no GPU BDF')
+        for entry in Path('/sys/bus/pci/devices').iterdir():
+            if (entry / 'vendor').read_text().strip().lower() == '0x10de':
+                raise ValueError('No-GPU test requires a PC without NVIDIA hardware')
+        value = {**value, 'boot_mode': 'no-gpu-test'}
+        pci_id = None
+    else:
+        if not re.fullmatch(r'[a-f0-9]{4}:[a-f0-9]{2}:[a-f0-9]{2}\.[0-7]', gpu_bdf):
+            raise ValueError('Invalid GPU BDF')
+        gpu = Path('/sys/bus/pci/devices') / gpu_bdf
+        if not (gpu / 'vendor').is_file() or (gpu / 'vendor').read_text().strip() != '0x10de':
+            raise ValueError('GPU BDF does not identify NVIDIA hardware')
+        pci_id = '10de:' + (gpu / 'device').read_text().strip().removeprefix('0x').lower()
+        if pci_id not in fleet.GPU_NORMAL_IDS:
+            raise ValueError('GPU BDF is not an RTX30 PCI ID supported by this release')
     verification = value.get('bitlocker_verification_method')
     value = fleet.record({**value, 'gpu_bdf': gpu_bdf, 'gpu_pci_id': pci_id})
     return {'record': value, 'hardware': hardware, 'verification': verification,
@@ -292,8 +301,8 @@ def registration_digest(context, mount):
     return hashlib.sha256(json.dumps(snapshot, sort_keys=True, separators=(',', ':'), allow_nan=False).encode()).hexdigest()
 
 
-def register(inventory, gpu_bdf, mount, confirm, bitlocker_evidence=None, expected_review=None):
-    context = registration_context(inventory, gpu_bdf, mount, bitlocker_evidence)
+def register(inventory, gpu_bdf, mount, confirm, bitlocker_evidence=None, expected_review=None, no_gpu_test=False):
+    context = registration_context(inventory, gpu_bdf, mount, bitlocker_evidence, no_gpu_test)
     value = context['record']
     hardware = context['hardware']
     verification = context['verification']
@@ -349,7 +358,9 @@ def main():
     deploy.add_argument('--mount', type=Path, required=True)
     registration = sub.add_parser('register')
     registration.add_argument('--inventory', type=Path, required=True)
-    registration.add_argument('--gpu-bdf', required=True)
+    mode = registration.add_mutually_exclusive_group(required=True)
+    mode.add_argument('--gpu-bdf')
+    mode.add_argument('--no-gpu-test', action='store_true', help='explicit USB-only test without NVIDIA hardware')
     registration.add_argument('--mount', type=Path, required=True)
     registration.add_argument('--confirm', default='')
     registration.add_argument('--bitlocker-evidence', type=Path, help='saved Shell observation JSON or reviewed Windows BitLocker inventory')
@@ -369,7 +380,7 @@ def main():
         fleet.deploy(fleet.for_version(fleet.load(args.registry), version), args.mount)
         print('Registry deployed to this USB configuration partition')
     else:
-        register(args.inventory, args.gpu_bdf, args.mount, args.confirm, args.bitlocker_evidence)
+        register(args.inventory, args.gpu_bdf, args.mount, args.confirm, args.bitlocker_evidence, no_gpu_test=args.no_gpu_test)
 
 
 if __name__ == '__main__':

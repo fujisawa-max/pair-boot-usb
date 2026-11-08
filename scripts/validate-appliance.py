@@ -11,6 +11,11 @@ import sys
 import tempfile
 
 
+def digest(path):
+    with path.open('rb') as stream:
+        return hashlib.file_digest(stream, 'sha256').hexdigest()
+
+
 def check_mokmanager(tree):
     if (tree / "EFI/BOOT/signing-cert.der").is_file():
         manager = tree / "EFI/BOOT/mmx64.efi"
@@ -142,11 +147,12 @@ def main():
     model_listing = debug("ls -l /models")
     if any(".gguf" in line.lower() for line in model_listing.splitlines()):
         raise ValueError("Master unexpectedly contains models")
-    cache_stat = debug("stat /home/gpu/.llamacpp")
-    if "Type: directory" not in cache_stat or "User:  1000" not in cache_stat:
-        raise ValueError("Writable per-host llama.cpp cache is missing or has wrong owner")
-    if any(".gguf" in line.lower() for line in debug("ls -l /home/gpu/.llamacpp").splitlines()):
-        raise ValueError("Master unexpectedly contains cached models")
+    if not manifest.get('persistent_state'):
+        cache_stat = debug("stat /home/gpu/.llamacpp")
+        if "Type: directory" not in cache_stat or "User:  1000" not in cache_stat:
+            raise ValueError("Writable per-host llama.cpp cache is missing or has wrong owner")
+        if any(".gguf" in line.lower() for line in debug("ls -l /home/gpu/.llamacpp").splitlines()):
+            raise ValueError("Master unexpectedly contains cached models")
     data, entries = cpio_entries(tree / "boot/initramfs.img")
     required = ["usr/bin/python3.13", "usr/bin/ntfs-3g", "usr/bin/ntfs-3g.probe", "usr/lib/gpu-root.py", "shutdown",
                 "usr/lib/systemd/system/dracut-cmdline.service",
@@ -231,8 +237,15 @@ def main():
     else:
         if "set default=1\n" not in menu_text or menu_text.index('menuentry "Normal / baseline"') > menu_text.index('menuentry "gpu-unlock enabled"'):
             raise ValueError("gpu-unlock menu entry is not the default")
-        if len(kernel_lines) != 2 or kernel_lines[1] != kernel_lines[0] + " gpu_unlock.targets=$gpu_targets":
+        if len(kernel_lines) != (3 if manifest.get("shared_registry") else 2) or kernel_lines[1] != kernel_lines[0] + " gpu_unlock.targets=$gpu_targets":
             raise ValueError("Boot entries differ beyond targets")
+        if manifest.get('shared_registry'):
+            if 'gpu_root.no_gpu_test=1' not in kernel_lines[2] or 'gpu_unlock.targets=' in kernel_lines[2]:
+                raise ValueError('Invalid explicit no-GPU test entry')
+            for name in ('no-gpu-test.py', 'fleet-registry.py'):
+                offset, size = entries['usr/lib/' + name]
+                if data[offset:offset+size] != (Path(__file__).resolve().parents[1] / 'runtime' / name).read_bytes():
+                    raise ValueError('Obsolete initramfs test policy: ' + name)
     efi = (tree / "EFI/BOOT/BOOTX64.EFI").read_bytes()
     if efi[:2] != b"MZ" or efi[struct.unpack_from("<I", efi, 60)[0]:][:4] != b"PE\0\0":
         raise ValueError("UEFI payload is not a PE image")
@@ -260,6 +273,43 @@ def main():
         if 'KillSignal=SIGHUP' not in debug('cat /usr/lib/systemd/system/gpu-root-console.service'):
             raise ValueError('Maintenance console lacks graceful shutdown signal')
     pair_runtime_checked = False
+    if manifest.get('persistent_state'):
+        meta = manifest['persistent_state']
+        state = tree / 'gpu-linux/state.img'
+        if (state.is_symlink() or meta.get('schema') != 1 or state.stat().st_size != meta['size']
+                or digest(state) != meta['sha256'] or inside.get('state_schema') != 1):
+            raise ValueError('Persistent state template metadata differs')
+        subprocess.run(['e2fsck', '-f', '-n', str(state)], check=True, capture_output=True)
+        def state_debug(command):
+            return subprocess.check_output(['debugfs', '-R', command, str(state)], text=True, stderr=subprocess.DEVNULL)
+        if json.loads(state_debug('cat /layout.json')) != {'schema': 1, 'kind': 'pair-boot-state'}:
+            raise ValueError('State layout mismatch')
+        if state_debug('cat /system/machine-id').strip() or state_debug('cat /system/hostname').strip():
+            raise ValueError('State master contains host identity')
+        if 'Type:' in state_debug('stat /system/gpu-root/identity.json'):
+            raise ValueError('State master contains identity record')
+        for path in ('/home/gpu', '/cache/gpu-inference'):
+            if 'User:  1000' not in state_debug('stat ' + path):
+                raise ValueError('State user directory ownership mismatch')
+        app = '/home/gpu/.config/Nvidia Corporation/Personal AI Router'
+        override = json.loads(state_debug('cat ' + json.dumps(app + '/engines/llamacpp.json')))
+        platform = override['platforms']['linux/amd64']
+        if platform['detect'] != ['/opt/llama.cpp/bin/llama-server'] or platform['runtime']['bin'] != '/opt/llama.cpp/bin/llama-server':
+            raise ValueError('State does not select root-owned engine')
+        if 'Type:' in state_debug('stat ' + json.dumps(app + '/engine-bin/llamacpp/llama-server')):
+            raise ValueError('State template contains engine executable')
+        if json.loads(state_debug('cat ' + json.dumps(app + '/engine-bin/engine-state.json'))) != {'engines': {'llamacpp': True}}:
+            raise ValueError('State engine intent seed missing')
+        for helper in ('persistent-state.py', 'replace-root.py'):
+            entry = entries.get('usr/lib/' + helper)
+            if entry is None or data[entry[0]:entry[0]+entry[1]] != (Path(__file__).resolve().parents[1] / 'runtime' / helper).read_bytes():
+                raise ValueError('State/update initramfs helper missing or stale')
+        for helper in ('boot-banner.py', 'pair-session.py'):
+            if 'Type: regular' not in debug('stat /usr/lib/gpu-root/' + helper):
+                raise ValueError('PAIR console helper missing: ' + helper)
+        if 'Type: regular' not in debug('stat /usr/bin/systemd-run'):
+            raise ValueError('Transient session launcher missing')
+        pair_runtime_checked = True
     if manifest['version'] == '0.8.0-shared':
         if manifest.get('automatic_root_recovery') is not True:
             raise ValueError('Automatic root recovery policy is missing')
@@ -308,7 +358,10 @@ def main():
               "image": inside, "initramfs_entries": len(entries), "required_entries_checked": required,
               "pilot_components_checked": pilot_checked, "pair_runtime_checked": pair_runtime_checked,
               "master_identity_empty": True, "shared_ssh_keys_absent": True,
-              "boot_entries_only_targets_differ": not args.diagnostic, "read_only_diagnostic": args.diagnostic,
+              "boot_entries_only_targets_differ": not args.diagnostic and not manifest.get('shared_registry'),
+              "normal_unlock_only_targets_differ": not args.diagnostic,
+              "explicit_no_gpu_test_entry": not args.diagnostic and bool(manifest.get('shared_registry')),
+              "read_only_diagnostic": args.diagnostic,
               "uefi_pe_present": True,
               "native_boot_tested": False, "ntfs_mount_and_shutdown_tested": False,
               "gpu_measurements_performed": False}

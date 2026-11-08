@@ -8,7 +8,7 @@ import shutil
 import subprocess
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = '0.8.0-shared'
+VERSION = '0.9.0-shared'
 
 
 def fresh_output(raw):
@@ -31,7 +31,7 @@ def main():
     parser.add_argument('--fedora-output', type=Path, default=ROOT / 'build/fedora-live-tools')
     parser.add_argument('--fedora-source', type=Path, required=True, help='freshly extracted Fedora tree below build/')
     parser.add_argument('--certificate', type=Path, required=True, help='public DER from the verified signing bundle')
-    parser.add_argument('--media-version', choices=['0.7.0', '0.7.1', '0.7.2', '0.7.3', '0.7.4', '0.7.5', '0.7.6', '0.7.7', '0.7.8', '0.7.9', '0.8.0'], default='0.8.0')
+    parser.add_argument('--media-version', choices=['0.7.0', '0.7.1', '0.7.2', '0.7.3', '0.7.4', '0.7.5', '0.7.6', '0.7.7', '0.7.8', '0.7.9', '0.8.0', '0.9.0'], default='0.9.0')
     parser.add_argument('--root-version', default=VERSION)
     args = parser.parse_args()
     output, fedora = fresh_output(args.output), fresh_output(args.fedora_output)
@@ -67,14 +67,14 @@ def main():
                     ignore=lambda folder, names: ['mok-cert'] if 'mok-cert' in names else [])
     shutil.copytree(tools, fedora / 'tools')
     runpy.run_path(str(ROOT / 'scripts/stage-shared-mok-commands.py'))['stage'](cert, fedora / 'mok-cert')
-    if args.media_version in ('0.7.5', '0.7.6', '0.7.7', '0.7.8', '0.7.9', '0.8.0'):
+    if args.media_version in ('0.7.5', '0.7.6', '0.7.7', '0.7.8', '0.7.9', '0.8.0', '0.9.0'):
         runpy.run_path(str(ROOT / 'scripts/stage-gui-tools.py'))['stage'](output, fedora, cert)
     manifest = json.loads((fedora / 'fedora-manifest.json').read_text())
     manifest['files'] = sorted(str(path.relative_to(fedora)) for path in fedora.rglob('*') if path.is_file())
     manifest['payload_bytes'] = sum(path.stat().st_size for path in fedora.rglob('*') if path.is_file())
     manifest['shared_toolkit'] = args.media_version
     manifest['media_revision'] = args.media_version
-    manifest['gui_connected'] = args.media_version in ('0.7.5', '0.7.6', '0.7.7', '0.7.8', '0.7.9', '0.8.0')
+    manifest['gui_connected'] = args.media_version in ('0.7.5', '0.7.6', '0.7.7', '0.7.8', '0.7.9', '0.8.0', '0.9.0')
     (fedora / 'fedora-manifest.json').write_text(json.dumps(manifest, indent=2) + '\n')
     print(output, fedora)
 

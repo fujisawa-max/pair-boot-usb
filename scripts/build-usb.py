@@ -9,7 +9,7 @@ import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = '0.8.0-shared'
+VERSION = '0.9.0-shared'
 PREPARED = ('debian-root', 'appliance-root', 'nvidia-runtime-615.71.10', 'pair-v1.0.0-headless',
             'pair-llamacpp-b11146', 'candidate-network-overlay-v1', 'pair-runtime-overlay-v1',
             'efi-inputs', 'assets', 'fedora-live', 'runtime-root')
@@ -51,7 +51,7 @@ def image_commands(args):
         python('verify-signed-module-bundle.py', args.signed_modules),
         python('prepare-shared-usb-tools.py', '--fedora-source', 'build/fedora-live',
                '--certificate', cert, '--output', args.tools_output, '--fedora-output', args.fedora_output,
-               '--media-version', '0.8.0', '--root-version', VERSION),
+               '--media-version', '0.9.0', '--root-version', VERSION),
         python('build-root-appliance.py', '--source-root', 'build/runtime-root', '--output', args.appliance_output,
                '--version', VERSION, '--size-mib', '6144', '--shared-registry', '--local-console',
                '--network-overlay', 'build/candidate-network-overlay-v1', '--pair-runtime',

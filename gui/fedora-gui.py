@@ -196,6 +196,7 @@ def main():
     operations = {
         '環境確認（Secure Boot・GPU・領域一覧）': 'environment',
         'Windows候補から保存先・GPUを登録': 'register',
+        'GPUなし確認用PC・USB保存先を登録（TEST）': 'register-test',
         'PC登録一覧（台帳）を表示': 'status', '台帳をJSONへ回収': 'collect',
         '複数の台帳JSONをマージ': 'merge', '統合台帳をこのUSBへ配布': 'deploy',
         'MOK公開証明書・登録状態を確認': 'mok-check', 'MOK登録を申請': 'mok-import',
@@ -243,14 +244,15 @@ def main():
                     password = None
                 show('MOK操作の結果', result)
                 continue
-            if operation == 'register':
+            if operation in ('register', 'register-test'):
+                test = operation == 'register-test'
                 inventory = pick_json(mount, 'この設定USBのWindows候補JSONを選択')
-                gpu = choose('登録するRTX 30シリーズのPCIアドレス', gpu_choices())
+                gpu = None if test else choose('登録するRTX 30シリーズのPCIアドレス', gpu_choices())
                 evidence = None
                 choice = choose('BitLockerの確認情報', ['候補JSONに含まれる観測情報を使う', '別の観測JSONを選択する'])
                 if choice.startswith('別'):
                     evidence = pick_json(mount, 'BitLocker観測JSONを選択')
-                request = {'operation': 'registration-preview', 'inventory': inventory, 'gpu_bdf': gpu}
+                request = {'operation': 'registration-preview', 'inventory': inventory, 'gpu_bdf': gpu, 'no_gpu_test': test}
                 if evidence:
                     request['evidence'] = evidence
                 review = invoke(request)

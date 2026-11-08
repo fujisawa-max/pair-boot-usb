@@ -71,12 +71,14 @@ def apply_upgrade(api, candidate, payload, metadata, workspace):
         api.run('losetup', '-d', loop)
 
 
-def maintain(api, target, receipt, manifest, payload, workspace, free_bytes=None, upgrade=None):
+def maintain(api, target, receipt, manifest, payload, workspace, free_bytes=None, upgrade=None, prefix="root"):
     """The caller already verified the selected NTFS and holds .root-image.lock."""
+    if prefix not in ('root', 'state'):
+        raise api.SafetyError('Unknown maintenance image kind')
     parent = target.parent
-    marker = api.safe_child(parent, '.root-maintenance.json')
-    candidate = api.safe_child(parent, '.root-maintenance.img')
-    pending_receipt = api.safe_child(parent, '.root-maintenance-receipt.json')
+    marker = api.safe_child(parent, '.' + prefix + '-maintenance.json')
+    candidate = api.safe_child(parent, '.' + prefix + '-maintenance.img')
+    pending_receipt = api.safe_child(parent, '.' + prefix + '-maintenance-receipt.json')
     if any(p.exists() for p in (marker, candidate, pending_receipt)):
         raise api.SafetyError('Interrupted root maintenance; preserve files and review from Fedora')
     api.regular(target)
@@ -103,9 +105,9 @@ def maintain(api, target, receipt, manifest, payload, workspace, free_bytes=None
     if size != receipt['size'] or available < size + max(1024**3, size // 10):
         raise api.SafetyError('Root size mismatch or insufficient space for preserved-copy recovery')
     token = uuid.uuid4().hex
-    backup = api.safe_child(parent, 'root-backup-' + token + '.img')
-    backup_receipt = api.safe_child(parent, 'root-backup-' + token + '.json')
-    log_path = api.safe_child(parent, 'root-maintenance-' + token + '.log')
+    backup = api.safe_child(parent, prefix + '-backup-' + token + '.img')
+    backup_receipt = api.safe_child(parent, prefix + '-backup-' + token + '.json')
+    log_path = api.safe_child(parent, prefix + '-maintenance-' + token + '.log')
     api.new_json(marker, {'schema': 1, 'state': 'copy-repair-upgrade', 'backup': backup.name,
                           'old_receipt': receipt, 'new_version': manifest['version'], 'log': log_path.name})
     print('GPU-ROOT: preparing preserved-copy recovery/upgrade; do not remove root storage', flush=True)
@@ -143,14 +145,14 @@ def maintain(api, target, receipt, manifest, payload, workspace, free_bytes=None
         if release.get('version') != manifest['version'] or release.get('kernel_release') != manifest['kernel_release']:
             raise api.SafetyError('Upgraded root version/kernel mismatch; original preserved')
     api.new_json(backup_receipt, receipt)
-    api.new_json(pending_receipt, {'schema': 1, 'version': manifest['version'], 'size': size,
+    api.new_json(pending_receipt, {**receipt, 'schema': 1, 'version': manifest['version'], 'size': size,
                                  'original_sha256': manifest['sha256']})
     api.sync_directory(parent)
     api.atomic_new(target, backup)
     api.sync_directory(parent)
     api.atomic_new(candidate, target)
     api.sync_directory(parent)
-    os.replace(pending_receipt, parent / 'root-image.json')
+    os.replace(pending_receipt, parent / (prefix + '-image.json'))
     api.sync_directory(parent)
     marker.unlink()
     api.sync_directory(parent)

@@ -2,7 +2,7 @@
 
 USBから起動し、対応するNVIDIA GPUをPAIRの推論ノードとして使うための構築ツールです。対応GPUではgpu-unlockによる高速化を選択できます。Normal起動とUnlock起動は区別します。
 
-**公開準備中です。構築入口は `scripts/build-usb.py prepare` → 利用者による鍵作成・署名 → `scripts/build-usb.py image` です。固定入力からの構築、署名済みイメージの生成・ファイル検査を確認済みで、生成USBからの実機起動確認の報告もあります。全対象GPUのNormal/UnlockやPAIR運用の検証完了を意味するものではありません。**
+**0.9.0は試作版です。`root.img` と設定用の `state.img` を分離し、起動メニューにバージョンとNormal/Unlockを表示します。構築入口は `scripts/build-usb.py prepare` → 利用者による鍵作成・署名 → `scripts/build-usb.py image` です。0.9.0の実機起動・異常終了・root交換の実機検証は未完了です。0.8以前からの設定移行は行わず、新しい保存先フォルダを指定してください。**
 
 ## 内容
 

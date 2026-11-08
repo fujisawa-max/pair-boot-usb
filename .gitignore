@@ -1,4 +1,5 @@
 /build/
+/build-0.8/
 /.cache/
 /vendor/
 /.local/

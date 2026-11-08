@@ -15,12 +15,16 @@ def seed(root):
     if app.exists():
         raise ValueError('PAIR state already exists; refusing to replace identity/settings')
     (app / 'engines').mkdir(parents=True)
-    override = {'engine': 'llamacpp', 'platforms': {'linux/amd64': {'runtime': {'launch_args': ['--models-dir', '/models']}}}}
+    override = {'engine': 'llamacpp', 'models_dir': '/var/cache/gpu-inference/llamacpp',
+                'platforms': {'linux/amd64': {'detect': ['/opt/llama.cpp/bin/llama-server'],
+                    'runtime': {'bin': '/opt/llama.cpp/bin/llama-server',
+                                'env': {'LD_LIBRARY_PATH': '/opt/llama.cpp/bin'},
+                                'launch_args': ['--models-dir', '/models']}}}}
     (app / 'engines/llamacpp.json').write_text(json.dumps(override, indent=2) + '\n')
     binaries = app / 'engine-bin'
     binaries.mkdir()
     (binaries / 'engine-state.json').write_text(json.dumps({'engines': {'llamacpp': True}}, indent=2) + '\n')
-    return binaries / 'llamacpp'
+    return root / 'opt/llama.cpp/bin'
 
 
 def stage(root):
@@ -46,7 +50,23 @@ def stage(root):
     engine = runpy.run_path(str(ROOT / 'scripts/prepare-pair-llamacpp.py'))
     entries = json.loads((ROOT / 'inputs/pair-llamacpp-inputs.json').read_text())['archives']
     inputs = [(entry, engine['verify_input'](entry)) for entry in entries]
-    engine['extract'](inputs, target)
+    if target.exists():
+        # stage-pilot-root may already have copied the engine. Reverify every file.
+        import tempfile
+        with tempfile.TemporaryDirectory(dir=root.parent) as folder:
+            expected = Path(folder) / 'engine'
+            engine['extract'](inputs, expected)
+            if {p.name for p in target.iterdir()} - {'verification.json'} != {p.name for p in expected.iterdir()}:
+                raise ValueError('Staged engine file inventory differs')
+            for item in expected.iterdir():
+                other = target / item.name
+                if item.is_symlink():
+                    if not other.is_symlink() or other.readlink() != item.readlink():
+                        raise ValueError('Staged engine link differs')
+                elif other.is_symlink() or hashlib.sha256(item.read_bytes()).digest() != hashlib.sha256(other.read_bytes()).digest():
+                    raise ValueError('Staged engine bytes differ')
+    else:
+        engine['extract'](inputs, target)
     (root / 'usr/lib/gpu-root/pair-runtime.json').write_text(json.dumps({
         'schema': 1, 'llamacpp': 'b11146', 'managed_preinstalled': True,
         'models_dir': '/models', 'engine_autostart': True, 'packages': lock['packages'],

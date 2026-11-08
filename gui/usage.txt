@@ -47,7 +47,7 @@ root.imgを置いたUSBはLinux稼働中に抜かないでください。
 
 詳しい手順と制限：設定領域 tools/QUICK-START.md、tools/DETAILS.md。
 
-GPU Linux 0.8.0の起動・終了
+PAIR BOOT 0.9.0（試作）の起動・終了
 ・PAIR起動前にUSBを抜けるか表示します。USB CAN BE REMOVED NOWの場合だけ
   起動USBを抜けます。root/Modelsの保存USBは終了まで抜かないでください。
 ・1（Enter）：PAIR起動／再起動、2：PC再起動、3：電源を切る。
@@ -55,3 +55,7 @@ GPU Linux 0.8.0の起動・終了
 ・root.imgに回復が必要な場合はコピー上でfsckします。元rootを保持するため追加容量が必要です。
 ・復旧不能や取引中断では停止します。root-backup-*や.root-maintenance.*を削除せず、Fedora保守へ進んでください。
 ・台帳の退避・復元と利用手順はtools/DETAILS.mdに記載しています。
+
+0.9.0はrootとstateを分離します。0.8以前の設定は自動移行せず、新しい保存先フォルダを登録してください。
+GPUなしでの起動確認:
+「GPUなし確認用PC・USB保存先を登録（TEST）」を選びます。保存先の安全確認とBitLockerの確実な確認は必要です。登録後は起動メニューの「TEST / no NVIDIA GPU / USB storage only」を明示的に選択します。推論サービスは開始できません。通常のGPU登録とは区別し、rootテンプレートは0.9.0のまま使用します。

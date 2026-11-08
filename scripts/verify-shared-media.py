@@ -118,7 +118,10 @@ def main():
                  'boot/x86_64/loader/linux', 'boot/x86_64/loader/initrd', 'LiveOS/squashfs.img'):
         if (fedora / name).is_file():
             verify('fedora-live.img', name, fedora / name)
-    for path in ('/gpu-linux/root.img', '/boot/initramfs.img', '/boot/grub/grub.cfg'):
+    master_files = ['/gpu-linux/root.img', '/boot/initramfs.img', '/boot/grub/grub.cfg']
+    if (tree / 'gpu-linux/state.img').is_file():
+        master_files.append('/gpu-linux/state.img')
+    for path in master_files:
         source = tree / path.lstrip('/')
         proc = subprocess.Popen(cmd + ['debugfs', '-R', 'cat ' + path, '/out/usb-data.img'], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
         h = hashlib.sha256()

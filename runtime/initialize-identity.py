@@ -40,7 +40,9 @@ if __name__ == "__main__":
         if not Path("/run/gpu-root/state.json").is_file():
             sys.exit("Identity initialization requires the managed writable root boot")
         def generate():
-            subprocess.run(["ssh-keygen", "-A"], check=True)
+            managed = json.loads(Path('/run/gpu-root/state.json').read_text())
+            if managed.get('state_schema') != 1:
+                subprocess.run(["ssh-keygen", "-A"], check=True)
         info = initialize(Path("/"), Path("/sys/class/dmi/id/product_uuid").read_text(), generate)
         subprocess.run(["hostname", info["hostname"]], check=True)
     except (OSError, ValueError, subprocess.CalledProcessError) as error:

@@ -92,7 +92,8 @@ class FleetTests(unittest.TestCase):
         text = menu.generate('1234-5678', {}, shared_registry=True)
         self.assertIn('load_env --file="($gpu_disk,gpt3)/gpu-config/hosts/$gpu_host_uuid.env" gpu_targets gpu_default', text)
         self.assertNotIn('source ', text)
-        self.assertEqual(text.count('gpu_root.shared_registry=1'), 2)
+        self.assertEqual(text.count('gpu_root.shared_registry=1'), 3)
+        self.assertIn('gpu_root.no_gpu_test=1', text)
         kernels = [line for line in text.splitlines() if line.strip().startswith('linux ')]
         self.assertEqual(kernels[1], kernels[0] + ' gpu_unlock.targets=$gpu_targets')
 

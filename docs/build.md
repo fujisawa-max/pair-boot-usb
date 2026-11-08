@@ -2,7 +2,7 @@
 
 LinuxまたはWSL2上で、固定入力の取得から通常ファイルのUSBイメージを作ります。ホストへのGPUドライバ・kernel・bootloaderの導入や、実USBへの書込みは行いません。
 
-構築入口は `scripts/build-usb.py` です。`prepare` が署名前の入力・module・中間ツリーを準備し、利用者が署名した後に `image` が組立と検査を行います。固定入力から署名済みイメージ生成・検査までの試行を確認済みで、生成USBからの実機起動確認の報告もあります。全機種・全起動モード・PAIR運用の確認とは区別します。
+構築入口は `scripts/build-usb.py` です。`prepare` が署名前の入力・module・中間ツリーを準備し、利用者が署名した後に `image` が組立と検査を行います。現行は0.9.0試作版です。実機起動・GPU・PAIR参加・異常終了・root交換の実機確認は未完了です。ソース試験、ファイル構築・検査、実機確認は区別します。
 
 ## 1. 環境を用意する
 
@@ -107,9 +107,9 @@ python scripts/build-usb.py image
 python scripts/build-usb.py image --signed-modules build/signed-modules-update
 ```
 
-署名束と元moduleの整合性、payloadの不変、選択した証明書によるCMS署名を検査してから、GUI・空の共有台帳・MOK操作ツール、6GiBのroot.img、initramfs、署名済みEFIを組み合わせます。同じ公開証明書を署名束とGUI・MOKツールで使用します。秘密鍵は入力にもコピー対象にも含めません。
+署名束と元moduleの整合性、payloadの不変、選択した証明書によるCMS署名を検査してから、GUI・空の共有台帳・MOK操作ツール、6GiBのroot.img、初期状態用の1GiBのstate.img、initramfs、署名済みEFIを組み合わせます。同じ公開証明書を署名束とGUI・MOKツールで使用します。秘密鍵は入力にもコピー対象にも含めません。
 
-最終出力は `build/usb-image/gpu-linux-usb.img` と `SHA256SUMS`、検査レポートです。GPT、FAT/ext4、initramfs、イメージ内部の内容、パーティションの読戻しを検査します。ログは `build/image-01.log` 等です。
+最終出力は `build/usb-image/gpu-linux-usb.img` と `SHA256SUMS`、検査レポートです。GPT、FAT/ext4、initramfs、状態テンプレートのSHAと初期内容、イメージ内部の内容、パーティションの読戻しを検査します。ログは `build/image-01.log` 等です。
 
 生成イメージは約12.1GBです。実USBへ書くときは、このファイル以上の実容量を持つ媒体を利用者が選びます。実デバイスへの書込みコマンドは構築入口に含めません。最終イメージができた後、[利用開始](quick-start.md)に進みます。
 
@@ -136,3 +136,13 @@ python scripts/run-tests.py
 秘密鍵、生成日時、ファイルシステムUUID等が異なるため、別の利用者の完成USBと全体SHAが一致することは合格条件にしません。固定入力、処理、署名、内部内容、動作を検証します。新規インストールは過去のrootイメージに依存せず、回復が必要なときは元を保持したコピー上でfsckする設計です。
 
 `.cache/`、`vendor/`、`build/`、鍵・証明書やPC登録情報は公開Gitへ追加しません。
+
+## 0.9.0試作の確認
+
+NVIDIA GPUのないPCで起動画面・root/stateの分離を調べる場合は、[GPUなし確認起動](no-gpu-test.md)を使用します。既存の0.9.0のrootテンプレートを保持して起動部分だけを更新できます。通常起動の代わりに自動実行するモードではありません。
+
+0.8以前の保存先を上書きせず、登録時に `GPU-Linux-0.9` などの新しいフォルダを選びます。初回起動時にrootとstateのテンプレートをコピーし、そのPCの識別情報を初期化します。既存のrootしかない保存先では停止します。署名鍵は従来の管理済み鍵を使えますが、対象kernel/moduleや公開証明書の整合性は通常どおり検査します。
+
+起動バナー、Normal/Unlock表示、PAIRの起動・終了・再起動、PC再起動後の設定保持、正常終了を順に確認します。異常終了後にプロセスが残る場合は次のPAIR起動を止めます。全対象GPU・全故障条件を確認済みとはしていません。
+
+root交換は0.9以降の同じstate schemaを使う更新に限ります。実機での更新確認には、別の対応版のUSBと、その版に合わせた正規のPC登録が必要です。版番号や登録情報だけを書き換えて更新試験を通さないでください。詳しくは[運用と回復](user-guide.md)を参照します。

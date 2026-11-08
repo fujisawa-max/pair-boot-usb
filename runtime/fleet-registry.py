@@ -81,9 +81,14 @@ def record(value, now=None):
     host = hardware_uuid(value.get('hardware_uuid'))
     if not re.fullmatch(r'[A-Fa-f0-9]{16}', str(value.get('ntfs_uuid', ''))):
         raise ValueError('Invalid NTFS UUID')
-    if not re.fullmatch(r'[a-f0-9]{4}:[a-f0-9]{2}:[a-f0-9]{2}\.[0-7]', str(value.get('gpu_bdf', ''))):
+    test = value.get('boot_mode') == 'no-gpu-test'
+    if 'boot_mode' in value and not test:
+        raise ValueError('Unknown boot mode')
+    if test and (value.get('gpu_bdf') is not None or value.get('gpu_pci_id') is not None or 'storage_target' not in value):
+        raise ValueError('No-GPU test requires explicit USB storage and null GPU identity')
+    if not test and not re.fullmatch(r'[a-f0-9]{4}:[a-f0-9]{2}:[a-f0-9]{2}\.[0-7]', str(value.get('gpu_bdf', ''))):
         raise ValueError('Explicit GPU PCI BDF required; register from Fedora')
-    if value.get('gpu_pci_id') not in GPU_NORMAL_IDS:
+    if not test and value.get('gpu_pci_id') not in GPU_NORMAL_IDS:
         raise ValueError('GPU is not in this release RTX30 normal-mode PCI policy')
     checked = value.get('checked_at_unix')
     if type(checked) not in (int, float) or not math.isfinite(checked):
@@ -111,6 +116,8 @@ def record(value, now=None):
         result['personal_os_volume_consent'] = dict(consent)
     if usb_target is not None:
         result['storage_target'] = usb_target
+    if test:
+        result['boot_mode'] = 'no-gpu-test'
     result['hardware_uuid'] = host
     result['ntfs_uuid'] = result['ntfs_uuid'].upper()
     return result
@@ -253,7 +260,13 @@ def deploy(registry, mount, now=None):
     if hosts.is_symlink():
         raise ValueError('Unsafe host environment directory')
     for item in value['records']:
-        atomic_write(hosts / (item['hardware_uuid'] + '.env'), environment(
-            item['gpu_bdf'], item['gpu_pci_id'] in GPU_UNLOCK_IDS, item['gpu_pci_id'] != '10de:2504'))
+        if item.get('boot_mode') == 'no-gpu-test':
+            # Never select the test entry automatically, including on a test PC.
+            data = b'# GRUB Environment Block\ngpu_targets=unconfigured\ngpu_default=0\n'
+            data += b'#' * (1024 - len(data))
+        else:
+            data = environment(item['gpu_bdf'], item['gpu_pci_id'] in GPU_UNLOCK_IDS,
+                               item['gpu_pci_id'] != '10de:2504')
+        atomic_write(hosts / (item['hardware_uuid'] + '.env'), data)
     # Commit registry last. Partial environment updates cannot bypass runtime matching.
     atomic_write(current, encode(value))

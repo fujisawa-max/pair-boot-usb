@@ -258,15 +258,18 @@ def dispatch(request, password=None):
         core.secure_boot_state()
         inventory = bounded_input(request.get('inventory'), mount)
         evidence = bounded_input(request['evidence'], mount) if request.get('evidence') else None
-        gpu = request.get('gpu_bdf', '')
+        test = request.get('no_gpu_test', False)
+        if type(test) is not bool:
+            raise ValueError('Invalid no-GPU test selection')
+        gpu = request.get('gpu_bdf', None if test else '')
         if operation == 'registration-preview':
-            context = core.registration_context(inventory, gpu, mount, evidence)
+            context = core.registration_context(inventory, gpu, mount, evidence, no_gpu_test=test)
             return {'record': context['record'], 'review_digest': core.registration_digest(context, mount),
                     'message': '保存先とGPUを確認してください。確定するまで台帳へ書き込みません。'}
         if not re.fullmatch(r'[0-9a-f]{64}', str(request.get('review_digest', ''))):
             raise ValueError('登録プレビューの確認情報が必要です。')
         with contextlib.redirect_stdout(io.StringIO()) as captured:
-            core.register(inventory, gpu, mount, 'REGISTER', evidence, expected_review=request['review_digest'])
+            core.register(inventory, gpu, mount, 'REGISTER', evidence, expected_review=request['review_digest'], no_gpu_test=test)
         return {'message': '設定USBの台帳へ登録しました。NTFSやroot.imgは変更していません。', 'details': captured.getvalue()}
     if operation in ('status', 'collect'):
         registry = core.fleet.load(mount / 'gpu-config/registry.json')

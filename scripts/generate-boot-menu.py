@@ -46,6 +46,11 @@ def generate(usb_uuid, profiles, shared_registry=False):
     for title, extra in (("Normal / baseline", ""), ("gpu-unlock enabled", " gpu_unlock.targets=$gpu_targets")):
         lines += [f'menuentry "{title}" {{', f"  linux /boot/vmlinuz {common}{extra}",
                   "  initrd /boot/initramfs.img", "}"]
+    if shared_registry:
+        test_common = common.replace('rd.driver.blacklist=nouveau ', '')
+        lines += ['menuentry "TEST / no NVIDIA GPU / USB storage only" {',
+                  f'  linux /boot/vmlinuz {test_common} gpu_root.no_gpu_test=1 rd.driver.blacklist=nvidia,nvidia_drm,nvidia_modeset,nvidia_uvm,nouveau,gpu_unlock modprobe.blacklist=nvidia,nvidia_drm,nvidia_modeset,nvidia_uvm,nouveau,gpu_unlock',
+                  '  initrd /boot/initramfs.img', '}']
     return "\n".join(lines) + "\n"
 
 
