@@ -2,6 +2,8 @@
 
 このソースツリーは第三者のISO・バイナリ・ソースチェックアウトを同梱しません。利用者が固定版を取得し、検証してローカルで構築する方式です。入力本体と生成したUSBをGitHubのGit/LFS/Releaseへ自動アップロードしません。
 
+リポジトリ直下の [MIT License](LICENSE) は、このプロジェクトの独自ソース、設定、テスト、文書に適用します。取得する第三者ソフトウェアやその生成物のライセンスを変更するものではありません。各入力の著作権表示、ライセンス、必要なNOTICEを保持します。
+
 | 入力 | 取得元・確認事項 |
 | --- | --- |
 | gpu-unlock | https://github.com/Zagitta/gpu-unlock 。固定基準は `af28cbbfd3d922a659227ecfb7369adfd924cf03`。モジュールとfirmwareの条件は別。上流のlicensesとfirmware/NOTICE.mdを保存する |
@@ -19,7 +21,7 @@
 
 公式公開鍵のURL・SHA・fingerprintは `inputs/public-keys.json`、APT配布元は `inputs/repositories.json` に記録します。署名済みshim/GRUBとgzip/公開CAは `inputs/debian-support-inputs.json` の固定パッケージを展開し、ホストへインストールしません。
 
-生成USBには外部ソフトウェアが含まれます。完成USBを再配布する場合は、ソース公開とは別に条件を確認してください。特にgpu-unlockの生成firmwareは再配布承認済みと扱いません。
+このリポジトリでは完成USBイメージを配布しません。利用者が構築したUSBには外部ソフトウェアが含まれます。利用者が別途USBイメージや媒体を再配布する場合は、ソース公開とは別に条件を確認してください。特にgpu-unlockの生成firmwareは再配布承認済みと扱いません。
 
 参照：
 
