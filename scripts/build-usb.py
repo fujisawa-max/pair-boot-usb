@@ -10,6 +10,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 RELEASE = json.loads((ROOT / 'config/release.json').read_text())
+LAYOUT = json.loads((ROOT / 'config/usb-layout.json').read_text())
 VERSION = RELEASE['root_version']
 PREPARED = ('debian-root', 'appliance-root', 'nvidia-runtime-615.71.10', 'pair-v1.0.0-headless',
             'pair-llamacpp-b11146', 'candidate-network-overlay-v1', 'pair-runtime-overlay-v1',
@@ -60,7 +61,7 @@ def image_commands(args):
                '--fedora-tree', args.fedora_output),
         python('validate-appliance.py', tree, '--output', args.appliance_output / 'validation.json'),
         python('assemble-usb-image.py', '--tree', tree, '--sysroot', sysroot, '--output', args.output,
-               '--data-mib', '8192', '--log-mib', '256', '--config-tree', args.tools_output,
+               '--data-mib', LAYOUT['master_size_mib'], '--log-mib', '256', '--config-tree', args.tools_output,
                '--fedora-tree', args.fedora_output),
         python('verify-shared-media.py', '--tree', tree, '--sysroot', sysroot,
                '--image-directory', args.output, '--config-tree', args.tools_output,

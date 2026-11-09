@@ -247,7 +247,7 @@ def main():
     shutil.copy2(ROOT / "runtime/gpu-root.py", moddir / "gpu-root.py")
     shutil.copy2(ROOT / "runtime/fleet-registry.py", moddir / "fleet-registry.py")
     shutil.copy2(ROOT / "runtime/storage-target.py", moddir / "storage-target.py")
-    for helper in ("root-maintenance.py", "persistent-state.py", "replace-root.py", "no-gpu-test.py", "release-info.py"):
+    for helper in ("root-maintenance.py", "persistent-state.py", "replace-root.py", "no-gpu-test.py", "release-info.py", "detach-loop.py"):
         shutil.copy2(ROOT / "runtime" / helper, moddir / helper)
     shutil.copy2(ROOT / "runtime/gpu-diagnostic.py", moddir / "gpu-diagnostic.py")
     shutil.copy2(ROOT / "runtime/gpu-unlock-diagnostic.py", moddir / "gpu-unlock-diagnostic.py")

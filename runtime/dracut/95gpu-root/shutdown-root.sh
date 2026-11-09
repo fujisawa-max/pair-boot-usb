@@ -5,7 +5,7 @@ gpu_state=/oldsys/run/gpu-root
 gpu_shutdown_fail() {
   warn "GPU-ROOT: $*; no force/lazy unmount or automatic repair"
   if [ "${final:-}" = final ]; then
-    warn 'GPU-ROOT: refusing automatic poweroff with storage still busy; manual intervention required'
+    warn 'GPU-ROOT: storage cleanup incomplete; refusing automatic poweroff; manual intervention required'
     while :; do sleep 60; done
   fi
   return 1
@@ -23,7 +23,7 @@ if [ -f "$gpu_state/state.json" ]; then
   case "$gpu_state_loop" in
     '') ;;
     /dev/loop[0-9]*)
-      losetup -d "$gpu_state_loop" || { gpu_shutdown_fail 'state loop detach failed'; return 1; } ;;
+      python3 /usr/lib/detach-loop.py "$gpu_state_loop" || { gpu_shutdown_fail 'state loop cleanup not confirmed'; return 1; } ;;
     *) gpu_shutdown_fail 'invalid state loop'; return 1 ;;
   esac
   sync
@@ -32,13 +32,11 @@ if [ -f "$gpu_state/state.json" ]; then
   fi
   gpu_loop=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["loop"])' "$gpu_state/state.json") || return 1
   case "$gpu_loop" in /dev/loop[0-9]*) ;; *) gpu_shutdown_fail 'invalid loop state'; return 1 ;; esac
-  if losetup "$gpu_loop" >/dev/null 2>&1; then
-    losetup -d "$gpu_loop" || { gpu_shutdown_fail 'loop detach failed'; return 1; }
-  fi
+  python3 /usr/lib/detach-loop.py "$gpu_loop" || { gpu_shutdown_fail 'root loop cleanup not confirmed'; return 1; }
   if ismounted "$gpu_state/ntfs"; then
     sync -f "$gpu_state/ntfs" || { gpu_shutdown_fail 'NTFS sync failed'; return 1; }
     umount "$gpu_state/ntfs" || { gpu_shutdown_fail 'NTFS still busy'; return 1; }
   fi
   rm "$gpu_state/state.json"
 fi
-unset gpu_loop gpu_state
+unset gpu_loop gpu_state_loop gpu_state

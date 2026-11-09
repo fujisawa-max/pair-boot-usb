@@ -1,14 +1,80 @@
 #!/usr/bin/env python3
 """Assemble regular GPT/FAT/ext4 image files under build/; never write a device."""
 import argparse
+import errno
 import hashlib
 import json
+import os
 from pathlib import Path
+import stat
 import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 MIB = 1024 * 1024
+BLOCK = 4096
+MASTER_RESERVE = 512 * MIB
+DEFAULT_MASTER_MIB = json.loads((ROOT / 'config/usb-layout.json').read_text())['master_size_mib']
+
+
+def sparse_bytes(path):
+    """Count data extents in logical blocks, independently of compression/reflinks."""
+    with path.open('rb') as stream:
+        size = os.fstat(stream.fileno()).st_size
+        offset = used = 0
+        while offset < size:
+            try:
+                data = os.lseek(stream.fileno(), offset, os.SEEK_DATA)
+            except OSError as error:
+                if error.errno == errno.ENXIO:
+                    return used
+                if error.errno in (errno.EINVAL, errno.ENOTSUP):
+                    # Unknown hole mapping: keep the conservative logical-size bound.
+                    return (size + BLOCK - 1) // BLOCK * BLOCK
+                raise
+            try:
+                hole = os.lseek(stream.fileno(), data, os.SEEK_HOLE)
+            except OSError as error:
+                if error.errno in (errno.EINVAL, errno.ENOTSUP, errno.ENXIO):
+                    return (size + BLOCK - 1) // BLOCK * BLOCK
+                raise
+            if data < offset or hole <= data:
+                raise ValueError('Invalid sparse extent mapping')
+            used += ((min(hole, size) + BLOCK - 1) // BLOCK - data // BLOCK) * BLOCK
+            offset = hole
+        return used
+
+
+def payload_usage(tree):
+    if not stat.S_ISDIR(tree.lstat().st_mode):
+        raise ValueError('Ordinary payload directory required')
+    logical = stored = 0
+    for path in tree.rglob('*'):
+        mode = path.lstat().st_mode
+        if stat.S_ISDIR(mode):
+            continue
+        if not stat.S_ISREG(mode):
+            raise ValueError('Payload links and special files are forbidden')
+        logical += path.stat().st_size
+        stored += sparse_bytes(path)
+    return {'logical_bytes': logical, 'data_extent_bytes': stored}
+
+
+def master_available(text):
+    fields = {}
+    for line in text.splitlines():
+        name, separator, value = line.partition(':')
+        if separator and name in ('Block count', 'Free blocks', 'Reserved block count', 'Block size'):
+            if name in fields:
+                raise ValueError('Duplicate master capacity field')
+            fields[name] = int(value.strip())
+    if (len(fields) != 4 or fields['Block size'] != BLOCK or
+            not 0 <= fields['Reserved block count'] <= fields['Free blocks'] <= fields['Block count']):
+        raise ValueError('Invalid master filesystem capacity')
+    available = (fields['Free blocks'] - fields['Reserved block count']) * BLOCK
+    if available < MASTER_RESERVE:
+        raise ValueError('Master filesystem requires 512MiB free after reserved blocks')
+    return available
 
 
 def main():
@@ -17,7 +83,7 @@ def main():
     parser.add_argument("--sysroot", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True, help="new build/ directory")
     parser.add_argument("--config-tree", type=Path, help="shared configuration/tools tree below build/")
-    parser.add_argument("--data-mib", type=int, default=4096)
+    parser.add_argument("--data-mib", type=int, default=DEFAULT_MASTER_MIB)
     parser.add_argument("--disk-bytes", type=int, default=0, help="exact target USB capacity in bytes")
     parser.add_argument("--log-mib", type=int, default=0, help="optional Windows basic-data FAT32 log partition (>=64 MiB)")
     parser.add_argument("--fedora-tree", type=Path, help="verified extracted Live tree below build/")
@@ -50,9 +116,10 @@ def main():
         marker = json.loads((config_tree / 'usb-config.json').read_text())
         if marker != {'schema': 1, 'kind': 'gpu-linux-config', 'root_version': manifest['version']}:
             parser.error('configuration marker does not match the master version')
-    used = sum(p.stat().st_size for p in tree.rglob("*") if p.is_file())
-    if args.data_mib * MIB < used + 512 * MIB:
-        parser.error("data image requires payload logical size plus 512MiB reserve")
+    usage = payload_usage(tree)
+    if args.data_mib * MIB < usage['data_extent_bytes'] + MASTER_RESERVE:
+        parser.error('data image requires payload data extents plus 512MiB reserve; '
+                     'filesystems without hole mapping use the full logical size')
     destination.mkdir(parents=True)
     image_sizes = [("efi.img", 64 * MIB), ("usb-data.img", args.data_mib * MIB)]
     if args.log_mib:
@@ -75,9 +142,15 @@ def main():
     run("grub-script-check", "/tree/boot/grub/grub.cfg")
     run("mkfs.fat", "-F", "32", "-n", "GPU-EFI", "/out/efi.img")
     run("mcopy", "-i", "/out/efi.img", "-s", "/tree/EFI", "::/")
-    run("mke2fs", "-q", "-t", "ext4", "-F", "-L", "GPU-MASTER", "-U", manifest["usb_data_uuid"],
+    run("mke2fs", "-q", "-t", "ext4", "-b", str(BLOCK), "-F", "-L", "GPU-MASTER", "-U", manifest["usb_data_uuid"],
         "-d", "/tree", "/out/usb-data.img")
     run("e2fsck", "-f", "-n", "/out/usb-data.img")
+    available = master_available(run('dumpe2fs', '-h', '/out/usb-data.img',
+                                    capture_output=True, text=True).stdout)
+    (destination / 'master-capacity.json').write_text(json.dumps({
+        **usage, 'partition_bytes': args.data_mib * MIB,
+        'available_bytes': available, 'required_free_bytes': MASTER_RESERVE,
+    }, indent=2) + '\n')
     if args.log_mib:
         run("mkfs.fat", "-F", "32", "-n", "GPU-LOGS", "/out/usb-logs.img")
         certificate = tree / 'EFI/BOOT/signing-cert.der'
@@ -136,7 +209,6 @@ def main():
                 while block := source.read(8 * MIB):
                     target.write(block)
         target.flush()
-        import os
         os.fsync(target.fileno())
     run("sfdisk", "--verify", "/out/gpu-linux-usb.img")
     table = run("sfdisk", "--json", "/out/gpu-linux-usb.img", capture_output=True, text=True).stdout

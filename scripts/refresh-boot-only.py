@@ -52,7 +52,7 @@ def refresh(source, output):
         raise ValueError('Unsafe dracut module directory')
     shutil.copytree(ROOT / 'runtime/dracut/95gpu-root', moddir, dirs_exist_ok=True)
     for name in ('gpu-root.py', 'fleet-registry.py', 'storage-target.py', 'root-maintenance.py',
-                 'persistent-state.py', 'replace-root.py', 'no-gpu-test.py', 'release-info.py',
+                 'persistent-state.py', 'replace-root.py', 'no-gpu-test.py', 'release-info.py', 'detach-loop.py',
                  'gpu-diagnostic.py', 'gpu-unlock-diagnostic.py'):
         shutil.copy2(ROOT / 'runtime' / name, moddir / name)
     command = ['bwrap', '--unshare-all', '--uid', '0', '--gid', '0', '--die-with-parent',

@@ -18,7 +18,7 @@ def archive_names(image):
     if any(name.startswith('/') or '..' in Path(name).parts for name in names):
         raise ValueError('Unsafe initramfs archive path')
     required = {'shutdown', 'usr/bin/bash', 'usr/bin/python3.13',
-                'var/lib/dracut/hooks/shutdown/10-shutdown-root.sh'}
+                'usr/lib/detach-loop.py', 'var/lib/dracut/hooks/shutdown/10-shutdown-root.sh'}
     if not required <= names:
         raise ValueError('Initramfs lacks shutdown runtime or storage hook')
 

@@ -100,6 +100,8 @@ def check_initramfs_runtime(tree):
                 'k.kmod_unref.argtypes=[ctypes.c_void_p]; k.kmod_unref(context); '
                 's=importlib.util.spec_from_file_location("gpu_root", "/usr/lib/gpu-root.py"); '
                 'm=importlib.util.module_from_spec(s); s.loader.exec_module(m); m.check_volume("ntfs",0); '
+                's=importlib.util.spec_from_file_location("detach_loop", "/usr/lib/detach-loop.py"); '
+                'm=importlib.util.module_from_spec(s); s.loader.exec_module(m); '
                 's=importlib.util.spec_from_file_location("gpu_diag", "/usr/lib/gpu-diagnostic.py"); '
                 'm=importlib.util.module_from_spec(s); s.loader.exec_module(m); '
                 'm.guard("gpu_root.diagnostic=1 gpu_root.allow_ntfs_write=0"); '
@@ -135,6 +137,14 @@ def main():
     def debug(command):
         return subprocess.check_output(["debugfs", "-R", command, str(master)], text=True, stderr=subprocess.DEVNULL)
     inside = json.loads(debug("cat /usr/lib/gpu-root/image.json"))
+    archive = '/boot/initramfs-' + manifest['kernel_release'] + '.img'
+    proc = subprocess.Popen(['debugfs', '-R', 'cat ' + archive, str(master)],
+                            stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+    embedded = hashlib.sha256()
+    while block := proc.stdout.read(8 * 1024**2):
+        embedded.update(block)
+    if proc.wait() or embedded.hexdigest() != digest(tree / 'boot/initramfs.img'):
+        raise ValueError('Root embedded shutdown archive differs from the USB initramfs')
     if inside["version"] != manifest["version"] or inside["kernel_release"] != manifest["kernel_release"]:
         raise ValueError("Master filesystem release differs from external manifest")
     if "User:     0" not in debug("stat /etc/passwd"):
@@ -162,6 +172,14 @@ def main():
             if debug('cat /usr/lib/gpu-root/' + name).strip() != (Path(__file__).resolve().parents[1] / 'runtime' / name).read_text().strip():
                 raise ValueError('Obsolete root release presentation: ' + name)
     data, entries = cpio_entries(tree / "boot/initramfs.img")
+    for name, source in (
+            ('usr/lib/detach-loop.py', 'runtime/detach-loop.py'),
+            ('var/lib/dracut/hooks/shutdown/10-shutdown-root.sh', 'runtime/dracut/95gpu-root/shutdown-root.sh')):
+        if name not in entries:
+            raise ValueError('Shutdown storage helper missing from initramfs: ' + name)
+        offset, size = entries[name]
+        if data[offset:offset+size] != (Path(__file__).resolve().parents[1] / source).read_bytes():
+            raise ValueError('Obsolete shutdown storage helper: ' + name)
     required = ["usr/bin/python3.13", "usr/bin/systemctl", "usr/bin/ntfs-3g", "usr/bin/ntfs-3g.probe", "usr/lib/gpu-root.py", "shutdown",
                 "usr/lib/systemd/system/dracut-cmdline.service",
                 "usr/lib/systemd/system/dracut-pre-udev.service",

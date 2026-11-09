@@ -54,7 +54,7 @@ PAIRの設定・クラスタ情報・起動ON/OFFとホームはstate.imgに保�
 
 起動バナーには現在のrootの版と実際のNormal/Unlockを表示します。PAIRを終了して3択メニューへ戻った場合も再表示します。
 
-0.9.1ではroot revisionで更新方向を判定します。0.9.0のrootはrevision 0、0.9.1の現在の構築はrevision 2です。USB側が新しければ、安全確認・容量確認・コピー検証後に自動更新します。旧rootとreceiptをroot-before-update-*へ退避し、stateとModelsは保持します。同じrevisionでSHAが異なる場合は採番不整合として停止します。通常利用によるrootの書込みではなく、receiptに記録した配布元SHAで比較します。
+0.9.1ではroot revisionで更新方向を判定します。0.9.0のrootはrevision 0、0.9.1の現在の構築はrevision 3です。USB側が新しければ、安全確認・容量確認・コピー検証後に自動更新します。旧rootとreceiptをroot-before-update-*へ退避し、stateとModelsは保持します。同じrevisionでSHAが異なる場合は採番不整合として停止します。通常利用によるrootの書込みではなく、receiptに記録した配布元SHAで比較します。
 
 USB側のrevisionが古い場合は、コンソールに次の選択を表示します。
 
@@ -76,6 +76,8 @@ PAIRは専用サービスでgpuユーザーとして実行します。終了時�
 現在の構成ではPAIRの操作画面をtty1、保守用の物理rootコンソールをtty2に配置します。保守コンソールにはパスワードを設定していません。対象PCの物理アクセスを管理できる環境で使用します。SSHログインは既定で無効です。
 
 PAIRをqで終了すると、PAIR再起動、PC再起動、電源断のメニューへ戻ります。完了前に電源を強制的に切らないでください。
+
+root revision 3では、dracutが先に解除したloopを終了処理で再解除して停止する問題を修正します。解除済みをカーネルへ照会し、接続中なら解除後の完了も確認してからNTFSの終了処理へ進みます。状態不明・使用中・同期やアンマウントの失敗では自動電源断を止めます。旧revisionから更新した場合は、バナーの `Root rev: 3` を確認し、メニューの再起動・電源断を実機で確認してください。
 
 USB CAN BE REMOVED NOWの表示がある場合のみ起動USBを取り外せます。root/Modelsを保存する別USBは接続したままにします。Fedora Liveの起動USBは稼働中に取り外しません。
 

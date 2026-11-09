@@ -4,6 +4,8 @@
 
 通常の0.9.1イメージにもTESTエントリが含まれるため、GPUなし専用イメージは不要です。以下のboot-only更新は、同じ版のrootを保持して起動部分だけを再構築する場合の手順です。root・stateテンプレートとmaster.jsonを保持します。0.9.0から0.9.1への更新は通常のrootリビジョン更新になります。確認起動で使用するrootとstateには、通常と同じ初期化・設定保存・回復処理による書込みが発生します。「root.imgを変更しない」はUSB内の配布テンプレートを再生成しないという意味です。
 
+終了処理を修正したroot revision 3を適用するときは、通常のroot更新を行います。root内の終了用initramfsも変わるため、旧revisionのrootを保持するboot-only更新では電源断の修正を適用できません。以下の手順は、現在のソースに対応するrevision 3のrootを準備済みの場合に使います。
+
 ## イメージを作る
 
 既に構築・検査した、署名済みの同じ版の共有USB用applianceを入力にします。以下の `build/appliance` は、その既存の出力ディレクトリに読み替えます。公開証明書を利用しますが、新しい秘密鍵や再署名は不要です。ホストや実デバイスは変更しません。
@@ -21,7 +23,7 @@ python3 scripts/assemble-usb-image.py \
   --tree build/appliance-no-gpu/usb-tree \
   --sysroot build/appliance-no-gpu/root-tree \
   --config-tree build/tools-no-gpu --fedora-tree build/fedora-no-gpu \
-  --data-mib 8192 --log-mib 256 --output build/usb-image-no-gpu
+  --data-mib 4608 --log-mib 256 --output build/usb-image-no-gpu
 python3 scripts/verify-shared-media.py \
   --tree build/appliance-no-gpu/usb-tree \
   --sysroot build/appliance-no-gpu/root-tree \
