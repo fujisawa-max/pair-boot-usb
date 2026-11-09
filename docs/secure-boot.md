@@ -24,7 +24,7 @@ openssl x509 -inform DER -in /path/to/controlled-storage/pair-boot-signing/modul
   -noout -subject -dates -fingerprint -sha256
 ```
 
-秘密鍵は所有者だけが読める通常ファイルとします。`scripts/sign-gpu-modules.py` はrepo外の秘密鍵とDER証明書を指定して、構築済みmoduleのコピーに署名します。暗号化鍵のパスフレーズは所有者が安全な入力方法で `KBUILD_SIGN_PIN` に渡します。コマンドラインやログへ直接書きません。入力moduleの準備手順は [構築手順](build.md) に従います。
+秘密鍵は所有者だけが読める通常ファイルとします。`scripts/sign-gpu-modules.py` はrepo外の秘密鍵とDER証明書を指定して、構築済みmoduleのコピーに署名します。暗号化鍵のパスフレーズは所有者が安全な入力方法で `KBUILD_SIGN_PIN` に渡します。コマンドラインやログへ直接書きません。署名前のモジュールの準備は [構築手順](build.md) に従います。
 
 ## 構築したmoduleへ署名する
 
@@ -40,7 +40,7 @@ python3 scripts/verify-signed-module-bundle.py build/signed-modules
 
 `--prompt` は対話端末を要求し、パスフレーズを署名ツールの `KBUILD_SIGN_PIN` として一時的に渡します。署名スクリプト終了時に環境変数を消去または元の状態へ戻します。パスフレーズはファイルへ保存しません。安全に設定した既存の `KBUILD_SIGN_PIN` を使う場合は `--prompt` を省略できます。
 
-署名処理は元moduleを保持し、コピーへ署名します。名前・kernel/driver版、元payloadの不変、選択した証明書によるCMS署名を検証します。確認済みの公開証明書と署名manifestは出力束に含め、秘密鍵はコピーしません。利用者による署名から最終イメージ生成・検査までの実行を確認済みです。署名束だけではUSB生成に必要な他の入力は揃いません。
+署名処理は元moduleを保持し、コピーへ署名します。名前・kernel/driver版、元payloadの不変、選択した証明書によるCMS署名を検証します。確認済みの公開証明書と署名manifestは出力束に含め、秘密鍵はコピーしません。利用者による署名から最終イメージ生成・検査までの実行を確認済みです。署名束だけではUSB生成に必要な他のファイルは揃いません。
 
 ## 対象PCへ登録する
 

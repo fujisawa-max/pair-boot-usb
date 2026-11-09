@@ -1,15 +1,15 @@
-# 外部入力とライセンス
+# 外部資料とライセンス
 
-このソースツリーは第三者のISO・バイナリ・ソースチェックアウトを同梱しません。利用者が固定版を取得し、検証してローカルで構築する方式です。入力本体と生成したUSBをGitHubのGit/LFS/Releaseへ自動アップロードしません。
+このソースツリーは第三者のISO・バイナリ・ソースチェックアウトを同梱しません。利用者が指定された版を取得し、検証してローカルで構築する方式です。取得した外部資料と生成したUSBをGitHubのGit/LFS/Releaseへ自動アップロードしません。
 
-リポジトリ直下の [MIT License](LICENSE) は、このプロジェクトの独自ソース、設定、テスト、文書に適用します。取得する第三者ソフトウェアやその生成物のライセンスを変更するものではありません。各入力の著作権表示、ライセンス、必要なNOTICEを保持します。
+リポジトリ直下の [MIT License](LICENSE) は、このプロジェクトの独自ソース、設定、テスト、文書に適用します。取得する第三者ソフトウェアやその生成物のライセンスを変更するものではありません。取得した各ソフトウェアや資料の著作権表示、ライセンス、必要なNOTICEを保持します。
 
-| 入力 | 取得元・確認事項 |
+| 外部ソフトウェア・資料 | 取得元・確認事項 |
 | --- | --- |
 | gpu-unlock | https://github.com/Zagitta/gpu-unlock 。固定基準は `af28cbbfd3d922a659227ecfb7369adfd924cf03`。モジュールとfirmwareの条件は別。上流のlicensesとfirmware/NOTICE.mdを保存する |
-| NVIDIA open modules | https://github.com/NVIDIA/open-gpu-kernel-modules 。現行ドライバ入力は615.71.10。ソースのCOPYINGと実行ライブラリ・firmwareの条件を分けて確認する |
+| NVIDIA open modules | https://github.com/NVIDIA/open-gpu-kernel-modules 。使用するドライバの版は615.71.10。ソースのCOPYINGと実行ライブラリ・firmwareの条件を分けて確認する |
 | NVIDIA/CUDA | https://developer.download.nvidia.com/compute/cuda/repos/debian13/x86_64/ 。inputs/nvidia-driver-inputs.jsonと公式署名メタデータで検証する |
-| firmware生成用入力 | inputs/firmware-inputs.jsonに固定。NVIDIAの610.43.03ソースと https://archive.cachyos.org/ の固定nvidia-utilsパッケージを取得し、gpu-unlockの固定generatorで生成する。生成物とNVIDIA-LICENSE・上流NOTICEを保持する |
+| firmware生成用の外部資料 | inputs/firmware-inputs.jsonに版・URL・ハッシュを指定。NVIDIAの610.43.03ソースと https://archive.cachyos.org/ の指定版のnvidia-utilsパッケージを取得し、gpu-unlockの指定版のgeneratorで生成する。生成物とNVIDIA-LICENSE・上流NOTICEを保持する |
 | PAIR | https://github.com/NVIDIA/Personal-AI-Router 。inputs/pair-headless-input.jsonの固定releaseを取得。現在の上流はApache-2.0だが、取得版のLICENSE/NOTICEと同梱物を確認する |
 | llama.cpp | https://github.com/ggml-org/llama.cpp 。inputs/pair-llamacpp-inputs.jsonのb11146/CUDA12.8。MIT本体と同梱CUDA等の条件を区別する |
 | Fedora Workstation Live | https://fedoraproject.org/workstation/download/ 。現行抽出処理は44-1.7の固定ISO用。公式CHECKSUMの署名とISOのハッシュを検証する |
