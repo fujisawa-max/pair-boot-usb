@@ -2,7 +2,7 @@
 
 LinuxまたはWSL2上で、固定入力の取得から通常ファイルのUSBイメージを作ります。ホストへのGPUドライバ・kernel・bootloaderの導入や、実USBへの書込みは行いません。
 
-構築入口は `scripts/build-usb.py` です。`prepare` が署名前の入力・module・中間ツリーを準備し、利用者が署名した後に `image` が組立と検査を行います。現行は0.9.0試作版です。実機起動・GPU・PAIR参加・異常終了・root交換の実機確認は未完了です。ソース試験、ファイル構築・検査、実機確認は区別します。
+構築入口は `scripts/build-usb.py` です。`prepare` が署名前の入力・module・中間ツリーを準備し、利用者が署名した後に `image` が組立と検査を行います。現行は0.9.1試作版です。実機起動・GPU・PAIR参加・異常終了・root交換の実機確認は未完了です。ソース試験、ファイル構築・検査、実機確認は区別します。
 
 ## 1. 環境を用意する
 
@@ -133,16 +133,33 @@ python scripts/run-tests.py
 
 合成fixtureとシェル構文を検査します。スキップは成功と区別し、環境不足による未検証範囲として扱います。構築・署名検査の成功だけでは、対象PCのMOK登録、Secure Boot起動、GPUのNormal/Unlock、PAIR参加、正常終了の実機確認にはなりません。
 
+WindowsツールのPowerShell処理もLinux/WSL上で試験する場合は、任意の開発用ランナーを一度だけ準備します。
+
+```sh
+python scripts/prepare-powershell-tests.py
+python scripts/run-tests.py
+```
+
+`inputs/powershell-test-input.json` のPowerShell 7.5.4をHTTPSで取得し、サイズ・SHAを照合して `build/powershell-7.5.4` へ展開します。既存出力は保持して停止するため、準備済みならテストだけを実行してください。x86_64 Linux/WSL用で、ホストへインストールせずUSBにも含めません。試験はその実行ファイルを自動検出し、WindowsストレージAPI等を合成fixtureで代用します。実WindowsのUSB列挙、FAT32書込み、GUI表示やUACの確認は別途必要です。
+
 秘密鍵、生成日時、ファイルシステムUUID等が異なるため、別の利用者の完成USBと全体SHAが一致することは合格条件にしません。固定入力、処理、署名、内部内容、動作を検証します。新規インストールは過去のrootイメージに依存せず、回復が必要なときは元を保持したコピー上でfsckする設計です。
 
 `.cache/`、`vendor/`、`build/`、鍵・証明書やPC登録情報は公開Gitへ追加しません。
 
-## 0.9.0試作の確認
+## 0.9.1試作の確認
 
-NVIDIA GPUのないPCで起動画面・root/stateの分離を調べる場合は、[GPUなし確認起動](no-gpu-test.md)を使用します。既存の0.9.0のrootテンプレートを保持して起動部分だけを更新できます。通常起動の代わりに自動実行するモードではありません。
+NVIDIA GPUのないPCで起動画面・root/stateの分離を調べる場合は、[GPUなし確認起動](no-gpu-test.md)を使用します。同じ版のrootテンプレートを保持して起動部分だけを更新する手順もあります。通常起動の代わりに自動実行するモードではありません。
 
 0.8以前の保存先を上書きせず、登録時に `GPU-Linux-0.9` などの新しいフォルダを選びます。初回起動時にrootとstateのテンプレートをコピーし、そのPCの識別情報を初期化します。既存のrootしかない保存先では停止します。署名鍵は従来の管理済み鍵を使えますが、対象kernel/moduleや公開証明書の整合性は通常どおり検査します。
 
 起動バナー、Normal/Unlock表示、PAIRの起動・終了・再起動、PC再起動後の設定保持、正常終了を順に確認します。異常終了後にプロセスが残る場合は次のPAIR起動を止めます。全対象GPU・全故障条件を確認済みとはしていません。
 
-root交換は0.9以降の同じstate schemaを使う更新に限ります。実機での更新確認には、別の対応版のUSBと、その版に合わせた正規のPC登録が必要です。版番号や登録情報だけを書き換えて更新試験を通さないでください。詳しくは[運用と回復](user-guide.md)を参照します。
+root交換は0.9以降の同じstate schemaを使う更新に限ります。0.9.1の現在の構築はroot revision 2で、独立したリビジョンを使い、0.9.0の既存rootはrevision 0として扱います。実機での更新確認には、別の対応版のUSBと、その版に合わせた正規のPC登録が必要です。版番号や登録情報だけを書き換えて更新試験を通さないでください。詳しくは[運用と回復](user-guide.md)を参照します。
+
+## 構成情報とrootリビジョン
+
+`config/release.json` がプロジェクト版、root release、root revision、boot ABI、state schemaの定義です。rootを変更するときはrevisionを増やします。同じrevisionで異なるSHAを公開すると既存環境は停止します。完成rootを再生成するとUUID等でもSHAが変わるため、同じリビジョンのrootを作り直して既存配布物と混在させないでください。
+
+`GPU-LOGS/MEDIA-INFO.txt` とFedoraパーティション直下に、固定入力から生成した構成一覧を配置します。Debian、kernel、gpu-unlock commit、NVIDIA、PAIR、llama.cpp、Fedoraの版を確認できます。これは媒体の情報であり、起動中rootの情報とは区別します。バナーはroot内の同じ形式のメタデータから版・revisionを、起動状態からNormal/Unlock/TESTを表示します。
+
+boot ABIはinitramfs・root・stateの取り決めです。kernelだけでなくGPUドライバとgpu-unlockの版も照合します。起動・終了・設定保存の互換性を変える開発では、ABIとstate schemaを見直して、互換性のない組合せを許可しないでください。

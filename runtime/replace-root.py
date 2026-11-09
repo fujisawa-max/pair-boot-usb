@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
-"""Confirmed whole-root replacement under the provisioning lock; preserve old files."""
+"""Revision-based root replacement and compatible keep/downgrade choices."""
 import json
 import os
 import re
 import shutil
 import uuid
+from pathlib import Path
+import runpy
 
 
 def version(value):
@@ -28,7 +30,7 @@ def confirm(old, new):
         return False
 
 
-def replace(api, master, target, receipt, manifest, ask=confirm, free_bytes=None, after_rename=None):
+def legacy_replace(api, master, target, receipt, manifest, ask=confirm, free_bytes=None, after_rename=None):
     parent = target.parent
     if receipt.get('state_schema') != 1 or manifest.get('persistent_state', {}).get('schema') != 1:
         raise api.SafetyError('Root layout cannot be upgraded; 0.8 and earlier require a fresh installation')
@@ -47,14 +49,95 @@ def replace(api, master, target, receipt, manifest, ask=confirm, free_bytes=None
     inside = json.loads(api.run('debugfs', '-R', 'cat /usr/lib/gpu-root/image.json', str(target)))
     if inside.get('version') != receipt['version'] or inside.get('state_schema') != 1:
         raise api.SafetyError('Existing root release/layout differs from receipt')
+    return copy_replace(api, master, target, receipt, manifest, free_bytes, after_rename, ask=ask)
+
+
+def downgrade_choice(old, new, can_keep, can_replace):
+    try:
+        with open('/dev/console', 'r+') as terminal:
+            if not terminal.isatty():
+                return 'poweroff'
+            terminal.write(f'\nOlder USB root revision: installed {old}, USB {new}\n'
+                           + ('1. DOWNGRADE root and boot (settings retained)\n' if can_replace else '1. Downgrade unavailable: incompatible state/root layout\n')
+                           + ('2. Keep installed root and try booting\n' if can_keep else '2. Keep unavailable: incompatible kernel/boot ABI/state\n')
+                           + '3. Power off\nChoose 1-3 [Enter = 3]: ')
+            terminal.flush()
+            answer = terminal.readline().strip()
+            if answer == '1' and can_replace:
+                terminal.write('Type DOWNGRADE to confirm replacing root; settings will not be rolled back: ')
+                terminal.flush()
+                return 'replace' if terminal.readline().strip() == 'DOWNGRADE' else 'poweroff'
+            if answer == '2' and can_keep:
+                return 'keep'
+            return 'poweroff'
+    except OSError:
+        return 'poweroff'
+
+
+def replace(api, master, target, receipt, manifest, ask=None, free_bytes=None, after_rename=None, choose=downgrade_choice):
+    if 'root_revision' not in manifest:
+        return legacy_replace(api, master, target, receipt, manifest, ask=confirm if ask is None else ask,
+                              free_bytes=free_bytes, after_rename=after_rename)
+    policy = runpy.run_path(str(Path(__file__).with_name('release-info.py')))
+    api.regular(target)
+    if receipt.get('size') != target.stat().st_size or api.run('losetup', '-j', str(target)):
+        raise api.SafetyError('Existing root size changed or image is in use')
+    for name in ('.root-replace.json', '.root-replace.img', '.root-replace-receipt.json'):
+        if api.safe_child(target.parent, name).exists():
+            raise api.SafetyError('Interrupted root replacement; preserve files and inspect from Fedora')
+    inside = json.loads(api.run('debugfs', '-R', 'cat /usr/lib/gpu-root/image.json', str(target)))
+    if inside.get('version') != receipt.get('version') or inside.get('state_schema') != receipt.get('state_schema'):
+        raise api.SafetyError('Existing root release/layout differs from receipt')
+    try:
+        old = policy['root_revision'](inside)
+        new = policy['root_revision'](manifest)
+    except ValueError as error:
+        raise api.SafetyError(str(error)) from error
+    if 'root_revision' in receipt and receipt['root_revision'] != old:
+        raise api.SafetyError('Root revision differs from receipt')
+    if not re.fullmatch(r'[a-f0-9]{64}', str(receipt.get('original_sha256', ''))):
+        raise api.SafetyError('Invalid root receipt hash')
+    if 'boot_abi' in receipt and receipt['boot_abi'] != inside.get('boot_abi'):
+        raise api.SafetyError('Root boot ABI differs from receipt')
+    can_keep = policy['compatible'](inside, manifest['kernel_release'], manifest)
+    can_replace = receipt.get('state_schema') == 1 and policy['compatible'](manifest, manifest['kernel_release'], manifest)
+    if new == old:
+        if receipt.get('original_sha256') != manifest['sha256']:
+            raise api.SafetyError('Same root revision has a different SHA; fix release numbering')
+        if not can_keep:
+            raise api.SafetyError('Installed root kernel/boot ABI/state incompatible')
+        return target
+    if new < old:
+        action = choose(old, new, can_keep, can_replace)
+        if action == 'poweroff':
+            raise api.RootPoweroff('User selected poweroff; root and state retained')
+        if action == 'keep' and can_keep:
+            return target
+        if action != 'replace' or not can_replace:
+            raise api.SafetyError('Unsupported downgrade choice or incompatible state')
+    elif not can_replace:
+        raise api.SafetyError('New root is incompatible with persistent state or boot ABI')
+    if version(receipt['version']) < (0, 9, 0):
+        raise api.SafetyError('Unsupported legacy root layout')
+    return copy_replace(api, master, target, receipt, manifest, free_bytes, after_rename)
+
+
+def copy_replace(api, master, target, receipt, manifest, free_bytes=None, after_rename=None, ask=None):
+    parent = target.parent
     api.regular(master)
     if master.stat().st_size != manifest['size'] or api.digest(master) != manifest['sha256']:
         raise api.SafetyError('Replacement master size/hash mismatch')
     api.validate_ext4(master)
+    if 'root_revision' in manifest:
+        inside = json.loads(api.run('debugfs', '-R', 'cat /usr/lib/gpu-root/image.json', str(master)))
+        for key in ('version', 'root_revision', 'boot_abi', 'state_schema', 'kernel_release'):
+            expected = manifest.get(key, 1 if key == 'state_schema' else None)
+            if inside.get(key) != expected:
+                raise api.SafetyError('Replacement root metadata differs from manifest: ' + key)
     available = shutil.disk_usage(parent).free if free_bytes is None else free_bytes
     if available < manifest['size'] + max(1024**3, manifest['size'] // 10):
         raise api.SafetyError('Insufficient storage for root replacement and reserve')
-    if not ask(receipt['version'], manifest['version']):
+    if ask is not None and not ask(receipt['version'], manifest['version']):
         raise api.SafetyError('Root update cancelled; incompatible old root was not booted')
     token = uuid.uuid4().hex
     marker = api.safe_child(parent, '.root-replace.json')
@@ -73,7 +156,8 @@ def replace(api, master, target, receipt, manifest, ask=confirm, free_bytes=None
     api.validate_ext4(candidate)
     api.new_json(backup_receipt, receipt)
     api.new_json(pending, {'schema': 1, 'state_schema': 1, 'version': manifest['version'],
-                           'size': manifest['size'], 'original_sha256': manifest['sha256']})
+                           'size': manifest['size'], 'original_sha256': manifest['sha256'],
+                           **({key: manifest[key] for key in ('root_revision', 'boot_abi')} if 'root_revision' in manifest else {})})
     api.atomic_new(target, backup)
     api.sync_directory(parent)
     if after_rename:

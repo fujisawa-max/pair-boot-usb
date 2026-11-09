@@ -13,6 +13,7 @@
 | Fedora Workstation Live | https://fedoraproject.org/workstation/download/ 。現行抽出処理は44-1.7の固定ISO用。公式CHECKSUMの署名とISOのハッシュを検証する |
 | Debian | https://deb.debian.org/ 。inputs/debian-build-inputs.json、debian-runtime-inputs.json等。公式パッケージの各ライセンスを保持する |
 | pycdlib | https://pypi.org/project/pycdlib/1.14.0/ 。inputs/fedora-tools-inputs.jsonのwheelをSHA照合してFedora ISOの展開に使用。wheel本体は同梱しない |
+| PowerShell（任意の開発用試験） | https://github.com/PowerShell/PowerShell/releases/tag/v7.5.4 。inputs/powershell-test-input.jsonのLinux x64 archiveをサイズ・SHA照合し、合成fixtureの実行に使用。MIT本体と同梱物のLICENSE・ThirdPartyNoticesを展開先に保持し、USBへは含めない |
 
 ダウンロード用の公開鍵は公式配布元でfingerprintを照合して取得します。作者のMOK証明書や共通秘密鍵は提供しません。
 

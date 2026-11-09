@@ -6,6 +6,30 @@ Windowsで候補JSONを集め、各対象PCのFedoraで実機情報と照合し�
 
 USBを書き直す前に候補JSONと台帳を退避します。復元は退避台帳を別名でUSBへ置き、管理GUIの配布操作を使います。古いusb-config.json、証明書、gui、toolsで新USBを上書きしません。
 
+### 1台の管理PCで台帳をまとめる
+
+回収・マージ・配布は1台の管理PCでできます。そのPCの登録、NVIDIA GPU、PAIRの起動は不要です。新規のPC登録には各対象PCのFedoraでの実機確認が必要ですが、登録済み情報を移す作業では管理PCの情報を登録し直しません。
+
+| 操作環境 | 対応と制限 |
+| --- | --- |
+| Windowsのファイル操作 | 各USBの `GPU-LOGS/gpu-config/registry.json` を別名でコピーして回収・バックアップできます。統合や起動用hostsの再生成には管理ツールを使います。 |
+| Windows管理GUI／PowerShell版 | 通常GPUとGPUなしTESTの台帳を回収・マージ・配布できます。0.9.0→0.9.1の対応する版変換も扱います。管理作業のためにFedoraを起動する必要はありません。[Windowsでの操作手順](windows-fleet.md)を参照してください。 |
+| Fedora管理GUI | GPUなしTESTと対応する版変換を含めて処理できます。操作対象は、そのFedoraを起動したUSBのGPU-LOGSに限定しています。別USBへの配布では、同じ管理PCで配布先USBのFedoraを起動します。 |
+
+Fedora管理GUIでは次の順に行います。
+
+1. 必要な各台帳を別名のJSONとして回収します。Windowsでコピーしても構いません。管理PC上に元の控えを保持します。
+2. 統合に使うUSBのGPU-LOGSへ回収JSONをコピーし、そのUSBからFedoraを起動します。
+3. 「複数の台帳JSONをマージ」で入力と出力ファイル名を指定します。新しい世代番号は全入力より大きくします。
+4. 内容を確認した統合JSONを各配布先USBのGPU-LOGSへコピーします。複数USBから起動するときは、どれを起動したか確認してください。
+5. 配布先USBから同じ管理PCをFedora起動し、「統合台帳をこのUSBへ配布」でそのJSONを選択します。必要なUSBごとに繰り返します。
+
+配布操作は台帳と起動用hostsを更新します。`registry.json` だけを直接上書きする方法で代用しません。版・世代・期限・保存先・安全性の不一致は停止条件です。移すだけで確認日を延ばしたり、既存登録の保存先を勝手に変えたりはしません。0.9.0→0.9.1は対応する移行ですが、任意の版の混在を許可するものではありません。
+
+台帳を他のUSBへ配っても、root・state・Modelsはコピーされず、登録済みのNTFS保存先も変わりません。MOKは各PCのfirmware側の登録であり、台帳の配布では移りません。
+
+Windows版のTEST、版変換、GUIからの引数受渡しはLinux上のPowerShellと合成fixtureで確認しています。Windows実機のUSB検出、FAT32への書込み、起動による配布結果の確認は未完了です。
+
 ## root・state・Models
 
 選択したNTFS領域の既定フォルダはGPU-Linuxです。登録時に変更できます。root.img、state.img、各管理用metadata、Modelsを使用します。0.9.0ではrootは6GiB、初期stateは1GiBです。初回コピー用に合計7GiBと1GiB以上の予備容量を用意し、更新・回復・キャッシュには追加の空き容量を確保します。初回Normal起動でフォルダを作らせ、正常終了した後でモデルをコピーする順序を推奨します。root.img、state.imgや管理ファイルをモデルコピーの際に上書きしないでください。
@@ -14,7 +38,15 @@ USBを書き直す前に候補JSONと台帳を退避します。復元は退避�
 
 開発者PCでもPAIRを起動し、推論ノードと同じクラスタへ参加させます。通常のllama.cpp接続先は、その開発者PCの http://127.0.0.1:8080/v1 です。APIに送るモデル名は/v1/modelsで確認します。モデル名、コンテキスト上限、画像・ツール対応はクライアント設定と実際のエンジンを揃えます。
 
+開発ツールの設定と動作確認は[共通準備](pair-client-setup.md)、[VS Code](vscode-pair-parallel-quick-start.md)、[OpenCode](opencode-pair-parallel-quick-start.md)を参照してください。子エージェントの並行実行と、PAIRが実際にどのノードへ要求を振り分けたかは分けて確認します。
+
 ## 設定の保持とroot交換
+
+ロゴは表示時の端末幅に合わせて横幅を調整します。起動直後とPAIR終了後で画面の列数が変わっても、その時点の幅で描画します。
+
+起動を停止した場合は、空行と区切り線で囲まれた `PAIR BOOT - STARTUP STOPPED` の理由と対処を確認します。`THIS PC IS NOT REGISTERED FOR THIS USB` は、このPCの登録がUSBにないことを示します。Fedora Liveで保存先とPCを登録してください。`NVIDIA HARDWARE DETECTED IN TEST MODE` は、NVIDIA機器があるPCでTESTを選んだことを示します。FedoraでGPU登録を確認し、対応するNormalまたはUnlockを選び直してください。
+
+`Details:` 以下には元のエラーを残します。root設定処理のエラー表示はメンテナンス用プロンプトの直前に再表示します。表示の変更によって安全確認を省略したり、自動で別モードへ切り替えたりはしません。
 
 0.9.0は新規導入用の試作版です。0.8以前からの自動設定移行はありません。既存データを残し、新しい保存先フォルダへ登録してください。
 
@@ -22,7 +54,16 @@ PAIRの設定・クラスタ情報・起動ON/OFFとホームはstate.imgに保�
 
 起動バナーには現在のrootの版と実際のNormal/Unlockを表示します。PAIRを終了して3択メニューへ戻った場合も再表示します。
 
-対応する新版USBで、登録先のrootが異なる版または同じ版の別ビルドだった場合は、起動途中でroot交換を確認します。交換する場合だけコンソールで `UPDATE` と入力します。新rootをコピー・検証し、旧rootとreceiptをroot-before-update-*へ退避します。stateとModelsは交換しません。キャンセル時は旧rootを変更せず起動を停止します。旧rootの起動には対応する旧USBが必要です。旧版へのdowngradeは受け付けません。
+0.9.1ではroot revisionで更新方向を判定します。0.9.0のrootはrevision 0、0.9.1の現在の構築はrevision 2です。USB側が新しければ、安全確認・容量確認・コピー検証後に自動更新します。旧rootとreceiptをroot-before-update-*へ退避し、stateとModelsは保持します。同じrevisionでSHAが異なる場合は採番不整合として停止します。通常利用によるrootの書込みではなく、receiptに記録した配布元SHAで比較します。
+
+USB側のrevisionが古い場合は、コンソールに次の選択を表示します。
+
+1. 古いrootへ交換して起動する。追加で `DOWNGRADE` の入力が必要です。
+2. 現在のrootを保持して起動を試みる。kernel、boot ABI、GPUドライバ、gpu-unlock、state schemaが適合する場合だけ選択できます。
+3. 電源を落とす。Enterや入力終了時もこの選択です。保存先を安全に閉じてから電源断を要求します。
+
+対応しないstate形式への交換は許可しません。現行の対応範囲はstate schema 1です。古い0.9.0 USBにはこの新処理がないため、0.9.1のrootで0.9.0 USBを使った場合は従来どおり停止し、選択画面は出ません。
+
 
 旧rootを残すことだけではrollbackの保証になりません。新版PAIRがstateの形式やクラスタ状態を更新した場合、旧rootでそのまま利用できないことがあります。状態のbackup/復元はクラスタとの整合性も含めて判断します。
 

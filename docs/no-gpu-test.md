@@ -1,12 +1,12 @@
-# GPUなしで0.9.0の起動を確認する
+# GPUなしで0.9.1の起動を確認する
 
 対応NVIDIA GPUのないPCで、起動バナー、3択メニュー、rootとstateの分離、再起動後の状態保持を確認するための専用起動です。GPU推論・Unlock・PAIR参加の試験にはなりません。実機動作の確認は未完了です。
 
-`root.img`、初期 `state.img`、`master.json` とバージョン `0.9.0-shared` を保持し、initramfs・GRUB設定・Fedoraの登録ツールを更新します。既存のrootを新版と判定して交換する処理は発生しません。確認起動で使用するrootとstateには、通常と同じ初期化・設定保存・回復処理による書込みが発生します。「root.imgを変更しない」はUSB内の配布テンプレートを再生成しないという意味です。
+通常の0.9.1イメージにもTESTエントリが含まれるため、GPUなし専用イメージは不要です。以下のboot-only更新は、同じ版のrootを保持して起動部分だけを再構築する場合の手順です。root・stateテンプレートとmaster.jsonを保持します。0.9.0から0.9.1への更新は通常のrootリビジョン更新になります。確認起動で使用するrootとstateには、通常と同じ初期化・設定保存・回復処理による書込みが発生します。「root.imgを変更しない」はUSB内の配布テンプレートを再生成しないという意味です。
 
 ## イメージを作る
 
-既に構築・検査した、署名済みの0.9.0共有USB用applianceを入力にします。以下の `build/appliance` は、その既存の出力ディレクトリに読み替えます。公開証明書を利用しますが、新しい秘密鍵や再署名は不要です。ホストや実デバイスは変更しません。
+既に構築・検査した、署名済みの同じ版の共有USB用applianceを入力にします。以下の `build/appliance` は、その既存の出力ディレクトリに読み替えます。公開証明書を利用しますが、新しい秘密鍵や再署名は不要です。ホストや実デバイスは変更しません。
 
 ```sh
 python3 scripts/refresh-boot-only.py \
@@ -37,13 +37,13 @@ python3 scripts/verify-shared-media.py \
 2. 対象PCのWindowsで、USBのNTFSデータ領域を明示的に選択して候補JSONを作ります。既存の0.8以前の保存先は使用せず、新しいフォルダを選びます。
 3. 同じPCでFedora Liveを起動し、保存先NTFSが自動マウントされていれば、使用中のファイルを閉じてそのNTFS領域だけを安全にアンマウントします。GPU-LOGS・GPU-FEDORAやUSB全体は取り外しません。管理GUIの「GPUなし確認用PC・USB保存先を登録（TEST）」を選び、候補とBitLocker確認情報を選択し、登録内容を確認して確定します。GPU BDFの入力は不要です。PC識別、Secure Boot、暗号化、Fast Startup、パーティション属性、USBの実体・予約領域との重複の確認は通常どおり行います。BitLockerのUnknownは許可しません。
 4. 再起動し、GRUBで **TEST / no NVIDIA GPU / USB storage only** を明示的に選びます。自動選択はされません。Normal/Unlockを選んでも確認モードへ自動で切り替わりません。
-5. バナーがバージョン0.9.0と `Mode: TEST / no GPU` を示すこと、3択メニュー、再起動・停止を確認します。PAIR開始を選ぶと、試験用に推論サービスを無効化しているため開始を拒否し、メニューに戻ります。
+5. バナーがバージョン0.9.1と `Mode: TEST / no GPU` を示すこと、3択メニュー、再起動・停止を確認します。PAIR開始を選ぶと、試験用に推論サービスを無効化しているため開始を拒否し、メニューに戻ります。
 
 同じPCでも通常登録と確認用登録は区別します。既存の登録を自動で書き換えません。確認用登録をNormal/Unlockで使うこと、通常登録をTESTで使うこと、NVIDIA機器のあるPCをTESTで起動すること、内蔵領域を確認用保存先にすることは許可しません。
 
 ## WindowsのShell観測がUnknownになる場合
 
-管理者の `manage-bde -status F:` で完全な復号・暗号化0%・保護オフを確認できても、通常権限のShell観測がUnknownになることがあります。候補JSONの値は書き換えず、管理者として開いたWindows PowerShellで、追加の確認JSONを作成します。`F:` は保存先NTFS、`X:` はGPU-LOGSの現在のドライブ文字に読み替えます。
+管理者の `manage-bde -status F:` で完全な復号・暗号化0%・保護オフを確認できても、通常権限のShell観測がUnknownになることがあります。候補JSONの値は書き換えず、Windows管理GUIの「BitLocker確認JSONを保存（管理者）」を選ぶか、管理者として開いたWindows PowerShellで追加の確認JSONを作成します。`F:` は保存先NTFS、`X:` はGPU-LOGSの現在のドライブ文字に読み替えます。
 
 ```powershell
 & 'X:\tools\save-admin-bitlocker.ps1' -Volume F: -OutputFile 'X:\bitlocker-admin.json'

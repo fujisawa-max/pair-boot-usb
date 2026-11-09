@@ -1,6 +1,7 @@
 """Read-only admin evidence plugs into existing Fedora identity/safety checks."""
 import importlib.util
 import json
+import os
 from pathlib import Path
 import shutil
 import subprocess
@@ -8,6 +9,7 @@ import tempfile
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
+PWSH = str(ROOT / 'build/powershell-7.5.4/pwsh') if (ROOT / 'build/powershell-7.5.4/pwsh').is_file() else shutil.which('pwsh')
 spec = importlib.util.spec_from_file_location('admin_inventory_fixture', ROOT / 'tests/test-standard-inventory.py')
 fixture = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(fixture)
@@ -31,23 +33,27 @@ class AdminBitLockerTests(unittest.TestCase):
                     (fixture.PARTITION, 1048576, 8 * 1024**3), '0123456789ABCDEF', True,
                     {**proof, **changes}, now=fixture.NOW)
 
-    @unittest.skipUnless(shutil.which('pwsh'), 'Optional PowerShell needed for mocked Windows API execution')
+    @unittest.skipUnless(PWSH, 'Optional PowerShell needed for mocked Windows API execution')
     def test_collector_rejects_unknown_encrypted_failed_and_existing_outputs(self):
         with tempfile.TemporaryDirectory() as folder:
             output = Path(folder) / 'proof.json'
-            command = [shutil.which('pwsh'), '-NoProfile', '-NonInteractive', '-File',
+            env = {**os.environ, 'DOTNET_SYSTEM_GLOBALIZATION_INVARIANT': '1',
+                   'POWERSHELL_TELEMETRY_OPTOUT': '1',
+                   'XDG_CACHE_HOME': str(ROOT / '.cache/powershell-xdg'),
+                   'XDG_CONFIG_HOME': str(ROOT / '.cache/powershell-config')}
+            command = [PWSH, '-NoProfile', '-NonInteractive', '-File',
                        str(ROOT / 'tests/admin-bitlocker-fixture.ps1'),
                        '-ScriptPath', str(ROOT / 'toolkit/save-admin-bitlocker.ps1'), '-OutputPath', str(output)]
             for scenario in ('missing','encrypted','transition','nonzero','protected','unknown','null','failed','serial-error'):
                 with self.subTest(scenario=scenario):
-                    result = subprocess.run(command + ['-Scenario', scenario], capture_output=True, text=True)
+                    result = subprocess.run(command + ['-Scenario', scenario], capture_output=True, text=True, env=env)
                     self.assertNotEqual(result.returncode, 0)
                     self.assertFalse(output.exists())
-            result = subprocess.run(command, capture_output=True, text=True)
+            result = subprocess.run(command, capture_output=True, text=True, env=env)
             self.assertEqual(result.returncode, 0, result.stderr)
             value = json.loads(output.read_text())
             self.assertEqual(value['ntfs_uuid'], '0123456789ABCDEF')
             before = output.read_bytes()
-            result = subprocess.run(command, capture_output=True, text=True)
+            result = subprocess.run(command, capture_output=True, text=True, env=env)
             self.assertNotEqual(result.returncode, 0)
             self.assertEqual(output.read_bytes(), before)

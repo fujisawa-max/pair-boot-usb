@@ -13,7 +13,8 @@ import sys
 import uuid
 
 ROOT = Path(__file__).resolve().parents[1]
-KERNEL = "6.12.113+deb13-amd64"
+RELEASE = runpy.run_path(str(ROOT / "scripts/release-metadata.py"))["metadata"]()
+KERNEL = RELEASE["components"]["Kernel"]
 
 
 def run(*args, **kwargs):
@@ -51,7 +52,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--source-root", type=Path, default=ROOT / "build/appliance-root")
     parser.add_argument("--output", type=Path, default=ROOT / "build/appliance-v0.2.0")
-    parser.add_argument("--version", default="0.9.0-shared")
+    parser.add_argument("--version", default=RELEASE["version"])
     parser.add_argument("--state-size-mib", type=int, default=1024)
     parser.add_argument("--size-mib", type=int, default=2048)
     parser.add_argument("--profiles", type=Path, default=ROOT / "config/gpu-profiles.example.json")
@@ -164,7 +165,9 @@ def main():
     pilot = json.loads(pilot_file.read_text()) if pilot_file.is_file() else None
     if pilot and pilot.get("kernel_release") != KERNEL:
         raise ValueError("Pilot driver modules target a different kernel")
-    image_info = {"schema": 1, "version": args.version, "kernel_release": KERNEL,
+    if args.version != RELEASE["version"]:
+        raise ValueError("Root build version must match config/release.json")
+    image_info = {**RELEASE, "schema": 1, "version": args.version, "kernel_release": KERNEL,
                   "state_schema": 1, "gpu_unlock_commit": "af28cbbfd3d922a659227ecfb7369adfd924cf03",
                   "nvidia_driver_installed": bool(pilot), "torch_installed": False,
                   "status": "pilot-components-staged-not-hardware-qualified" if pilot else
@@ -184,7 +187,7 @@ def main():
     write(stage, "/usr/lib/gpu-root/image.json", json.dumps(image_info, indent=2) + "\n")
     shutil.copy2(ROOT / "runtime/initialize-identity.py", stage / "usr/lib/gpu-root/initialize-identity.py")
     shutil.copy2(ROOT / "runtime/announce-usb-ready.py", stage / "usr/lib/gpu-root/announce-usb-ready.py")
-    for helper in ("pair-console.py", "boot-banner.py", "pair-session.py"):
+    for helper in ("pair-console.py", "boot-banner.py", "pair-session.py", "release-info.py"):
         shutil.copy2(ROOT / "runtime" / helper, stage / "usr/lib/gpu-root" / helper)
     shutil.copy2(ROOT / "runtime/prepare-shutdown.py", stage / "usr/lib/gpu-root/prepare-shutdown.py")
     if args.pair_runtime:
@@ -244,7 +247,7 @@ def main():
     shutil.copy2(ROOT / "runtime/gpu-root.py", moddir / "gpu-root.py")
     shutil.copy2(ROOT / "runtime/fleet-registry.py", moddir / "fleet-registry.py")
     shutil.copy2(ROOT / "runtime/storage-target.py", moddir / "storage-target.py")
-    for helper in ("root-maintenance.py", "persistent-state.py", "replace-root.py", "no-gpu-test.py"):
+    for helper in ("root-maintenance.py", "persistent-state.py", "replace-root.py", "no-gpu-test.py", "release-info.py"):
         shutil.copy2(ROOT / "runtime" / helper, moddir / helper)
     shutil.copy2(ROOT / "runtime/gpu-diagnostic.py", moddir / "gpu-diagnostic.py")
     shutil.copy2(ROOT / "runtime/gpu-unlock-diagnostic.py", moddir / "gpu-unlock-diagnostic.py")
@@ -341,7 +344,7 @@ def main():
     run("e2fsck", "-f", "-n", master)
     with master.open("rb") as stream:
         sha = hashlib.file_digest(stream, "sha256").hexdigest()
-    manifest = {"schema": 1, "version": args.version, "kernel_release": KERNEL,
+    manifest = {**RELEASE, "schema": 1, "version": args.version, "kernel_release": KERNEL,
                 "size": master.stat().st_size, "sha256": sha, "usb_data_uuid": data_uuid,
                 "production_ready": False, "secure_boot_signed_artifacts": bool(signed),
                 "shared_registry": args.shared_registry,

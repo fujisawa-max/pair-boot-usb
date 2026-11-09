@@ -8,7 +8,8 @@ import shutil
 import subprocess
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = '0.9.0-shared'
+RELEASE = json.loads((ROOT / 'config/release.json').read_text())
+VERSION = RELEASE['root_version']
 
 
 def fresh_output(raw):
@@ -31,7 +32,7 @@ def main():
     parser.add_argument('--fedora-output', type=Path, default=ROOT / 'build/fedora-live-tools')
     parser.add_argument('--fedora-source', type=Path, required=True, help='freshly extracted Fedora tree below build/')
     parser.add_argument('--certificate', type=Path, required=True, help='public DER from the verified signing bundle')
-    parser.add_argument('--media-version', choices=['0.7.0', '0.7.1', '0.7.2', '0.7.3', '0.7.4', '0.7.5', '0.7.6', '0.7.7', '0.7.8', '0.7.9', '0.8.0', '0.9.0'], default='0.9.0')
+    parser.add_argument('--media-version', choices=['0.7.0', '0.7.1', '0.7.2', '0.7.3', '0.7.4', '0.7.5', '0.7.6', '0.7.7', '0.7.8', '0.7.9', '0.8.0', '0.9.0', '0.9.1'], default=RELEASE['version'])
     parser.add_argument('--root-version', default=VERSION)
     args = parser.parse_args()
     output, fedora = fresh_output(args.output), fresh_output(args.fedora_output)
@@ -49,7 +50,11 @@ def main():
         parser.error('An ordinary public DER certificate is required')
     subprocess.run(['openssl', 'x509', '-inform', 'DER', '-in', str(cert), '-noout'],
                    check=True, capture_output=True)
+    info = runpy.run_path(str(ROOT / 'scripts/release-metadata.py'))
+    if args.root_version != VERSION or args.media_version != RELEASE['version']:
+        parser.error('Media information requires the configured release version')
     output.mkdir(parents=True)
+    (output / 'MEDIA-INFO.txt').write_text(info['text'](), encoding='utf-8')
     tools = output / 'tools'
     shutil.copytree(ROOT / 'toolkit', tools, ignore=shutil.ignore_patterns('__pycache__', '*.pyc'))
     shutil.copy2(ROOT / 'runtime/fleet-registry.py', tools / 'fleet-registry.py')
@@ -57,6 +62,8 @@ def main():
     shutil.copy2(ROOT / 'config/rtx30-gpu-policy.json', tools / 'rtx30-gpu-policy.json')
     shutil.copy2(ROOT / 'docs/quick-start.md', tools / 'QUICK-START.md')
     shutil.copy2(ROOT / 'docs/user-guide.md', tools / 'DETAILS.md')
+    shutil.copy2(ROOT / 'docs/no-gpu-test.md', tools / 'NO-GPU-TEST.md')
+    shutil.copy2(ROOT / 'docs/windows-fleet.md', tools / 'WINDOWS-FLEET.md')
 
     (output / 'usb-config.json').write_text(json.dumps({'schema': 1, 'kind': 'gpu-linux-config', 'root_version': args.root_version}, indent=2) + '\n')
     fleet = runpy.run_path(str(ROOT / 'runtime/fleet-registry.py'))
@@ -66,15 +73,16 @@ def main():
     shutil.copytree(source, fedora,
                     ignore=lambda folder, names: ['mok-cert'] if 'mok-cert' in names else [])
     shutil.copytree(tools, fedora / 'tools')
+    shutil.copy2(output / 'MEDIA-INFO.txt', fedora / 'MEDIA-INFO.txt')
     runpy.run_path(str(ROOT / 'scripts/stage-shared-mok-commands.py'))['stage'](cert, fedora / 'mok-cert')
-    if args.media_version in ('0.7.5', '0.7.6', '0.7.7', '0.7.8', '0.7.9', '0.8.0', '0.9.0'):
+    if args.media_version in ('0.7.5', '0.7.6', '0.7.7', '0.7.8', '0.7.9', '0.8.0', '0.9.0', '0.9.1'):
         runpy.run_path(str(ROOT / 'scripts/stage-gui-tools.py'))['stage'](output, fedora, cert)
     manifest = json.loads((fedora / 'fedora-manifest.json').read_text())
     manifest['files'] = sorted(str(path.relative_to(fedora)) for path in fedora.rglob('*') if path.is_file())
     manifest['payload_bytes'] = sum(path.stat().st_size for path in fedora.rglob('*') if path.is_file())
     manifest['shared_toolkit'] = args.media_version
     manifest['media_revision'] = args.media_version
-    manifest['gui_connected'] = args.media_version in ('0.7.5', '0.7.6', '0.7.7', '0.7.8', '0.7.9', '0.8.0', '0.9.0')
+    manifest['gui_connected'] = args.media_version in ('0.7.5', '0.7.6', '0.7.7', '0.7.8', '0.7.9', '0.8.0', '0.9.0', '0.9.1')
     (fedora / 'fedora-manifest.json').write_text(json.dumps(manifest, indent=2) + '\n')
     print(output, fedora)
 

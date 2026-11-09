@@ -14,10 +14,38 @@ import struct
 import subprocess
 import sys
 import time
+import textwrap
 
 
 class SafetyError(RuntimeError):
     pass
+
+
+class RootPoweroff(SafetyError):
+    pass
+
+
+def boot_failure(error):
+    detail = str(error)
+    title = 'ROOT SETUP FAILED'
+    hint = 'Read the details below. Use Fedora Live to inspect the saved files.'
+    if 'This PC is not registered' in detail:
+        title = 'THIS PC IS NOT REGISTERED FOR THIS USB'
+        hint = 'Boot Fedora Live and register this PC and its storage on this USB.'
+    elif 'without NVIDIA hardware' in detail:
+        title = 'NVIDIA HARDWARE DETECTED IN TEST MODE'
+        hint = ('TEST is only for PCs without NVIDIA hardware. Reboot into Fedora Live '
+                'to review the GPU registration, then choose Normal or Unlock as supported.')
+    elif 'Boot menu mode and registered PC mode differ' in detail:
+        title = 'BOOT MODE DOES NOT MATCH THE PC REGISTRATION'
+        hint = 'Choose TEST for a test registration, or Normal/Unlock for a GPU registration.'
+    elif 'gpu_unlock was not loaded' in detail:
+        title = 'GPU MODULE COULD NOT LOAD'
+        hint = 'Check MOK enrollment and the kernel log from Fedora Live.'
+    border = '=' * 70
+    return '\n\n' + border + '\nPAIR BOOT - STARTUP STOPPED\n\n' + title + '\n\n' + \
+        textwrap.fill(hint, width=70) + '\n\nDetails:\n' + textwrap.fill(detail, width=70) + \
+        '\n\nAutomatic boot will not continue. A maintenance prompt follows.\n' + border + '\n\n'
 
 
 def require_gpu_unlock_loaded(module_root=Path("/sys/module")):
@@ -221,6 +249,7 @@ def provision(master, parent, manifest, free_bytes=None, copy_hook=None, mainten
         sync_directory(parent)
         new_json(receipt, {"schema": 1, "version": manifest["version"], "size": manifest["size"],
                            "original_sha256": manifest["sha256"],
+                           **({key: manifest[key] for key in ("root_revision", "boot_abi")} if "root_revision" in manifest else {}),
                            **({"state_schema": 1} if manifest.get("persistent_state") else {})})
         marker.unlink()
         sync_directory(parent)
@@ -498,6 +527,12 @@ def boot(config):
             if receipt.get('state_schema') != 1:
                 raise SafetyError('0.8 and earlier require a fresh installation in a new storage folder')
             state_image, state_receipt = persistent['inspect'](api, parent, hardware)
+            if 'root_revision' in manifest:
+                replacement = runpy.run_path('/usr/lib/replace-root.py')['replace']
+                result = replacement(api, master, target, receipt, manifest)
+                current = json.loads((parent / 'root-image.json').read_text())
+                recovery = {'version': current['version'], 'sha256': current['original_sha256']}
+                return helper(api, result, current, recovery, None, state)
             if receipt.get('version') != manifest['version'] or receipt.get('original_sha256') != manifest['sha256']:
                 replacement = runpy.run_path('/usr/lib/replace-root.py')['replace']
                 return replacement(api, master, target, receipt, manifest)
@@ -511,7 +546,8 @@ def boot(config):
         # Inspect release inside the filesystem without mounting it writable.
         inside = run("debugfs", "-R", "cat /usr/lib/gpu-root/image.json", str(image))
         release = json.loads(inside)
-        if release.get("version") != manifest["version"] or release.get("kernel_release") != os.uname().release:
+        policy = runpy.run_path('/usr/lib/release-info.py')
+        if not policy['compatible'](release, os.uname().release, manifest):
             raise SafetyError("Existing root version/kernel incompatible; no automatic update")
         loop = run("losetup", "--find", "--show", "--nooverlap", str(image))
         run("mount", "-t", "ext4", "-o", "rw,noatime", loop, "/sysroot")
@@ -524,7 +560,8 @@ def boot(config):
         run("mount", "-o", "remount,bind,ro,nodev,nosuid,noexec", "/sysroot/models")
         run("umount", str(usb_mount))
         new_json(state / "state.json", {"loop": loop, "created": created,
-                                        "version": manifest["version"], "state_schema": 1, "state_loop": state_loop,
+                                        "version": release["version"], "root_revision": policy["root_revision"](release),
+                                        "usb_version": manifest["version"], "state_schema": 1, "state_loop": state_loop,
                                         "mode": "TEST" if test else ("Unlock" if selected else "Normal"),
                                         "usb_device": usb, "usb_unmounted": True, **storage_state})
         # /run survives switch_root; shutdown hook tears down root -> loop -> NTFS.
@@ -553,5 +590,9 @@ if __name__ == "__main__":
     parser.parse_args()
     try:
         boot(cmdline(Path("/proc/cmdline").read_text()))
+    except RootPoweroff as error:
+        print(str(error), file=sys.stderr)
+        sys.exit(64)
     except (OSError, ValueError, KeyError, TypeError, SafetyError, subprocess.CalledProcessError) as error:
-        sys.exit(f"GPU-ROOT STOP: {error}")
+        print(boot_failure(error), file=sys.stderr, flush=True)
+        sys.exit(1)

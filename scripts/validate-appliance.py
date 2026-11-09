@@ -153,8 +153,16 @@ def main():
             raise ValueError("Writable per-host llama.cpp cache is missing or has wrong owner")
         if any(".gguf" in line.lower() for line in debug("ls -l /home/gpu/.llamacpp").splitlines()):
             raise ValueError("Master unexpectedly contains cached models")
+    if 'root_revision' in manifest:
+        info = json.loads(debug('cat /usr/lib/gpu-root/image.json'))
+        for key in ('version', 'project_version', 'root_revision', 'boot_abi', 'state_schema', 'components'):
+            if info.get(key) != manifest.get(key):
+                raise ValueError('Root release metadata differs from master manifest: ' + key)
+        for name in ('boot-banner.py', 'release-info.py'):
+            if debug('cat /usr/lib/gpu-root/' + name).strip() != (Path(__file__).resolve().parents[1] / 'runtime' / name).read_text().strip():
+                raise ValueError('Obsolete root release presentation: ' + name)
     data, entries = cpio_entries(tree / "boot/initramfs.img")
-    required = ["usr/bin/python3.13", "usr/bin/ntfs-3g", "usr/bin/ntfs-3g.probe", "usr/lib/gpu-root.py", "shutdown",
+    required = ["usr/bin/python3.13", "usr/bin/systemctl", "usr/bin/ntfs-3g", "usr/bin/ntfs-3g.probe", "usr/lib/gpu-root.py", "shutdown",
                 "usr/lib/systemd/system/dracut-cmdline.service",
                 "usr/lib/systemd/system/dracut-pre-udev.service",
                 "usr/lib/systemd/system/dracut-pre-mount.service",
@@ -242,7 +250,7 @@ def main():
         if manifest.get('shared_registry'):
             if 'gpu_root.no_gpu_test=1' not in kernel_lines[2] or 'gpu_unlock.targets=' in kernel_lines[2]:
                 raise ValueError('Invalid explicit no-GPU test entry')
-            for name in ('no-gpu-test.py', 'fleet-registry.py'):
+            for name in ('no-gpu-test.py', 'fleet-registry.py', 'release-info.py', 'replace-root.py'):
                 offset, size = entries['usr/lib/' + name]
                 if data[offset:offset+size] != (Path(__file__).resolve().parents[1] / 'runtime' / name).read_bytes():
                     raise ValueError('Obsolete initramfs test policy: ' + name)

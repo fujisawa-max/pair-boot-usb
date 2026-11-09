@@ -17,12 +17,45 @@ function Hash-Bytes([byte[]]$Bytes) {
     $hash = [Security.Cryptography.SHA256]::Create()
     try { return ([BitConverter]::ToString($hash.ComputeHash($Bytes))).Replace('-','').ToLowerInvariant() } finally { $hash.Dispose() }
 }
+function Test-Integer($Value) { return ($Value -is [int] -or $Value -is [long]) }
+function Compatible-Version([string]$From, [string]$To) {
+    return ($From -ceq $To -or ($From -ceq '0.7.8-shared' -and $To -ceq '0.8.0-shared') -or
+            ($From -ceq '0.9.0-shared' -and $To -ceq '0.9.1-shared'))
+}
+function Canonical-Json($Value) {
+    if ($null -eq $Value) { return 'null' }
+    if ($Value -is [Collections.IDictionary]) {
+        $parts = @($Value.Keys | Sort-Object -CaseSensitive | ForEach-Object { (ConvertTo-Json -InputObject ([string]$_) -Compress) + ':' + (Canonical-Json $Value[$_]) })
+        return '{' + ($parts -join ',') + '}'
+    }
+    if ($Value -is [pscustomobject]) {
+        $parts = @($Value.PSObject.Properties.Name | Sort-Object -CaseSensitive | ForEach-Object { (ConvertTo-Json -InputObject $_ -Compress) + ':' + (Canonical-Json $Value.$_) })
+        return '{' + ($parts -join ',') + '}'
+    }
+    if ($Value -is [array]) { return '[' + (@($Value | ForEach-Object { Canonical-Json $_ }) -join ',') + ']' }
+    return (ConvertTo-Json -InputObject $Value -Compress -Depth 12)
+}
+function Host-Identity($Value) {
+    $fields = @{}
+    foreach ($property in $Value.PSObject.Properties) {
+        if ($property.Name -ne 'checked_at_unix') { $fields[$property.Name] = $property.Value }
+    }
+    return (Canonical-Json $fields)
+}
 function Check-Host($Value) {
     $required = @('schema','hardware_uuid','ntfs_uuid','gpu_bdf','gpu_pci_id','checked_at_unix','bitlocker_volume_status','bitlocker_protection','fast_startup_enabled','secure_boot_enabled','partition_is_boot','partition_is_system','partition_is_hidden','storage_directory')
-    foreach ($key in $required) { if ($null -eq $Value.PSObject.Properties[$key]) { throw "Missing field: $key" } }
+    foreach ($key in $required) { if ($Value.PSObject.Properties.Name -cnotcontains $key) { throw "Missing field: $key" } }
     $hostId = ([Guid]::Parse($Value.hardware_uuid)).ToString().ToLowerInvariant()
     if ($hostId -ne $Value.hardware_uuid.ToLowerInvariant() -or $hostId -eq [Guid]::Empty.ToString() -or $hostId -eq 'ffffffff-ffff-ffff-ffff-ffffffffffff') { throw 'Invalid hardware UUID.' }
-    if ($Value.schema -ne 1 -or $Value.ntfs_uuid -cnotmatch '^[A-Fa-f0-9]{16}$' -or $Value.gpu_bdf -cnotmatch '^[a-f0-9]{4}:[a-f0-9]{2}:[a-f0-9]{2}\.[0-7]$' -or $Value.gpu_pci_id -cnotin $SupportedRtx30Ids) { throw 'Invalid host/NTFS/GPU record; register from Fedora.' }
+    if (-not (Test-Integer $Value.schema) -or $Value.schema -ne 1 -or $Value.ntfs_uuid -isnot [string] -or $Value.ntfs_uuid -cnotmatch '^[A-Fa-f0-9]{16}$') { throw 'Invalid host/NTFS record.' }
+    $mode = $Value.PSObject.Properties['boot_mode']
+    $test = $null -ne $mode -and $mode.Value -is [string] -and $mode.Value -ceq 'no-gpu-test'
+    if ($null -ne $mode -and -not $test) { throw 'Unknown boot mode.' }
+    if ($test) {
+        if ($null -ne $Value.gpu_bdf -or $null -ne $Value.gpu_pci_id -or $null -eq $Value.PSObject.Properties['storage_target']) { throw 'No-GPU test requires explicit USB storage and null GPU identity.' }
+    } elseif ($Value.gpu_bdf -isnot [string] -or $Value.gpu_bdf -cnotmatch '^[a-f0-9]{4}:[a-f0-9]{2}:[a-f0-9]{2}\.[0-7]$' -or $Value.gpu_pci_id -isnot [string] -or $Value.gpu_pci_id -cnotin $SupportedRtx30Ids) {
+        throw 'Invalid GPU record; register from Fedora.'
+    }
     if ($Value.checked_at_unix -isnot [long] -and $Value.checked_at_unix -isnot [int] -and $Value.checked_at_unix -isnot [double]) { throw 'Invalid timestamp type.' }
     $age = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds() - [double]$Value.checked_at_unix
     if ([double]::IsNaN($age) -or [double]::IsInfinity($age) -or $age -lt 0 -or $age -gt 2592000) { throw 'Inventory expired or future dated.' }
@@ -60,6 +93,7 @@ function Check-Host($Value) {
     }
     $clean = [ordered]@{}
     foreach ($key in $required) { $clean[$key] = $Value.$key }
+    if ($test) { $clean['boot_mode'] = 'no-gpu-test' }
     if ($null -ne $consentProperty) { $clean['personal_os_volume_consent'] = $consentProperty.Value }
     if ($null -ne $usbTargetProperty) { $clean['storage_target'] = $usbTargetProperty.Value }
     $clean.hardware_uuid = $hostId
@@ -82,7 +116,7 @@ function Read-Input([string]$Path) {
         $raw = [Convert]::FromBase64String($value.payload_base64)
         if ((Hash-Bytes $raw) -cne $value.sha256) { throw 'Registry checksum mismatch.' }
         $value = $utf8.GetString($raw) | ConvertFrom-Json
-        if ($value.schema -ne 1 -or $value.generation -lt 1 -or $value.root_version -cnotmatch '^[a-zA-Z0-9._-]{1,80}$') { throw 'Invalid registry metadata.' }
+        if (-not (Test-Integer $value.schema) -or $value.schema -ne 1 -or -not (Test-Integer $value.generation) -or $value.generation -lt 1 -or $value.root_version -cnotmatch '^[a-zA-Z0-9._-]{1,80}$') { throw 'Invalid registry metadata.' }
         $ids = @{}
         $records = @()
         foreach ($record in @($value.records)) {
@@ -102,7 +136,7 @@ function New-Registry($Values, [int]$NewGeneration, [string]$Version) {
     $prior = 0
     foreach ($value in @($Values)) {
         if ($null -ne $value.PSObject.Properties['records']) {
-            if ($value.root_version -cne $Version -and -not ($value.root_version -ceq '0.7.8-shared' -and $Version -ceq '0.8.0-shared')) { throw 'Registry versions conflict.' }
+            if (-not (Compatible-Version $value.root_version $Version)) { throw 'Registry versions conflict.' }
             $prior = [Math]::Max($prior, $value.generation)
             $items = @($value.records)
         } else { $items = @($value) }
@@ -110,9 +144,7 @@ function New-Registry($Values, [int]$NewGeneration, [string]$Version) {
             $item = Check-Host $item
             $id = $item.hardware_uuid
             if ($records.ContainsKey($id)) {
-                foreach ($property in $item.PSObject.Properties) {
-                    if ($property.Name -ne 'checked_at_unix' -and $property.Value -cne $records[$id].($property.Name)) { throw "Conflicting configuration for host $id" }
-                }
+                if ((Host-Identity $item) -cne (Host-Identity $records[$id])) { throw "Conflicting configuration for host $id" }
                 $item.checked_at_unix = [Math]::Max($item.checked_at_unix, $records[$id].checked_at_unix)
             }
             $records[$id] = $item
@@ -169,15 +201,17 @@ function Check-Usb([string]$Path) {
 }
 if ($Action -eq 'Merge') {
     if (-not $Inputs -or -not $OutputFile -or (Test-Path -LiteralPath $OutputFile)) { throw 'Inputs and a fresh output filename required.' }
+    if ($UsbRoot) { $null = Check-Usb $UsbRoot }
     $values = @($Inputs | ForEach-Object { Read-Input $_ })
     if (-not $RootVersion) {
         $versions = @($values | Where-Object { $null -ne $_.PSObject.Properties['root_version'] } | ForEach-Object { $_.root_version } | Select-Object -Unique)
-        if ($versions.Count -ne 1) { throw 'Specify one compatible root version, or use -RootVersion for raw records.' }
-        $RootVersion = $versions[0]
+        $targets = @($versions | Where-Object { $candidate = $_; @($versions | Where-Object { -not (Compatible-Version $_ $candidate) }).Count -eq 0 })
+        if ($targets.Count -ne 1) { throw 'Specify one compatible root version, or use -RootVersion for raw records.' }
+        $RootVersion = $targets[0]
     }
     $registry = New-Registry $values $Generation $RootVersion
     Atomic-Write $OutputFile (Encode-Registry $registry)
-    Write-Output "Merged $(@($registry.records).Count) hosts; generation $Generation"
+    Write-Output "Merged $(@($registry.records).Count) hosts; generation $Generation; version $RootVersion"
 } elseif ($Action -eq 'Status') {
     foreach ($path in $Inputs) {
         $registry = Read-Input $path
@@ -195,14 +229,12 @@ if ($Action -eq 'Merge') {
     if (@($Inputs).Count -ne 1) { throw 'Exactly one merged registry input required.' }
     $registry = Read-Input $Inputs[0]
     if ($null -eq $registry.PSObject.Properties['records']) { throw 'Deploy requires a registry.' }
-    $destinationMarker = [IO.File]::ReadAllText((Join-Path $UsbRoot 'usb-config.json'), $utf8) | ConvertFrom-Json
-    if ($registry.root_version -ceq '0.7.8-shared' -and $destinationMarker.root_version -ceq '0.8.0-shared') {
-        if ($RootVersion -and $RootVersion -cne '0.8.0-shared') { throw 'Explicit target root version mismatch.' }
-        $registry = New-Registry @($registry) ($registry.generation + 1) '0.8.0-shared'
-    }
-    if ($RootVersion -and $RootVersion -cne $registry.root_version) { throw 'Explicit root version differs from input.' }
-    $RootVersion = $registry.root_version
+    # Validate the selected physical GPU-LOGS USB before reading its marker.
     $target = Check-Usb $UsbRoot
+    if (-not (Compatible-Version $registry.root_version $RootVersion)) { throw 'Unsupported registry version migration.' }
+    if ($registry.root_version -cne $RootVersion) {
+        $registry = New-Registry @($registry) ($registry.generation + 1) $RootVersion
+    }
     $directory = Join-Path $target 'gpu-config'
     if (-not (Test-Path -LiteralPath $directory)) { [void][IO.Directory]::CreateDirectory($directory) }
     Assert-OrdinaryDirectory $directory
@@ -210,21 +242,20 @@ if ($Action -eq 'Merge') {
     if (Test-Path -LiteralPath $current) {
         $old = Read-Input $current
         if ($old.generation -gt $registry.generation) { throw 'Refusing registry rollback.' }
-        if ($old.generation -eq $registry.generation -and (Hash-Bytes (Encode-Registry $old)) -ne (Hash-Bytes (Encode-Registry $registry))) { throw 'Same generation has different contents.' }
+        if ($old.generation -eq $registry.generation -and (Canonical-Json $old) -cne (Canonical-Json $registry)) { throw 'Same generation has different contents.' }
         foreach ($item in @($old.records)) {
             $matching = @($registry.records | Where-Object { $_.hardware_uuid -eq $item.hardware_uuid })
             if ($matching.Count -ne 1) { throw 'Deployment would remove a host.' }
-            foreach ($property in $item.PSObject.Properties) {
-                if ($property.Name -ne 'checked_at_unix' -and $property.Value -cne $matching[0].($property.Name)) { throw 'Deployment would change an existing host mapping.' }
-            }
+            if ((Host-Identity $item) -cne (Host-Identity $matching[0])) { throw 'Deployment would change an existing host mapping.' }
         }
     }
     $hostsDirectory = Join-Path $directory 'hosts'
     if (-not (Test-Path -LiteralPath $hostsDirectory)) { [void][IO.Directory]::CreateDirectory($hostsDirectory) }
     Assert-OrdinaryDirectory $hostsDirectory
     foreach ($item in @($registry.records)) {
-        $targetBdf = if ($item.gpu_pci_id -cin $UnlockRtx30Ids) { $item.gpu_bdf } else { "unsupported" }
-        $defaultEntry = if ($item.gpu_pci_id -ceq '10de:2504') { '1' } else { '0' }
+        $isTest = $null -ne $item.PSObject.Properties['boot_mode'] -and $item.boot_mode -ceq 'no-gpu-test'
+        $targetBdf = if ($isTest) { 'unconfigured' } elseif ($item.gpu_pci_id -cin $UnlockRtx30Ids) { $item.gpu_bdf } else { "unsupported" }
+        $defaultEntry = if (-not $isTest -and $item.gpu_pci_id -ceq '10de:2504') { '1' } else { '0' }
         $text = "# GRUB Environment Block`ngpu_targets=$targetBdf`ngpu_default=$defaultEntry`n"
         $text = $text.PadRight(1024, '#')
         Atomic-Write (Join-Path $hostsDirectory ($item.hardware_uuid + '.env')) ($utf8.GetBytes($text))

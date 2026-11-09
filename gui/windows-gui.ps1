@@ -5,7 +5,7 @@ param(
     [switch]$UsbStorageTarget,
     [switch]$PersonalUseOsVolume,
     [string]$PersonalUseConfirmation,
-    [ValidateSet('Inventory','ShellObservation','Status','Collect','Merge','Deploy','Environment','ReviewedInventory')][string]$Operation = 'Inventory',
+    [ValidateSet('Inventory','ShellObservation','Status','Collect','Merge','Deploy','Environment','ReviewedInventory','AdminBitLocker')][string]$Operation = 'Inventory',
     [string]$Volume = 'D:',
     [string]$StorageDirectory = 'GPU-Linux',
     [string]$UsbRoot = 'F:\',
@@ -30,6 +30,10 @@ function New-OperationPlan {
             $scriptName = if ($Action -eq 'ReviewedInventory') { 'export-inventory.ps1' } else { 'export-standard-inventory.ps1' }
             $command += @((Join-Path $base $scriptName),'-Volume',$Drive,'-StorageDirectory',$Folder,'-OutputFile',$Output)
         }
+        'AdminBitLocker' {
+            if ($Drive -notmatch '^[A-Za-z]:$') { throw 'NTFSドライブを選択してください。' }
+            $command += @((Join-Path $base 'save-admin-bitlocker.ps1'),'-Volume',$Drive,'-OutputFile',$Output)
+        }
         'ShellObservation' {
             if ($Drive -notmatch '^[A-Za-z]:$') { throw '一覧からドライブを選択してください。' }
             $command += @((Join-Path $base 'save-shell-bitlocker.ps1'),'-Volume',$Drive,'-OutputFile',$Output)
@@ -49,6 +53,7 @@ function New-OperationPlan {
             $command += @((Join-Path $base 'fleet.ps1'),'-Action','Merge','-Inputs')
             $command += $Files
             $command += @('-Generation',[string]$NewGeneration,'-OutputFile',$Output)
+            if ($Usb) { $command += @('-UsbRoot',$Usb) }
         }
         'Deploy' {
             if ($Files.Count -ne 1 -or -not $Usb) { throw '統合台帳と設定USBを選択してください。' }
@@ -57,8 +62,8 @@ function New-OperationPlan {
         default { throw 'Unknown operation.' }
     }
     if ($UsbStorage) {
-        if ($Action -notin @('Inventory','ShellObservation') -or $Personal) { throw 'USB保存先と個人利用OS領域の例外は併用できません。' }
-        $command += '-UsbStorageTarget'
+        if ($Action -notin @('Inventory','ShellObservation','AdminBitLocker') -or $Personal) { throw 'USB保存先と個人利用OS領域の例外は併用できません。' }
+        if ($Action -ne 'AdminBitLocker') { $command += '-UsbStorageTarget' }
     }
     if ($Personal) {
         if ($Action -notin @('Inventory','ReviewedInventory') -or $Confirmation -cne '個人利用で許可') { throw '個人利用の確認が必要です。' }
@@ -78,6 +83,24 @@ if ($PlanOnly) {
     return
 }
 function Invoke-GuiOperation($Request) {
+    if ($Request.operation -eq 'AdminBitLocker') {
+        if ($Request.volume -notmatch '^[A-Za-z]:$') { throw 'Invalid drive selection.' }
+        $script = (Join-Path ([IO.Path]::GetFullPath($ToolsPath)) 'save-admin-bitlocker.ps1').Replace("'", "''")
+        $drive = ([string]$Request.volume).Replace("'", "''")
+        $target = ([string]$Request.output_file).Replace("'", "''")
+        # Encoded fixed invocation: filenames remain literal PowerShell strings.
+        # Elevate only this read-only collector, not the entire GUI/worker.
+        $code = "try { & '$script' -Volume '$drive' -OutputFile '$target'; exit 0 } catch { Write-Error -ErrorRecord `$_; exit 1 }"
+        $encoded = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($code))
+        $executable = Join-Path $PSHOME 'powershell.exe'
+        if (-not (Test-Path -LiteralPath $executable)) { $executable = Join-Path $PSHOME 'pwsh.exe' }
+        $process = Start-Process -FilePath $executable -Verb RunAs -PassThru -Wait -ArgumentList @('-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-EncodedCommand',$encoded)
+        try {
+            if ($process.ExitCode -ne 0) { throw '管理者による確認情報の取得に失敗しました。不明な状態は許可しません。管理者PowerShellのCLIで詳細を確認できます。' }
+            return [pscustomobject]@{exit_code=0;text='確認JSONを保存しました。Fedoraで「別の観測JSONを選択する」から指定してください。'}
+        } finally { $process.Dispose() }
+    }
+
     $worker = (Join-Path $PSScriptRoot 'windows-worker.ps1').Replace("'", "''")
     $base = ([IO.Path]::GetFullPath($ToolsPath)).Replace("'", "''")
     $code = "& '$worker' -ToolsPath '$base'"
@@ -105,7 +128,7 @@ Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 [Windows.Forms.Application]::EnableVisualStyles()
 $form = [Windows.Forms.Form]::new()
-$form.Text = 'GPU Linux 管理GUI 0.7.5'
+$form.Text = 'PAIR BOOT 管理GUI'
 $form.ClientSize = [Drawing.Size]::new(650,440)
 $form.AutoScaleMode = 'Dpi'
 $form.MinimumSize = [Drawing.Size]::new(666,479)
@@ -125,8 +148,8 @@ function Combo-At([int]$Y) {
 }
 Label-At '操作' 20
 $actions = Combo-At 20
-$actionCodes = @('Inventory','ShellObservation','Status','Collect','Merge','Deploy','Environment','ReviewedInventory')
-$actions.Items.AddRange([object[]]@('候補情報を保存','BitLocker観測を保存','PC登録一覧（台帳）を表示','USBから台帳回収','台帳をマージ','USBへ台帳配布','環境確認（読取専用）','管理者向け確認情報を保存'))
+$actionCodes = @('Inventory','ShellObservation','Status','Collect','Merge','Deploy','Environment','ReviewedInventory','AdminBitLocker')
+$actions.Items.AddRange([object[]]@('候補情報を保存','BitLocker観測を保存','PC登録一覧（台帳）を表示','USBから台帳回収','台帳をマージ','USBへ台帳配布','環境確認（読取専用）','管理者向け確認情報を保存','BitLocker確認JSONを保存（管理者）'))
 $actions.SelectedIndex = 0
 Label-At '保存先NTFSドライブ' 58
 $drives = Combo-At 58
@@ -175,7 +198,7 @@ $usbTargetBox.Text = 'USBをroot保存先に指定'
 $usbTargetBox.Location = [Drawing.Point]::new(340,172); $usbTargetBox.Size = [Drawing.Size]::new(290,28)
 $form.Controls.Add($usbTargetBox)
 $actions.Add_SelectedIndexChanged({
-    $usbTargetBox.Enabled = ($actionCodes[$actions.SelectedIndex] -in @('Inventory','ShellObservation'))
+    $usbTargetBox.Enabled = ($actionCodes[$actions.SelectedIndex] -in @('Inventory','ShellObservation','AdminBitLocker'))
     if (-not $usbTargetBox.Enabled) { $usbTargetBox.Checked = $false }
 })
 $preview = [Windows.Forms.TextBox]::new()
@@ -221,14 +244,14 @@ $button.Add_Click({
             }
         }
 
-        if ($action -in @('Inventory','ReviewedInventory','ShellObservation') -and -not $drive) { throw 'NTFSドライブが見つかりません。Windowsでドライブ文字が付いたNTFS領域を確認してください。' }
+        if ($action -in @('Inventory','ReviewedInventory','ShellObservation','AdminBitLocker') -and -not $drive) { throw 'NTFSドライブが見つかりません。Windowsでドライブ文字が付いたNTFS領域を確認してください。' }
         if ($action -in @('Status','Merge','Deploy')) {
             $picker = [Windows.Forms.OpenFileDialog]::new(); $picker.Filter = 'JSON (*.json)|*.json'
             $picker.Multiselect = ($action -eq 'Merge')
             if ($picker.ShowDialog($form) -ne 'OK') { return }
             $files = @($picker.FileNames)
         }
-        if ($action -in @('Inventory','ReviewedInventory','ShellObservation','Collect','Merge')) {
+        if ($action -in @('Inventory','ReviewedInventory','ShellObservation','AdminBitLocker','Collect','Merge')) {
             $picker = [Windows.Forms.SaveFileDialog]::new(); $picker.Title = '新しいJSONの保存先を選択'; $picker.Filter = 'JSON (*.json)|*.json'
             $picker.FileName = if ($action -eq 'Inventory') { 'inventory-pc01.json' } else { 'observation-or-registry.json' }
             if ($usb) { $picker.InitialDirectory = $usb }
@@ -238,6 +261,8 @@ $button.Add_Click({
         $value = New-OperationPlan $action $drive $folderBox.Text $usb $files $output ([int]$generationBox.Value) $personal $confirmation ([bool]$usbTargetBox.Checked)
         $preview.Text = $value | ConvertTo-Json -Depth 6
         $summary = "操作: $action`r`n対象: $drive\$($folderBox.Text)`r`n設定USB: $usb`r`n入力: $($files -join ', ')`r`n出力: $output`r`nこの内容で実行しますか？"
+        if ($action -eq 'Merge') { $summary += "`r`n設定USBを選んだ場合はそのUSBの版へ統合します。USB未選択時は同じ版または対応する版の組合せだけを統合します。確認日は延長しません。" }
+        if ($action -eq 'AdminBitLocker') { $summary += "`r`nWindowsの管理者承認（UAC）を求めます。暗号化設定は変更せず、復号状態と保護状態だけを取得します。" }
         if ($action -notin @('Environment','Status') -and [Windows.Forms.MessageBox]::Show($form,$summary,'実行内容の確認','YesNo','Question','Button2') -ne 'Yes') { return }
         $button.Enabled = $false; $form.UseWaitCursor = $true
         $preview.Text = '実行中です。処理が終わるまでお待ちください。'

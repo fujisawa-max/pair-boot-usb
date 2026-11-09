@@ -35,7 +35,7 @@ try {
             $scriptName = 'fleet.ps1'
             $parameters = @{Action=[string]$request.operation}
             if ($request.operation -in @('Status','Merge','Deploy')) { $parameters.Inputs = [string[]]@($request.inputs) }
-            if ($request.operation -in @('Collect','Deploy')) { $parameters.UsbRoot = [string]$request.usb_root }
+            if ($request.operation -in @('Collect','Merge','Deploy') -and $request.usb_root) { $parameters.UsbRoot = [string]$request.usb_root }
             if ($request.operation -in @('Collect','Merge')) { $parameters.OutputFile = [string]$request.output_file }
             if ($request.operation -eq 'Merge') { $parameters.Generation = [int]$request.generation }
         }

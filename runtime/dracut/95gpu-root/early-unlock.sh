@@ -8,6 +8,7 @@ if [ "${root:-}" = gpu-root ]; then
     # dracut die() may power off with rd.shell disabled. Keep the reason visible.
     while :; do
       warn 'gpu_unlock module failed to load; check MOK enrollment and kernel log; boot stopped'
+      printf '\n\n======================================================================\nPAIR BOOT - STARTUP STOPPED\n\nGPU MODULE COULD NOT LOAD\n\nCheck MOK enrollment and the kernel log from Fedora Live.\nAutomatic boot will not continue. A maintenance prompt follows.\n======================================================================\n\n' >&2
       emergency_shell -n gpu-module 'GPU module could not load; do not continue Normal/Unlock boot'
       sleep 1
     done

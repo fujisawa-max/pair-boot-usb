@@ -162,7 +162,7 @@ def load(path, now=None):
 def for_version(registry, version, now=None):
     if registry['root_version'] == version:
         return decode(encode(registry), now)
-    if registry['root_version'] != '0.7.8-shared' or version != '0.8.0-shared':
+    if (registry['root_version'], version) not in (('0.7.8-shared', '0.8.0-shared'), ('0.9.0-shared', '0.9.1-shared')):
         raise ValueError('Unsupported registry version migration')
     return merge([registry], registry['generation'] + 1, version, now)
 
@@ -172,7 +172,7 @@ def merge(inputs, generation, root_version, now=None):
     prior = 0
     for value in inputs:
         if 'records' in value:
-            if value['root_version'] != root_version and not (value['root_version'] == '0.7.8-shared' and root_version == '0.8.0-shared'):
+            if value['root_version'] != root_version and (value['root_version'], root_version) not in (('0.7.8-shared', '0.8.0-shared'), ('0.9.0-shared', '0.9.1-shared')):
                 raise ValueError('Registry root versions conflict')
             prior = max(prior, value['generation'])
             values = value['records']

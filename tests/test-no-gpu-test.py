@@ -207,6 +207,7 @@ class NoGpuTests(unittest.TestCase):
             banner = root / 'usr/lib/gpu-root/boot-banner.py'
             banner.parent.mkdir(parents=True)
             banner.write_bytes((ROOT / 'runtime/boot-banner.py').read_bytes())
+            (banner.parent / 'release-info.py').write_bytes((ROOT / 'runtime/release-info.py').read_bytes())
             before = banner.read_bytes()
             state = base / 'run/gpu-root'
             state.mkdir(parents=True)
@@ -226,7 +227,10 @@ class NoGpuTests(unittest.TestCase):
             current = state / 'state.json'
             current.write_text('{"mode":"TEST"}')
             original = runpy.run_path(str(state / 'original-banner.py'))
-            with patch('runpy.run_path', return_value=original):
+            actual_run_path = runpy.run_path
+            def load_banner(path):
+                return original if str(path) == '/run/gpu-root/original-banner.py' else actual_run_path(path)
+            with patch('runpy.run_path', side_effect=load_banner):
                 text = test_boot.render(image, current)
             self.assertIn('Version: 0.9.0-shared    Mode: TEST / no GPU', text)
 

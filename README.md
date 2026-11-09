@@ -2,7 +2,7 @@
 
 USBから起動し、対応するNVIDIA GPUをPAIRの推論ノードとして使うための構築ツールです。対応GPUではgpu-unlockによる高速化を選択できます。Normal起動とUnlock起動は区別します。
 
-**0.9.0は試作版です。`root.img` と設定用の `state.img` を分離し、起動メニューにバージョンとNormal/Unlockを表示します。構築入口は `scripts/build-usb.py prepare` → 利用者による鍵作成・署名 → `scripts/build-usb.py image` です。0.9.0の実機起動・異常終了・root交換の実機検証は未完了です。0.8以前からの設定移行は行わず、新しい保存先フォルダを指定してください。**
+**0.9.1は試作版です。`root.img` と設定用の `state.img` を分離し、rootリビジョンによる更新・ダウングレード選択、構成一覧、BitLocker管理者確認GUIを備えます。起動バナーは実行中rootの版・リビジョン・モードを表示します。構築入口は `scripts/build-usb.py prepare` → 利用者による鍵作成・署名 → `scripts/build-usb.py image` です。0.9.1の実機起動・異常終了・root交換の実機検証は未完了です。0.8以前からの設定移行は行わず、新しい保存先フォルダを指定してください。**
 
 ## 内容
 
@@ -18,7 +18,8 @@ USBから起動し、対応するNVIDIA GPUをPAIRの推論ノードとして使
 1. [構築環境と入力の準備](docs/build.md)
 2. [署名鍵とSecure Boot](docs/secure-boot.md)
 3. [USBの利用開始](docs/quick-start.md)
-4. [運用・モデル・終了・回復](docs/user-guide.md)
+4. [運用・モデル・終了・回復](docs/user-guide.md)：[Windowsでの台帳回収・統合・配布](docs/windows-fleet.md)。
+5. [開発ツールからPAIRを利用する準備](docs/pair-client-setup.md)：[VS Code](docs/vscode-pair-parallel-quick-start.md)／[OpenCode](docs/opencode-pair-parallel-quick-start.md)のサブエージェント設定。
 
 構築環境はx86_64 Linux/WSL2、Python 3.11以上、空き容量64GiB以上です。Conda用の [environment.yml](environment.yml) はPython 3.11を選びます。追加のpip導入は不要で、[requirements.txt](requirements.txt) に依存関係の扱いを記載しています。OSツール導入・環境確認・テストを済ませてから構築に進んでください：[環境準備の手順](docs/build.md#1-環境を用意する)。
 

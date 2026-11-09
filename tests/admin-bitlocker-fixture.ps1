@@ -3,7 +3,7 @@ param([string]$ScriptPath, [string]$OutputPath, [string]$Scenario='ok')
 $ErrorActionPreference = 'Stop'
 function Get-Volume { param($DriveLetter) [pscustomobject]@{FileSystem='NTFS'} }
 function Get-CimInstance {
-    param($Namespace,$ClassName,$Filter)
+    param($ClassName,$Namespace,$Filter)
     if ($ClassName -eq 'Win32_ComputerSystemProduct') {
         return [pscustomobject]@{UUID='01234567-89ab-cdef-0123-456789abcdef'}
     }

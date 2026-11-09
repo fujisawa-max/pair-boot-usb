@@ -62,6 +62,9 @@ def main():
     for name in ('efi.img', 'usb-logs.img', 'fedora-live.img'):
         subprocess.run(cmd + ['fsck.fat', '-n', '/out/' + name], check=True)
     checks = []
+    expected_info = runpy.run_path(str(ROOT / 'scripts/release-metadata.py'))['text']()
+    if (config / 'MEDIA-INFO.txt').read_text() != expected_info or (fedora / 'MEDIA-INFO.txt').read_text() != expected_info:
+        raise ValueError('Media release information differs from configured inputs')
 
     def verify(name, relative, source):
         proc = subprocess.Popen(cmd + ['mtype', '-i', '/out/' + name, '::/' + relative], stdout=subprocess.PIPE)
@@ -71,6 +74,7 @@ def main():
         if proc.wait() or h.hexdigest() != sha(source):
             raise ValueError('FAT readback mismatch: ' + relative)
         checks.append({'image': name, 'path': relative, 'sha256': h.hexdigest()})
+    verify('fedora-live.img', 'MEDIA-INFO.txt', fedora / 'MEDIA-INFO.txt')
     for name in ('BOOTX64.EFI', 'mmx64.efi', 'grubx64.efi', 'grub.cfg', 'signing-cert.der'):
         verify('efi.img', 'EFI/BOOT/' + name, tree / 'EFI/BOOT' / name)
     verify('usb-logs.img', 'signing-cert.der', tree / 'EFI/BOOT/signing-cert.der')

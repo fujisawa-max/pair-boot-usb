@@ -32,6 +32,11 @@ Fedora：保存先の登録
 ・世代や内容が競合する場合は上書きせず停止します。「マージ」で確認します。
 ・usb-config.json、signing-cert.der、gui、toolsを古い退避物で上書きしないでください。
 ・複数USBは各台帳を回収→マージ→各USBへ配布します。
+・Windows版も通常GPUとGPUなしTEST、0.9.0→0.9.1の台帳変換に対応します。
+  未登録・GPUなしの管理PCで操作できます。新規のPC登録とMOK確認は各対象PCで行います。
+・マージでは配布先のGPU-LOGSを選び、全入力・配布先より大きい世代を指定します。
+  確認日は延長しません。古い版への逆変換・競合・保存先変更は停止します。
+・Windowsでの詳しい操作順と実機確認項目は tools/WINDOWS-FLEET.md を参照してください。
 
 MOK：Fedoraで操作
 1. 証明書・登録状態の確認を選び、設定領域の signing-cert.der を指定します。
@@ -47,7 +52,7 @@ root.imgを置いたUSBはLinux稼働中に抜かないでください。
 
 詳しい手順と制限：設定領域 tools/QUICK-START.md、tools/DETAILS.md。
 
-PAIR BOOT 0.9.0（試作）の起動・終了
+PAIR BOOT 0.9.1（試作）の起動・終了
 ・PAIR起動前にUSBを抜けるか表示します。USB CAN BE REMOVED NOWの場合だけ
   起動USBを抜けます。root/Modelsの保存USBは終了まで抜かないでください。
 ・1（Enter）：PAIR起動／再起動、2：PC再起動、3：電源を切る。
@@ -56,6 +61,12 @@ PAIR BOOT 0.9.0（試作）の起動・終了
 ・復旧不能や取引中断では停止します。root-backup-*や.root-maintenance.*を削除せず、Fedora保守へ進んでください。
 ・台帳の退避・復元と利用手順はtools/DETAILS.mdに記載しています。
 
-0.9.0はrootとstateを分離します。0.8以前の設定は自動移行せず、新しい保存先フォルダを登録してください。
+0.9.1はrootとstateを分離します。0.8以前の設定は自動移行せず、新しい保存先フォルダを登録してください。
 GPUなしでの起動確認:
-「GPUなし確認用PC・USB保存先を登録（TEST）」を選びます。保存先の安全確認とBitLockerの確実な確認は必要です。登録後は起動メニューの「TEST / no NVIDIA GPU / USB storage only」を明示的に選択します。推論サービスは開始できません。通常のGPU登録とは区別し、rootテンプレートは0.9.0のまま使用します。
+「GPUなし確認用PC・USB保存先を登録（TEST）」を選びます。保存先の安全確認とBitLockerの確実な確認は必要です。登録後は起動メニューの「TEST / no NVIDIA GPU / USB storage only」を明示的に選択します。推論サービスは開始できません。通常のGPU登録とは区別し、rootテンプレートは0.9.1のまま使用します。
+
+構成確認:
+GPU-LOGS直下のMEDIA-INFO.txtで、プロジェクト版、root revision、kernel、gpu-unlock、Debian、Fedora、NVIDIA、PAIR、llama.cppの版を確認できます。バナーは実行中rootの情報を表示します。
+
+ShellのBitLocker観測がUnknownの場合:
+Windows GUIで「BitLocker確認JSONを保存（管理者）」を選び、対象NTFSを確認してUACを承認します。取得したJSONをFedoraの「別の観測JSONを選択する」で指定します。暗号化状態を変更する操作ではありません。
