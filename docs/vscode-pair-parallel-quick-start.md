@@ -174,6 +174,6 @@ PAIR Reviewにsrc/config.tsの入力検証の問題を調べさせてくださ�
 | 子がファイルを知らない | 子の指示にパス・目的・制約を含める |
 | コンテキスト超過 | 小さいファイルと新しい会話で、サーバとクライアントの上限を照合する |
 
-2026-11-09時点の公式資料に基づくLocal用の設定例です。別のharnessへ同じツール名・設定を流用しないでください。エディターとPAIRの実機連携、並行性、画像の受渡しは未検証です。USBイメージの再生成は不要です。[OpenCodeの手順](opencode-pair-parallel-quick-start.md)も用意しています。
+2026-11-09時点の公式資料に基づくLocal用の設定例です。別のharnessへ同じツール名・設定を流用しないでください。USBイメージの再生成は不要です。[OpenCodeの手順](opencode-pair-parallel-quick-start.md)も用意しています。確認済みの範囲と残っている確認項目は [TODO](../TODO.md) を参照してください。
 
 確認用の `pair-check-a.txt` と `pair-check-b.txt` は、確認後に削除して構いません。

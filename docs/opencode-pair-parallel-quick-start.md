@@ -210,6 +210,6 @@ subagent呼出しをbackground: trueで行い、片方の完了を待たずに�
 | ファイルを読めない | プロジェクト内のパス、子のread/glob/grep権限、モデルのツール対応 |
 | コンテキスト上限やcompactionで失敗する | 新しい会話と短い依頼で、サーバの1要求あたりの枠とlimitを照合する |
 
-2026-11-09時点の公式v2資料に基づく設定例です。Desktop／CLIのUIや設定読込位置は利用する版で確認してください。PAIRと組み合わせた並行動作、画像の受渡し、ノードへの振り分けは実機未検証です。USBイメージの再生成は不要です。[VS Code用の手順](vscode-pair-parallel-quick-start.md)もあります。
+2026-11-09時点の公式v2資料に基づく設定例です。Desktop／CLIのUIや設定読込位置は利用する版で確認してください。USBイメージの再生成は不要です。[VS Code用の手順](vscode-pair-parallel-quick-start.md)もあります。確認済みの範囲と残っている確認項目は [TODO](../TODO.md) を参照してください。
 
 確認用の `pair-check-a.txt` と `pair-check-b.txt` は、確認後に削除して構いません。
