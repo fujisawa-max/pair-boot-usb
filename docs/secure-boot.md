@@ -1,6 +1,6 @@
 # 署名鍵とSecure Boot
 
-秘密鍵の生成・保管とMOK登録は、PCの所有者または管理者が行います。構築ツールはMOK登録を自動実行しません。
+MOK登録に使う公開鍵（証明書）およびモジュール署名に使う秘密鍵のペアは、**利用するPCの管理者（あるいは管理者の許諾の元で）作成**してください。秘密鍵はPCのセキュリティ上極めて重要です。USB媒体やリポジトリ、共有ストレージ等には絶対に配置せず、適切なアクセス制限を設けた安全な場所で**適切に管理**してください。構築ツールはMOK登録を自動実行しません。
 
 構築時と同じPython 3.11以上を使います。以下は `python3` の例です。Conda環境ではactivateして `python` に読み替えてください。
 
@@ -24,7 +24,7 @@ openssl x509 -inform DER -in /path/to/controlled-storage/pair-boot-signing/modul
   -noout -subject -dates -fingerprint -sha256
 ```
 
-秘密鍵は所有者だけが読める通常ファイルとします。`scripts/sign-gpu-modules.py` はrepo外の秘密鍵とDER証明書を指定して、構築済みmoduleのコピーに署名します。暗号化鍵のパスフレーズは所有者が安全な入力方法で `KBUILD_SIGN_PIN` に渡します。コマンドラインやログへ直接書きません。署名前のモジュールの準備は [構築手順](build.md) に従います。
+秘密鍵は所有者だけが読める通常ファイルとします。`scripts/sign-gpu-modules.py` はrepo外の秘密鍵とDER証明書を指定して、構築済みmoduleのコピーに署名します。暗号化鍵のパスフレーズは所有者が安全な入力方法で `KBUILD_SIGN_PIN` に渡します。コマンドラインやログへ直接書きません。署名前のモジュールの準備は [build.md](build.md) に従います。
 
 ## 構築したmoduleへ署名する
 

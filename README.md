@@ -1,40 +1,71 @@
 # pair-boot-usb
 
-USBから起動し、対応するNVIDIA GPUをPAIRの推論ノードとして使うための構築ツールです。RTX 30シリーズのうち、Unlockに対応するGPUではgpu-unlockによる高速化を選択できます。Normal起動とUnlock起動は区別します。
+PCに内蔵されたNVIDIA GPUを活用し、USBから起動してLLM推論環境（PAIR）を動かすためのブータブルUSB構築ツールです。既存のWindows環境を壊さず、USBと指定した保存先フォルダのみを利用して安全に推論ノードを立ち上げられます。
 
-## 手順
+RTX 30シリーズのうち対応GPUでは、gpu-unlockによる高速化（Unlock起動）も選択できます。
 
-1. [構築環境と外部資料の準備](docs/build.md)
-2. [署名鍵とSecure Boot](docs/secure-boot.md)
-3. [USBの利用開始](docs/quick-start.md)
-4. [運用・モデル・終了・回復](docs/user-guide.md)：[Windowsでの台帳回収・統合・配布](docs/windows-fleet.md)。
-5. [開発ツールからPAIRを利用する準備](docs/pair-client-setup.md)：[VS Code](docs/vscode-pair-parallel-quick-start.md)／[OpenCode](docs/opencode-pair-parallel-quick-start.md)のサブエージェント設定。
+---
 
-動作確認の状況と残っている確認項目は [TODO](TODO.md) にまとめています。
+## 全体の流れ
 
-必要な構築環境はx86_64 Linux/WSL2、Python 3.11以上、空き容量64GiB以上です。Conda用の [environment.yml](environment.yml) ではPython 3.11を使うようになっています。[requirements.txt](requirements.txt) に依存関係の扱いを記載しています。開発ツール導入・環境確認・テストを済ませてから構築に進んでください：[環境準備の手順](docs/build.md#1-環境を用意する)。
+本システムを利用する大まかな流れは以下のとおりです。
 
-## 内容
+```mermaid
+flowchart TD
+    A[1. USBイメージ構築<br>Linux/WSL2でビルド・署名] --> B[2. 起動USBを作成<br>イメージを実際のUSBへ書込み]
+    B --> C[3. Windowsで情報取得<br>GPU・保存先フォルダをUSBへ出力]
+    C --> D[4. 同梱Fedoraで登録<br>Secure Boot MOK登録 & PC情報登録]
+    D --> E[5. PAIR BOOT起動<br>推論エンジン起動 & モデル推論]
+```
 
-- `runtime/`：起動、選択した保存先の検証、root.imgの展開・回復、PAIRの操作と終了。
-- `toolkit/`、`gui/`：Windowsでの候補情報作成とFedoraでのPC・保存先登録。
-- `scripts/`：外部資料の展開、モジュール構築・署名、イメージ組立・検査の部品。
-- `inputs/`：外部資料の取得元URL・バージョン情報・SHA-256などの検証情報。第三者ファイル本体は含みません。
-- `config/`：GPUの種類ごとのNormal／Unlockの実行許可設定と空の初期プロファイル。
-- `tests/`：テスト用に作成したデータやファイルを使い、実デバイスに書き込まずに動作を確認するテスト。
+### 署名鍵の作成・管理について（重要）
+PAIR BOOTでは Secure Boot の利用が前提となっています。Secure Boot を利用するには、モジュール署名に使う秘密鍵およびMOK登録に使う公開鍵（証明書）のペアを用意する必要があります。これらの作成は、**利用するPCの管理者（あるいは管理者の許諾の元で利用者）が作成**してください。秘密鍵はUSBやリポジトリに含めず、安全な保管場所で**適切に管理**してください（公開鍵のみをUSBへ配置します）。
+
+---
+
+## ドキュメント一覧
+
+### 初めて利用する方へ
+1. [構築環境と外部資料の準備](docs/build.md)：Linux/WSL2環境の準備とUSBイメージのビルド手順
+2. [署名鍵とSecure Boot](docs/secure-boot.md)：鍵ペアの作成、モジュール署名、秘密鍵の管理方針
+3. [USBの利用開始（クイックスタート）](docs/quick-start.md)：Windowsでの情報取得、FedoraでのMOK・PC登録、PAIR BOOTの起動手順
+
+### 運用・連携
+- [運用・モデル・終了・回復](docs/user-guide.md)：モデルの配置方法、正常終了・USB取り外し手順、トラブル対応
+- [Windowsでの台帳管理](docs/windows-fleet.md)：複数台のPC登録情報を1台のWindowsでまとめる手順
+- [開発ツールからPAIRを利用する準備](docs/pair-client-setup.md)：[VS Code](docs/vscode-pair-parallel-quick-start.md)／[OpenCode](docs/opencode-pair-parallel-quick-start.md)から推論ノードを利用する設定
+
+動作確認の状況と残りの確認項目は [TODO](TODO.md) にまとめています。
+
+---
+
+## 構築要件
+
+- **OS**: x86_64 Linux または WSL2（Ubuntu 22.04等）
+- **Python**: 3.11以上（Conda用環境定義: [environment.yml](environment.yml)）
+- **ストレージ空き容量**: 64GiB以上
+
+※ 詳しい環境構築とツールの導入手順は [docs/build.md](docs/build.md#1-環境を用意する) を参照してください。
+
+## リポジトリ構成
+
+- `toolkit/`、`gui/`：Windows用情報取得ツールおよびFedora用管理GUI
+- `runtime/`：ブート後の初期化、保存先の検証、PAIR起動と終了処理
+- `scripts/`：依存パッケージ取得、カーネルモジュール構築・署名、USBイメージ組立
+- `inputs/`：外部ソースの取得元URLやハッシュ値定義
+- `config/`：GPU種別ごとの起動プロファイル定義
+- `tests/`：実機への書き込みを行わずに動作を確認するテストスイート
 
 ## 対応範囲
 
-現行の許可設定はRTX 30シリーズを対象とします。機種ごとにNormal/Unlockの可否が異なり、一覧への掲載は全機種の実機試験完了を意味しません。RTX 40以降やすべてのCUDA GPUに対応済みとはしていません。v1.0.0のころにはRTX-30シリーズ以外にも対応していく予定です。
-
-保存先は明示的に選択したNTFS領域の `GPU-Linux` フォルダです。ドライブとフォルダは登録時に変更できます。安全条件を確認できなければ起動・登録を停止します。実USBへの書込みは利用者が対象を確認して行います。
+- **対象GPU**: 主にRTX 30シリーズ（機種ごとにNormal／Unlockの可否が異なります）。
+- **保存先**: 対象PC上の指定されたNTFS領域（既定: `GPU-Linux` フォルダ）。Windows側のデータ領域を破壊しないよう、安全性確認を行ってから利用します。
 
 ## 含まないもの
 
-ISO、完成USB、rootイメージ、上流ソース一式、ドライバ、モデル、鍵・証明書、PC登録データ、開発日誌、実機のログや写真は同梱していません。ダウンロードした外部資料は `.cache/` と `vendor/`、生成物は `build/` で管理します。
+ISO本体、完成済みUSBイメージ、上流バイナリ一式、プロプライエタリドライバ、モデルデータ、署名鍵・証明書、実機のPC登録データ等は本リポジトリに含まれません。ビルドスクリプトにより各自の環境で取得・生成します。
 
 ## ライセンス
 
-このリポジトリの独自ソース、設定、テスト、文書は [MIT License](LICENSE) で公開します。著作権表示とライセンス文を保持して、利用・改変・再配布できます。
-
-取得する外部ソフトウェアには、それぞれのライセンスが適用されます：[外部資料とライセンス](THIRD-PARTY.md)。このリポジトリでは構築用ソースを公開し、完成USBイメージは配布しません。
+本リポジトリの独自ソース、設定、テスト、文書は [MIT License](LICENSE) で公開します。
+取得・利用する外部ソフトウェアのライセンスについては [THIRD-PARTY.md](THIRD-PARTY.md) を参照してください。

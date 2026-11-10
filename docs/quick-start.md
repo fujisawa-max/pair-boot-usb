@@ -1,22 +1,61 @@
 # USBの利用開始
 
-検査済みイメージを利用者がUSBへ書き込んだ後の手順です。構築は [構築手順](build.md) に従います。登録・MOK・Normal/Unlock・PAIR・終了の動作を対象PCごとに確認してください。0.8以前の設定は引き継がず、保存先には新しいフォルダ（例：GPU-Linux-0.9）を指定します。
+作成したブータブルUSBを使って、対象PCでPAIR BOOTを起動するまでの手順です。イメージの構築は [build.md](build.md) を参照してください。
 
-1. WindowsでUSBの `start-windows-gui.cmd` を開き、環境確認を行う。
-2. 保存先のドライブとフォルダを指定し、候補JSONをGPU-LOGSへ保存する。既定はD:のGPU-Linux。保存成功はLinuxからの書込み許可ではない。
-3. USBのFedoraを起動し、管理GUIでWindows候補から保存先・GPUを登録する。表示されたPC、領域、GPU、フォルダを確認する。検証に失敗したら表示理由を確認し、安全性の値を手動で偽って進めない。
-4. 必要に応じて [MOK登録](secure-boot.md) を行う。保存先登録とMOK申請は同じFedora起動中に行えるが、MokManagerの最終承認後に登録状態を確認する。
-5. Normalを選んで起動する。root・stateイメージの初回コピー完了を待ち、メニューからPAIRを開始する。
-6. モデルは登録したフォルダのModelsへ置く。[運用手順](user-guide.md)に従ってモデルと終了操作を確認する。
+ここでは、PC本体のNTFS領域を保存先にする基本の使い方を説明します。USBを保存先にする場合は、[USBにroot.imgやModelsを保存する場合](user-guide.md#usbにrootimgやmodelsを保存する場合)を参照してください。
 
-UnlockはNormalの成功後に、対応GPUの検証として別に試します。解除による速度向上はモデルや処理によって異なります。
+### 鍵の作成と管理について
+Secure Boot環境で利用する場合、モジュール署名に使う秘密鍵およびMOK登録に使う公開鍵（証明書）のペアは、**利用するPCの管理者（あるいは管理者の許諾の元で）作成**してください。
+秘密鍵はPCのセキュリティ上極めて重要です。USB媒体やリポジトリ、共有ストレージ等には絶対に含めず、安全な保管場所で**適切に管理**してください（公開鍵のみをUSBの `GPU-LOGS/signing-cert.der` に配置します。詳細は [secure-boot.md](secure-boot.md) を参照）。
 
-終了時はPAIRをqで閉じ、メニューからPCの再起動または電源断を選びます。起動USBを抜くのはUSB CAN BE REMOVED NOWと表示された場合だけです。rootやModelsを置いた保存用USBは終了まで接続します。
+---
 
-USBを起動する前にGPU-LOGS直下の `MEDIA-INFO.txt` で媒体の版と構成を確認できます。
+## 全体の流れ
 
-通常のShell観測がUnknownのときは、Windows GUIの「BitLocker確認JSONを保存（管理者）」を使います。選択したNTFS領域についてUAC承認後に状態照会のみを行い、確認JSONを保存します。Fedoraの登録では「別の観測JSONを選択する」からそのJSONを指定します。管理者承認を取り消した場合や状態が不明な場合は停止します。暗号化解除や保護設定の変更は行いません。
+1. **Windowsで情報取得**：対象PCのWindows上でGPUや保存先（NTFS）の情報を取得し、候補情報をUSBへ保存します。
+2. **FedoraでMOK登録**：USBから同梱のFedora Liveを起動し、Secure Boot用のMOK登録を申請・承認します。
+3. **Fedoraで確認とUSB登録**：Windowsで取得した情報をFedora上で確認し、USBへ登録します。
+4. **PAIR BOOTの起動**：USBからPAIR BOOTを起動し、推論環境を利用します。
 
-0.9.0からUSBを更新する場合、書き直す前に台帳と候補・観測JSONを退避します。新媒体へ古いtoolsやusb-config.jsonを上書きせず、管理GUIの台帳配布を使います。0.9.0→0.9.1の同形式の台帳だけを変換し、確認日や安全情報は延長・変更しません。保存先の0.9.0 rootは初回起動時にrevision 0から現在のrevision 3へ自動更新し、旧rootを残します。stateは保持します。同じ0.9.1のrevision 1・2からも、容量確認後にrootを更新します。
+---
 
-保存先NTFSを起動USBの第5パーティションに置いている場合は、新版イメージを同じUSBへ書く前にroot・state・Modelsも退避します。イメージ書込みでパーティション表も置き換わるためです。更新試験では新版を別USBへ書き、既存の保存先USBを保持して接続する方法を使えます。
+## 手順
+
+### 1. WindowsでGPU・保存先情報を取得する
+1. 対象PCのWindowsを起動し、USBを接続します。
+2. USB内の `start-windows-gui.cmd` を実行して管理GUIを起動します。
+3. 推論モデルや状態を保存するドライブ・フォルダ（既定は `D:\GPU-Linux`）を指定し、GPU情報を確認します。
+
+   ※ PC本体にC:以外の領域がなく、USBにroot.img等を保存する場合は、「USBをroot保存先に指定」にチェックします。詳しい手順は[USBに保存する場合](user-guide.md#usbにrootimgやmodelsを保存する場合)を参照してください。
+
+4. 候補情報（JSON）をUSB（`GPU-LOGS`）へ保存します。
+   - ※ BitLocker状態が不明（Unknown）と表示される場合は、画面の指示に従い管理者権限でBitLocker確認JSONを保存してください。
+
+### 2. 同梱FedoraでSecure BootのMOK登録を行う
+※ Secure Boot有効環境で初めて起動する場合に実施します。
+1. PCを再起動し、ブートメニューからUSBを選択して同梱の「Fedora Live」を起動します。
+2. 管理GUIで証明書と登録状態を確認し、未登録の場合はMOK登録を申請します。その際、承認用の一時パスワードを設定します。
+3. PCを再起動すると「MokManager」青色画面が表示されるので、「Enroll MOK」から先ほどの一時パスワードを入力して承認を完了します。
+4. 再度Fedoraを起動し、管理GUIでMOKが「登録済み」になっていることを確認します。
+
+### 3. Windowsで取得した情報の確認とUSBへの登録
+1. Fedora Liveの管理GUIを開きます。
+2. 手順1でWindowsから出力した候補JSONを読み込み、表示されるPC識別情報、保存先領域、GPU型番、保存フォルダを確認します。
+
+   ※ 上の手順でBitLocker状態が不明（Unknown）と表示され、別途管理者権限でBitLocker確認JSONを取得した場合は、「別の観測JSONを選択する」から、その確認JSONを指定してください。
+
+3. 内容に問題がなければ登録を実行し、USB内の台帳へ反映します。
+
+### 4. PAIR BOOTを起動する
+1. PCを再起動し、ブートメニューから「Normal」を選択して起動します。
+2. 初回起動時はrootイメージおよびstateイメージの準備が自動で行われます。完了後、起動メニューが表示されます。
+3. メニューからPAIRを開始します。
+4. 推論モデル（GGUF形式等）は、登録した保存先の `Models` フォルダへ配置して利用します（モデル配置や運用手順の詳細は [user-guide.md](user-guide.md) を参照）。
+   - 対応GPUでの高速化（Unlock）は、Normalでの正常起動と動作を確認した後に試してください。
+
+---
+
+## 終了とUSBの取り外し
+- PAIRを終了するときは、画面上で `q` を入力してメニューに戻り、PCの再起動または電源断を選択します。
+- 起動USBを抜く際は、画面に `USB CAN BE REMOVED NOW` と表示されたことを必ず確認してから取り外してください。
+- rootやModelsを置いた別ドライブ／USBは、PCの電源が完全に切れるまで接続したままにしてください。
