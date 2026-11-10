@@ -2,7 +2,7 @@
 
 [日本語 (Japanese)](README.ja.md)
 
-A build tool for creating a **USB-bootable Linux environment optimized for LLM inference (PAIR)**, leveraging the power of local NVIDIA GPUs.
+A build tool for creating a **USB-bootable Linux environment optimized for LLM inference ([PAIR: Personal AI Router](https://github.com/NVIDIA/Personal-AI-Router))**, leveraging the power of local NVIDIA GPUs.
 
 This tool allows you to safely spin up a dedicated inference node using only the USB drive and a designated storage folder, **without destroying or altering your existing Windows environment**.
 

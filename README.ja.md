@@ -2,7 +2,7 @@
 
 [English](README.md)
 
-PCに内蔵されたNVIDIA GPUを活用し、USBから起動してLLM推論環境（PAIR）を動かすためのブータブルUSB構築ツールです。既存のWindows環境を壊さず、USBと指定した保存先フォルダのみを利用して安全に推論ノードを立ち上げられます。
+PCに内蔵されたNVIDIA GPUを活用し、USBから起動してLLM推論環境（[PAIR: Personal AI Router](https://github.com/NVIDIA/Personal-AI-Router)）を動かすためのブータブルUSB構築ツールです。既存のWindows環境を壊さず、USBと指定した保存先フォルダのみを利用して安全に推論ノードを立ち上げられます。
 
 RTX 30シリーズのうち対応GPUでは、gpu-unlockによる高速化（Unlock起動）も選択できます。
 
