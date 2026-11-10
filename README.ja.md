@@ -1,5 +1,7 @@
 # pair-boot-usb
 
+[English](README.md)
+
 PCに内蔵されたNVIDIA GPUを活用し、USBから起動してLLM推論環境（PAIR）を動かすためのブータブルUSB構築ツールです。既存のWindows環境を壊さず、USBと指定した保存先フォルダのみを利用して安全に推論ノードを立ち上げられます。
 
 RTX 30シリーズのうち対応GPUでは、gpu-unlockによる高速化（Unlock起動）も選択できます。
@@ -29,17 +31,12 @@ PAIR BOOTでは Secure Boot の利用が前提となっています。Secure Boo
 
 ---
 
-## 他言語ドキュメント
-* [English Version (英語ドキュメント)](./README.md)
-
----
-
 ## ドキュメント一覧
 
 ### 初めて利用する方へ
-1. [構築環境と外部資料の準備](docs/build.md)：Linux/WSL2環境の準備とUSBイメージのビルド手順
+1. [構築環境と外部資料の準備](docs/build.ja.md)：Linux/WSL2環境の準備とUSBイメージのビルド手順
 2. [署名鍵とSecure Boot](docs/secure-boot.md)：鍵ペアの作成、モジュール署名、秘密鍵の管理方針
-3. [USBの利用開始（クイックスタート）](docs/quick-start.md)：Windowsでの情報取得、FedoraでのMOK・PC登録、PAIR BOOTの起動手順
+3. [USBの利用開始（クイックスタート）](docs/quick-start.ja.md)：Windowsでの情報取得、FedoraでのMOK・PC登録、PAIR BOOTの起動手順
 
 ### 運用・連携
 - [運用・モデル・終了・回復](docs/user-guide.md)：モデルの配置方法、正常終了・USB取り外し手順、トラブル対応
@@ -56,7 +53,7 @@ PAIR BOOTでは Secure Boot の利用が前提となっています。Secure Boo
 - **Python**: 3.11以上（Conda用環境定義: [environment.yml](environment.yml)）
 - **ストレージ空き容量**: 64GiB以上
 
-※ 詳しい環境構築とツールの導入手順は [docs/build.md](docs/build.md#1-環境を用意する) を参照してください。
+※ 詳しい環境構築とツールの導入手順は [docs/build.ja.md](docs/build.ja.md#1-環境を用意する) を参照してください。
 
 ## リポジトリ構成
 

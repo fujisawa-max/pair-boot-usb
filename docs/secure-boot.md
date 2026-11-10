@@ -24,7 +24,7 @@ openssl x509 -inform DER -in /path/to/controlled-storage/pair-boot-signing/modul
   -noout -subject -dates -fingerprint -sha256
 ```
 
-秘密鍵は所有者だけが読める通常ファイルとします。`scripts/sign-gpu-modules.py` はrepo外の秘密鍵とDER証明書を指定して、構築済みmoduleのコピーに署名します。暗号化鍵のパスフレーズは所有者が安全な入力方法で `KBUILD_SIGN_PIN` に渡します。コマンドラインやログへ直接書きません。署名前のモジュールの準備は [build.md](build.md) に従います。
+秘密鍵は所有者だけが読める通常ファイルとします。`scripts/sign-gpu-modules.py` はrepo外の秘密鍵とDER証明書を指定して、構築済みmoduleのコピーに署名します。暗号化鍵のパスフレーズは所有者が安全な入力方法で `KBUILD_SIGN_PIN` に渡します。コマンドラインやログへ直接書きません。署名前のモジュールの準備は [build.ja.md](build.ja.md) に従います。
 
 ## 構築したmoduleへ署名する
 

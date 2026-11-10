@@ -2,7 +2,7 @@
 
 ## PCと保存先の登録
 
-初期セットアップの流れ（Windowsでの情報取得、FedoraでのMOK登録・PC登録、PAIR BOOT起動）については [quick-start.md](quick-start.md) を参照してください。
+初期セットアップの流れ（Windowsでの情報取得、FedoraでのMOK登録・PC登録、PAIR BOOT起動）については [quick-start.ja.md](quick-start.ja.md) を参照してください。
 
 まず、候補PCのWindows上でそのPCの情報が記載された候補JSONファイルを生成して保存します。このファイルを同じPCで起動したFedoraで照合・確認してUSBに登録します。PC登録一覧の本体はGPU-LOGSのgpu-config/registry.jsonです。複数USBでは台帳を回収・マージし、管理GUIの配布操作で各USBへ反映してhostsフォルダ内のファイルも再生成します。登録情報を手入力で流用してはいけません。
 
@@ -51,7 +51,7 @@ PC本体にC:以外の領域がない場合などは、利用者が用意したU
 1. Windows管理GUIで保存先のUSB上のNTFSドライブとフォルダを選び、「USBをroot保存先に指定」にチェックして候補JSONを保存します。
 2. Fedora Liveで保存先NTFSが自動マウントされている場合は、使用中のファイルを閉じ、そのNTFS領域だけを安全にアンマウントします。GPU-LOGS・GPU-FEDORAやUSB全体は取り外しません。
 3. 管理GUIの「Windows候補から保存先・GPUを登録」で候補JSONを選び、保存先とGPUを確認して登録します。別途取得したBitLocker確認JSONがある場合は、「別の観測JSONを選択する」から指定します。
-4. [クイックスタートの起動手順](quick-start.md#4-pair-bootを起動する)に従って起動します。保存先に使うUSBは、終了まで接続したままにしてください。
+4. [クイックスタートの起動手順](quick-start.ja.md#4-pair-bootを起動する)に従って起動します。保存先に使うUSBは、終了まで接続したままにしてください。
 
 ## USBを書き直す前のバックアップ
 

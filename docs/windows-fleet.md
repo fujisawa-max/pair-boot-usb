@@ -7,7 +7,7 @@
 ## 1. 各USBから回収する
 
 1. PAIRが終了し、利用中のroot・stateが安全に閉じられたUSBをWindows管理PCへ接続します。
-2. エクスプローラーで **GPU-LOGS** を開き、そのUSBの `MEDIA-INFO.txt` とドライブ文字を確認します。0.9.1の `gui/windows-gui.ps1` をWindows PowerShellから起動します。起動方法は[利用開始](quick-start.md)を参照してください。
+2. エクスプローラーで **GPU-LOGS** を開き、そのUSBの `MEDIA-INFO.txt` とドライブ文字を確認します。0.9.1の `gui/windows-gui.ps1` をWindows PowerShellから起動します。起動方法は[利用開始](quick-start.ja.md)を参照してください。
 3. 「設定USB（GPU-LOGS）」で回収元を選び、「USBから台帳回収」を実行します。保存先は管理PCの作業フォルダとし、`registry-usb-a.json` などUSBごとに異なる新しい名前にします。既存ファイルへは上書きしません。
 4. 「PC登録一覧（台帳）を表示」で回収したJSONを選び、`generation`（世代）、`version`（版）、`hosts`（登録数）を控えます。
 5. 他のUSBも同様に回収します。回収した元ファイルはバックアップとして保持します。

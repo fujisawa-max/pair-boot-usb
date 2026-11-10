@@ -1,61 +1,71 @@
-# USBの利用開始
+# Getting Started with the USB Drive
 
-作成したブータブルUSBを使って、対象PCでPAIR BOOTを起動するまでの手順です。イメージの構築は [build.md](build.md) を参照してください。
+[日本語 (Japanese)](quick-start.ja.md)
 
-ここでは、PC本体のNTFS領域を保存先にする基本の使い方を説明します。USBを保存先にする場合は、[USBにroot.imgやModelsを保存する場合](user-guide.md#usbにrootimgやmodelsを保存する場合)を参照してください。
+This guide explains how to start PAIR BOOT on a target PC using the bootable USB drive you created. For image build instructions, see [build.md](build.md).
 
-### 鍵の作成と管理について
-Secure Boot環境で利用する場合、モジュール署名に使う秘密鍵およびMOK登録に使う公開鍵（証明書）のペアは、**利用するPCの管理者（あるいは管理者の許諾の元で）作成**してください。
-秘密鍵はPCのセキュリティ上極めて重要です。USB媒体やリポジトリ、共有ストレージ等には絶対に含めず、安全な保管場所で**適切に管理**してください（公開鍵のみをUSBの `GPU-LOGS/signing-cert.der` に配置します。詳細は [secure-boot.md](secure-boot.md) を参照）。
+This guide covers the basic setup using an NTFS partition on the PC's internal drive for storage. To use a USB drive for storage, see [Storing root.img and Models on a USB Drive (Japanese)](user-guide.md#usbにrootimgやmodelsを保存する場合).
 
----
+### Creating and Managing Signing Keys
 
-## 全体の流れ
+For use with Secure Boot, the key pair consisting of the private key for module signing and the public key (certificate) for MOK enrollment must be **created by the administrator of the target PC, or with the administrator's permission**.
 
-1. **Windowsで情報取得**：対象PCのWindows上でGPUや保存先（NTFS）の情報を取得し、候補情報をUSBへ保存します。
-2. **FedoraでMOK登録**：USBから同梱のFedora Liveを起動し、Secure Boot用のMOK登録を申請・承認します。
-3. **Fedoraで確認とUSB登録**：Windowsで取得した情報をFedora上で確認し、USBへ登録します。
-4. **PAIR BOOTの起動**：USBからPAIR BOOTを起動し、推論環境を利用します。
+The private key is critical to the PC's security. Never include it on a USB drive, in the repository, or on shared storage. **Manage it appropriately in a secure location**. Only the public certificate is placed at `GPU-LOGS/signing-cert.der` on the USB drive. For details, see [secure-boot.md (Japanese)](secure-boot.md).
 
 ---
 
-## 手順
+## Overview
 
-### 1. WindowsでGPU・保存先情報を取得する
-1. 対象PCのWindowsを起動し、USBを接続します。
-2. USB内の `start-windows-gui.cmd` を実行して管理GUIを起動します。
-3. 推論モデルや状態を保存するドライブ・フォルダ（既定は `D:\GPU-Linux`）を指定し、GPU情報を確認します。
-
-   ※ PC本体にC:以外の領域がなく、USBにroot.img等を保存する場合は、「USBをroot保存先に指定」にチェックします。詳しい手順は[USBに保存する場合](user-guide.md#usbにrootimgやmodelsを保存する場合)を参照してください。
-
-4. 候補情報（JSON）をUSB（`GPU-LOGS`）へ保存します。
-   - ※ BitLocker状態が不明（Unknown）と表示される場合は、画面の指示に従い管理者権限でBitLocker確認JSONを保存してください。
-
-### 2. 同梱FedoraでSecure BootのMOK登録を行う
-※ Secure Boot有効環境で初めて起動する場合に実施します。
-1. PCを再起動し、ブートメニューからUSBを選択して同梱の「Fedora Live」を起動します。
-2. 管理GUIで証明書と登録状態を確認し、未登録の場合はMOK登録を申請します。その際、承認用の一時パスワードを設定します。
-3. PCを再起動すると「MokManager」青色画面が表示されるので、「Enroll MOK」から先ほどの一時パスワードを入力して承認を完了します。
-4. 再度Fedoraを起動し、管理GUIでMOKが「登録済み」になっていることを確認します。
-
-### 3. Windowsで取得した情報の確認とUSBへの登録
-1. Fedora Liveの管理GUIを開きます。
-2. 手順1でWindowsから出力した候補JSONを読み込み、表示されるPC識別情報、保存先領域、GPU型番、保存フォルダを確認します。
-
-   ※ 上の手順でBitLocker状態が不明（Unknown）と表示され、別途管理者権限でBitLocker確認JSONを取得した場合は、「別の観測JSONを選択する」から、その確認JSONを指定してください。
-
-3. 内容に問題がなければ登録を実行し、USB内の台帳へ反映します。
-
-### 4. PAIR BOOTを起動する
-1. PCを再起動し、ブートメニューから「Normal」を選択して起動します。
-2. 初回起動時はrootイメージおよびstateイメージの準備が自動で行われます。完了後、起動メニューが表示されます。
-3. メニューからPAIRを開始します。
-4. 推論モデル（GGUF形式等）は、登録した保存先の `Models` フォルダへ配置して利用します（モデル配置や運用手順の詳細は [user-guide.md](user-guide.md) を参照）。
-   - 対応GPUでの高速化（Unlock）は、Normalでの正常起動と動作を確認した後に試してください。
+1. **Collect information on Windows**: Collect GPU and storage destination (NTFS) information on the target PC's Windows installation, and save the candidate configuration to the USB drive.
+2. **Enroll the MOK using Fedora**: Boot the bundled Fedora Live environment from the USB drive, then request and approve MOK enrollment for Secure Boot.
+3. **Verify and register the configuration using Fedora**: Review the information collected on Windows and register it on the USB drive.
+4. **Start PAIR BOOT**: Boot PAIR BOOT from the USB drive and use the inference environment.
 
 ---
 
-## 終了とUSBの取り外し
-- PAIRを終了するときは、画面上で `q` を入力してメニューに戻り、PCの再起動または電源断を選択します。
-- 起動USBを抜く際は、画面に `USB CAN BE REMOVED NOW` と表示されたことを必ず確認してから取り外してください。
-- rootやModelsを置いた別ドライブ／USBは、PCの電源が完全に切れるまで接続したままにしてください。
+## Steps
+
+### 1. Collect GPU and Storage Information on Windows
+
+1. Start Windows on the target PC and connect the USB drive.
+2. Run `start-windows-gui.cmd` on the USB drive to open the management GUI.
+3. Specify the drive and folder for storing inference models and state data (the default is `D:\GPU-Linux`), and check the GPU information.
+
+   Note: If the PC has no partition other than C: and you want to store `root.img` and related files on a USB drive, select “Use USB as the root storage destination” (`USBをroot保存先に指定`). For detailed instructions, see [Storing root.img and Models on a USB Drive (Japanese)](user-guide.md#usbにrootimgやmodelsを保存する場合).
+
+4. Save the candidate configuration (JSON) to `GPU-LOGS` on the USB drive.
+   - If the BitLocker status is shown as Unknown, follow the on-screen instructions to save a BitLocker verification JSON file with administrator privileges.
+
+### 2. Enroll the Secure Boot MOK Using the Bundled Fedora Environment
+
+Perform this step before the first boot with Secure Boot enabled.
+
+1. Restart the PC, select the USB drive from the boot menu, and start the bundled “Fedora Live” environment.
+2. In the management GUI, check the certificate and enrollment status. If the certificate is not enrolled, request MOK enrollment and set a temporary password for approval.
+3. Restart the PC. When the blue “MokManager” screen appears, select “Enroll MOK” and enter the temporary password you just set to complete approval.
+4. Boot Fedora again and confirm that the management GUI shows the MOK as enrolled (`登録済み`).
+
+### 3. Verify the Information Collected on Windows and Register It on the USB Drive
+
+1. Open the management GUI in Fedora Live.
+2. Load the candidate JSON file exported from Windows in Step 1, and check the displayed PC identification information, storage partition, GPU model, and storage folder.
+
+   Note: If the BitLocker status was shown as Unknown and you obtained a separate BitLocker verification JSON file with administrator privileges, use “Select another observation JSON” (`別の観測JSONを選択する`) to select that verification file.
+
+3. If the information is correct, register the configuration to update the registry on the USB drive.
+
+### 4. Start PAIR BOOT
+
+1. Restart the PC and select “Normal” from the boot menu.
+2. On first boot, the root and state images are prepared automatically. When preparation is complete, the startup menu appears.
+3. Start PAIR from the menu.
+4. Place inference models (such as GGUF files) in the `Models` folder at the registered storage destination. For model placement and operating instructions, see [user-guide.md (Japanese)](user-guide.md).
+   - Try acceleration with Unlock on supported GPUs only after confirming successful startup and operation in Normal mode.
+
+---
+
+## Shutdown and USB Removal
+
+- To exit PAIR, enter `q` on screen to return to the menu, then choose to restart or power off the PC.
+- Before removing the boot USB drive, always confirm that `USB CAN BE REMOVED NOW` is displayed on screen.
+- Keep any separate drive or USB drive containing root or Models connected until the PC has completely powered off.

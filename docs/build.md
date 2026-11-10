@@ -1,14 +1,16 @@
-# 構築手順
+# Build Instructions
 
-この構築手順によりLinuxまたはWSL2上で、USBから起動するためのイメージファイルを作ります。構築を行うPCにGPUドライバ・kernel・bootloaderをインストールすることはありません。また、ここのツールでは実USBへの書込みは行いませんので別途書き込みツールが必要です。
+[日本語 (Japanese)](build.ja.md)
 
-構築のための最初の一手は `scripts/build-usb.py prepare` の実行です。引数 `prepare` を指定することで外部資料の取得と検証、署名前のモジュールの構築、作業用ファイルの準備を行います。そして、構築した6つのGPUドライバ用モジュールに利用者が署名した後に、`image` を引数として `scripts/build-usb.py` を実行することでイメージの構築と検査を行います。実際の構築は、環境の準備から順に以下の手順で進めてください。
+These instructions describe how to create a bootable USB image on Linux or WSL2. The build process does not install GPU drivers, a kernel, or a bootloader on the build PC. The tools in this repository do not write to a physical USB drive, so a separate image-writing tool is required.
 
-## 1. 環境を用意する
+Start the build process by running `scripts/build-usb.py prepare`. The `prepare` argument downloads and verifies external inputs, builds the unsigned modules, and prepares working files. After you sign the six GPU driver modules, run `scripts/build-usb.py` with the `image` argument to build and validate the image. Follow the steps below, starting with environment setup.
 
-x86_64のLinux/WSL2、Python **3.11以上（Condaでは3.11を使用）**、HTTPS通信、64GiB以上の空き容量を用意します。ビルド先はLinuxのファイルシステム上に置きます。構築にはbubblewrapというツールを使い、構築処理からホスト環境へのアクセスを制限します。この実行環境を一般ユーザーの権限で用意できない場合は、構築を停止します。
+## 1. Set Up the Environment
 
-リポジトリを取得し、そのルートで以後のコマンドを実行します。Anaconda/MinicondaをLinux側で利用できる場合は、専用環境を作成します。
+You need x86_64 Linux/WSL2, Python **3.11 or later (the Conda environment uses 3.11)**, HTTPS access, and at least 64 GiB of free disk space. Place the build directory on a Linux filesystem. The build uses bubblewrap to restrict access from the build process to the host environment. If this isolated environment cannot be set up with ordinary user privileges, the build stops.
+
+Clone the repository and run all subsequent commands from its root directory. If Anaconda or Miniconda is available on the Linux side, create a dedicated environment:
 
 ```sh
 conda env create -f environment.yml
@@ -16,110 +18,114 @@ conda activate pair-boot-build
 python --version
 ```
 
-既に `pair-boot-build` をPython 3.11以上で作成済みなら、再作成は不要です。`conda activate pair-boot-build` から進めてください。別の端末でも再度activateします。`environment.yml` はビルド用Python 3.11系列を選ぶ定義で、Condaが導入する全パッケージのバージョンを細かく固定するものではありません。
+If you have already created `pair-boot-build` with Python 3.11 or later, you do not need to recreate it. Start with `conda activate pair-boot-build`. Activate the environment again whenever you open another terminal. `environment.yml` selects the Python 3.11 series for the build; it does not pin the exact versions of all packages installed by Conda.
 
-Condaを使わない場合は、`python3 --version` で3.11以上を確認し、以下の `python` を対応版の `python3` または `python3.11` に読み替えてください。`hashlib.file_digest` を使うため3.10以下では実行できません。署名・イメージ生成を含め、同じPythonを使います。
+If you do not use Conda, run `python3 --version` to confirm that Python 3.11 or later is available, and replace `python` in the commands below with the appropriate `python3` or `python3.11`. Python 3.10 and earlier are not supported because the scripts use `hashlib.file_digest`. Use the same Python interpreter throughout, including signing and image generation.
 
-### 開発ツールの導入
+### Install Build Tools
 
-Ubuntu/Debian系では次を実行します。先に対象一覧だけを確認できます。
+On Ubuntu/Debian-based systems, run the following commands. You can preview the package list first:
 
 ```sh
 PYTHON=python sh scripts/install-build-dependencies.sh --print
 PYTHON=python sh scripts/install-build-dependencies.sh
 ```
 
-このコマンドはsudoでAPTのパッケージ一覧を更新し、bubblewrap（`bwrap`）、fakeroot、zstd、Git、GnuPG、OpenSSL、e2fsprogs、kmod等の構築用ツールを導入します。Ubuntu 22.04のOS標準Pythonが3.10のままでも、activate済みのConda Python 3.11で構築できます。
+This command uses sudo to update the APT package lists and install build tools, including bubblewrap (`bwrap`), fakeroot, zstd, Git, GnuPG, OpenSSL, e2fsprogs, and kmod. Even if Ubuntu 22.04 still uses Python 3.10 as its system Python, you can build with Python 3.11 from an activated Conda environment.
 
-構築用のLinux／WSL側で実行するツールは、Ubuntu／DebianがAPTで提供するパッケージを使用します。USBで使うカーネル、そのヘッダーファイル、構築用コンパイラ、イメージ操作用ツール等は、`prepare` が指定版のDebianパッケージを取得し、`build/` 内の専用フォルダへ展開して使います。構築を行うPCにGPUドライバ、DKMS、カーネル、bootloaderをインストールすることはありません。
+Tools executed on the Linux/WSL build host use packages provided by Ubuntu/Debian through APT. For the USB kernel, its headers, the build compiler, image manipulation tools, and related components, `prepare` downloads specific versions of Debian packages and extracts them into dedicated directories under `build/`. It does not install GPU drivers, DKMS, a kernel, or a bootloader on the build PC.
 
-### 環境確認とソース試験を行う
+### Check the Environment and Run Source Tests
 
 ```sh
 python scripts/check-environment.py
 python scripts/run-tests.py
 ```
 
-環境確認（`check-environment.py`）はPythonのバージョン、OSとCPUの種類、必要なコマンド、リポジトリを置いた領域の空き容量を確認します。要件を満たさない場合は理由を表示し、コマンドが不足する場合は対応するAPTパッケージも示して、終了コード1で停止します。`--json` で機械可読な結果も取得できます。`scripts/build-usb.py` の実行時にも同じ要件を検査します。
+The environment check (`check-environment.py`) checks the Python version, OS and CPU architecture, required commands, and free space on the filesystem containing the repository. If a requirement is not met, it displays the reason and exits with code 1. For missing commands, it also lists the corresponding APT packages. Use `--json` to obtain machine-readable results. `scripts/build-usb.py` checks the same requirements when it runs.
 
-`requirements.txt` は追加のpip導入が不要であることを記載したコメントのみのファイルです。`pip install -r requirements.txt` の実行は不要です。FedoraのISOファイルから必要なファイルを取り出すために、構築スクリプトがPythonライブラリのpycdlibを自動で取得します。指定されたバージョンとSHA-256を確認し、取得したファイルから読み込むため、手動でのインストールは不要です。USB内のPAIR等の依存関係も、ホストのpip環境とは別に、指定されたバージョンを外部から準備します。
+`requirements.txt` contains only comments explaining that no additional pip packages need to be installed. You do not need to run `pip install -r requirements.txt`. The build script automatically downloads the Python library pycdlib to extract the required files from the Fedora ISO. It verifies the specified version and SHA-256 and loads the library from the downloaded file, so no manual installation is required. Dependencies for PAIR and other software inside the USB image are also obtained separately from the host's pip environment, using specified versions.
 
-参照：[Condaの環境ファイルと切替](https://docs.conda.io/projects/conda/en/stable/user-guide/tasks/manage-environments.html)、[Pythonのfile_digest仕様](https://docs.python.org/3.11/library/hashlib.html#hashlib.file_digest)。
+References: [Managing Conda environments](https://docs.conda.io/projects/conda/en/stable/user-guide/tasks/manage-environments.html), [Python file_digest documentation](https://docs.python.org/3.11/library/hashlib.html#hashlib.file_digest).
 
-## 2. 外部資料を取得して署名前まで構築する
+## 2. Download External Inputs and Build the Unsigned Modules
 
-空の `build/` から次を実行します。通常ファイルの検査用ログは `build/prepare-01.log` 等へ保存されます。
+Starting with an empty `build/` directory, run:
 
 ```sh
 python scripts/build-usb.py prepare
 ```
 
-実行するコマンドだけを見る場合：
+Validation logs are saved as regular files such as `build/prepare-01.log`.
+
+To preview only the commands that would be executed:
 
 ```sh
 python scripts/build-usb.py prepare --plan
 ```
 
-このスクリプトの中で、以下を順に実行します。
+The script performs the following steps in order:
 
-1. `inputs/` の取得元URL・バージョン情報・SHA-256などの検証情報に従って、パッケージ、archive、Fedora ISO、公式公開鍵、抽出ツールを取得し `.cache/` へ格納する。
-2. fingerprintを照合した公開鍵で署名付きDebian/NVIDIA APT情報を検証し、固定したパッケージの版・SHA・公開パス等を照合する。
-3. gpu-unlockの指定されたcommitを `vendor/gpu-unlock` へ取得し、commit・作業ツリー・Gitオブジェクトを検査する。
-4. Debianのビルド用sysrootとruntime baseを別々に展開し、対象kernel用の6つの未署名moduleを隔離環境で構築・検査する。
-5. NVIDIA、PAIR、llama.cpp、ネットワーク、gzip/公開CA、署名済みshim/GRUBを展開する。
-6. 固定した上流generatorでfirmwareを生成し、出力のハッシュと帰属表示を確認する。
-7. Fedoraの公式CHECKSUM署名とISOのSHAを確認し、固定したpycdlib wheelでLiveツリーを展開する。
-8. 空のPC登録状態で使うruntime中間ツリーを `build/runtime-root` へまとめる。
+1. Download packages, archives, the Fedora ISO, official public keys, and extraction tools according to the source URLs, versions, SHA-256 hashes, and other verification information in `inputs/`, and store them in `.cache/`.
+2. Verify signed Debian/NVIDIA APT metadata using public keys whose fingerprints have been checked, then verify the pinned package versions, SHA hashes, published paths, and other details.
+3. Fetch the specified gpu-unlock commit into `vendor/gpu-unlock`, and check the commit, working tree, and Git objects.
+4. Extract the Debian build sysroot and runtime base separately, then build and validate six unsigned modules for the target kernel in an isolated environment.
+5. Extract NVIDIA, PAIR, llama.cpp, networking components, gzip/public CA certificates, and signed shim/GRUB.
+6. Generate firmware using the pinned upstream generator, and verify the output hashes and attribution notices.
+7. Verify Fedora's official CHECKSUM signature and the ISO's SHA hash, then extract the Live tree using the pinned pycdlib wheel.
+8. Assemble an intermediate runtime tree in `build/runtime-root` for use with an empty PC registration state.
 
-カーネルと、GPUドライバの構築に必要なヘッダーファイルは、使用するバージョンを指定して取得します。また、取得したソースに付属するインストール用コマンド（make installなど）は実行しません。
+The kernel and the headers required to build the GPU drivers are downloaded at specified versions. Installation commands included with the downloaded sources, such as `make install`, are not executed.
 
-ダウンロード済みのファイルは、検証に合格していれば再利用できます。破損が見つかった場合は自動で上書きせず、処理を停止します。ダウンロードに失敗した場合や、指定したバージョンが配布元から取得できなくなった場合も停止します。ダウンロードが途中で止まったファイルは、再実行時に最初から取得し直します。
+Previously downloaded files can be reused if they pass verification. If corruption is detected, the process stops rather than overwriting the files automatically. It also stops if a download fails or a specified version is no longer available from its source. Files left by interrupted downloads are downloaded again from the beginning on the next run.
 
-構築途中で作成されたファイルやフォルダは、自動で削除したり、次の構築に使い回したりしません。 `prepare` が「出力先が既に存在する」という理由で停止した場合は、調査用のログを残し、リポジトリを別のフォルダへ新しくcloneして、構築をやり直してください。
+Files and directories created during a build are neither deleted automatically nor reused in subsequent builds. If `prepare` stops because an output destination already exists, retain the logs for investigation, clone the repository into a new directory, and restart the build there.
 
-### 検証の範囲
+### Verification Scope
 
-Debian/NVIDIAパッケージには、公式署名付きAPT情報からパッケージSHAへ至る照合を行います。Fedoraには公式鍵・CHECKSUM署名・ISOの照合を行います。これらの鍵の取得元とfingerprintは `inputs/public-keys.json` に記録しています。
+For Debian/NVIDIA packages, verification follows the chain from officially signed APT metadata to the package SHA hashes. For Fedora, it verifies the official key, CHECKSUM signature, and ISO. The key sources and fingerprints are recorded in `inputs/public-keys.json`.
 
-gpu-unlockのソースは指定されたcommit、PAIR/llama.cpp・firmware生成用の外部資料・抽出wheelは指定されたSHAとHTTPS配布元で確認します。これらすべてに作者の電子署名を検証している、という意味ではありません。APT情報は有効期限を確認するためネットワークで更新します。指定された版が署名付きindexから消えた場合も、別版への自動更新は行いません。
+The gpu-unlock source is checked against the specified commit. PAIR/llama.cpp, external inputs for firmware generation, and the extraction wheel are checked against specified SHA hashes and HTTPS sources. This does not mean that the authors' digital signatures are verified for all of these inputs. APT metadata is refreshed over the network so that its expiration can be checked. If a specified version disappears from the signed index, the build does not automatically switch to another version.
 
-参照：[Debianの署名鍵](https://ftp-master.debian.org/keys.html)、[Fedoraの検証方法と署名鍵](https://fedoraproject.org/security/)。
+References: [Debian signing keys](https://ftp-master.debian.org/keys.html), [Fedora verification instructions and signing keys](https://fedoraproject.org/security/).
 
-## 3. 利用者の鍵で署名する
+## 3. Sign with Your Own Key
 
-[署名鍵の作成とmodule署名](secure-boot.md)を、利用者自身の端末で実行。
+Follow [Creating a Signing Key and Signing Modules (Japanese)](secure-boot.md) on your own terminal.
 
-- 初回に、このリポジトリおよびUSBの外に暗号化秘密鍵と公開DER証明書を作成。
-- 既存鍵を使う更新では、鍵を作り直さず署名する。
-- 署名先はデフォルトで `build/signed-modules` とする。署名前のモジュールは保持する。
+- For the first build, create an encrypted private key and a public DER certificate outside both this repository and the USB drive.
+- For updates using an existing key, sign with that key without recreating it.
+- The default destination for the signed modules is `build/signed-modules`. The unsigned modules are retained.
 
-エージェントへ秘密鍵やパスフレーズを渡す必要はありません。
+You do not need to give an agent your private key or passphrase.
 
-## 4. USBイメージを生成・検査する
+## 4. Generate and Validate the USB Image
 
-署名が終わったら次を実行。
+After signing is complete, run:
 
 ```sh
 python scripts/build-usb.py image
 ```
 
-別名の署名束を使う場合：
+To use a signed module bundle with a different name:
 
 ```sh
 python scripts/build-usb.py image --signed-modules build/signed-modules-update
 ```
 
-署名束と元moduleの整合性、payloadの不変、選択した証明書によるCMS署名を検査してから、GUI・空の共有台帳・MOK操作ツール、6GiBのroot.img、初期状態用の1GiBのstate.img、initramfs、署名済みEFIを組み合わせます。同じ公開証明書を署名束とGUI・MOKツールで使用します。
+The script checks consistency between the signed bundle and the original modules, verifies that the payloads are unchanged, and validates the CMS signatures using the selected certificate. It then assembles the GUI, an empty shared registry, MOK management tools, a 6 GiB `root.img`, a 1 GiB `state.img` for the initial state, initramfs, and signed EFI components. The signed bundle, GUI, and MOK tools use the same public certificate.
 
-最終出力は `build/usb-image/gpu-linux-usb.img` と `SHA256SUMS`、検査レポートです。GPT、FAT/ext4、initramfs、状態テンプレートのSHAと初期内容、イメージ内部の内容、パーティションの読戻しを検査します。ログは `build/image-01.log` 等です。
+The final outputs are `build/usb-image/gpu-linux-usb.img`, `SHA256SUMS`, and validation reports. Validation covers GPT, FAT/ext4 filesystems, initramfs, the state template's SHA hash and initial contents, image contents, and partition readback. Logs are saved as files such as `build/image-01.log`.
 
-現在の開発ツリーでは、`config/usb-layout.json` でGPU-MASTERを4608MiB（4.5GiB）に設定し、生成イメージは約8.4GBです。0.9.1 revision 2までの従来の構成ではGPU-MASTERは8GiB、イメージ全体は約12.1GBです。実USBへ書くときは、使用するイメージ以上の実容量を持つ媒体を利用者が選びます。`scripts/build-usb.py` は実デバイスへの書込みを行いません。最終イメージができた後、[利用開始](quick-start.md)に進みます。
+For now, user-facing Markdown guides bundled on the USB use Japanese versions. The copies omit `.ja` from filenames and remove language-switch links, and links between guides are rewritten to the bundled filenames. Existing GUI references such as `QUICK-START.md` and `DETAILS.md` are retained. Linked guides are also copied into `GPU-LOGS/tools/` and Fedora's `tools/` directory. Repository originals and third-party license notices are left unchanged.
 
-GPU-MASTERは配布元の領域です。root.imgの論理サイズ6GiBとstate.imgの1GiBは維持し、両ファイルをスパースファイル（未使用部分の保存容量を節約する形式）として格納します。構築前にデータ領域の格納量を見積もり、未使用部分の位置を取得できないファイルシステムでは論理サイズ全体で判定します。容量不足時は停止します。作成後はファイルシステムを検査し、予約ブロックを除いて512MiB以上の空きを確認します。結果は出力先の `master-capacity.json` に保存します。
+In the current development tree, `config/usb-layout.json` sets GPU-MASTER to 4608 MiB (4.5 GiB), producing an image of approximately 8.4 GB. In the previous layout, used through 0.9.1 revision 2, GPU-MASTER was 8 GiB and the entire image was approximately 12.1 GB. When writing to a physical USB drive, choose a drive whose actual capacity is at least the size of the image you are using. `scripts/build-usb.py` does not write to physical devices. Once the final image is ready, proceed to [Quick Start](quick-start.md).
 
-余りの領域をモデルの手動配布用に使う場合、利用者がUSB上に追加のNTFS領域を作成してモデルをコピーします。構築ツールはその追加領域を自動作成しません。配布用モデルの置き場と、起動時に使用する登録済みのroot・state・Models保存先は別に扱います。
+GPU-MASTER is the distribution source partition. The logical sizes of `root.img` and `state.img` remain 6 GiB and 1 GiB, respectively, and both are stored as sparse files to avoid allocating storage for unused regions. Before building, the script estimates the storage required for the data. On filesystems that cannot report the locations of unused regions, it uses the full logical sizes for this calculation. The build stops if capacity is insufficient. After creation, it checks the filesystem and confirms that at least 512 MiB is free, excluding reserved blocks. Results are saved to `master-capacity.json` in the output directory.
 
-既存出力を保持して再組立する場合は、すべて新しい名前を指定します。
+If you want to use the remaining space for manually distributing models, create an additional NTFS partition on the USB drive and copy the models there yourself. The build tools do not create this additional partition automatically. The storage location for models being distributed is treated separately from the registered root, state, and Models storage locations used at boot.
+
+To reassemble the image while preserving existing outputs, specify new names for all output directories:
 
 ```sh
 python scripts/build-usb.py image \
@@ -129,45 +135,45 @@ python scripts/build-usb.py image \
   --output build/usb-image-next
 ```
 
-これらの出力は `build/` 内の、互いに重ならない新規ディレクトリに限定します。
+These outputs must be new, non-overlapping directories under `build/`.
 
-## ソース試験と実機試験
+## Source Tests and Hardware Tests
 
 ```sh
 python scripts/run-tests.py
 ```
 
-テスト用に作成したデータやファイルを使って動作を確認し、シェルスクリプトの構文も検査します。スキップは成功と区別し、環境不足による未検証範囲として扱います。構築・署名検査の成功だけでは、対象PCのMOK登録、Secure Boot起動、GPUのNormal/Unlock、PAIR参加、正常終了の実機確認にはなりません。
+The tests check behavior using data and files created for testing, and also check shell script syntax. Skipped tests are distinguished from successful tests and treated as areas left unverified because of missing environment requirements. Successful builds and signature checks alone do not verify MOK enrollment, Secure Boot startup, GPU Normal/Unlock operation, PAIR participation, or clean shutdown on the target PC.
 
-WindowsツールのPowerShell処理もLinux/WSL上で試験する場合は、任意の開発用ランナーを一度だけ準備します。
+To also test the PowerShell code for the Windows tools on Linux/WSL, prepare the optional development test runner once:
 
 ```sh
 python scripts/prepare-powershell-tests.py
 python scripts/run-tests.py
 ```
 
-`inputs/powershell-test-input.json` のPowerShell 7.5.4をHTTPSで取得し、サイズ・SHAを照合して `build/powershell-7.5.4` へ展開します。既存出力は保持して停止するため、準備済みならテストだけを実行してください。x86_64 Linux/WSL用で、ホストへインストールせずUSBにも含めません。試験はその実行ファイルを自動検出し、Windows固有のストレージ操作等をテスト用の処理に置き換えて確認します。
+This downloads PowerShell 7.5.4 over HTTPS as specified in `inputs/powershell-test-input.json`, verifies its size and SHA hash, and extracts it into `build/powershell-7.5.4`. If the output already exists, preparation stops and preserves it, so run only the tests if it has already been prepared. This runner is for x86_64 Linux/WSL. It is not installed on the host or included on the USB drive. The tests automatically detect its executable and replace Windows-specific storage operations and similar functionality with test substitutes.
 
-秘密鍵、生成日時、ファイルシステムUUID等が異なるため、別の利用者の完成USBと全体SHAが一致することは合格条件にしません。外部資料の版とハッシュ、処理、署名、内部内容、動作を検証します。新規インストールは過去のrootイメージに依存せず、回復が必要なときは元を保持したコピー上でfsckする設計です。
+Matching the overall SHA hash of another user's completed USB image is not a pass criterion, because private keys, generation timestamps, filesystem UUIDs, and other details differ. Verification instead covers external input versions and hashes, processing, signatures, internal contents, and behavior. A fresh installation does not depend on a previous root image. When recovery is needed, the design runs fsck on a copy while preserving the original.
 
-`.cache/`、`vendor/`、`build/`、鍵・証明書やPC登録情報は公開Gitへ追加しません。
+Do not add `.cache/`, `vendor/`, `build/`, keys, certificates, or PC registration information to public Git repositories.
 
-## 構築後の起動確認
+## Post-Build Boot Checks
 
-NVIDIA GPUのないPCで起動画面・root/stateの分離を調べる場合は、[GPUなし確認起動](no-gpu-test.md)を使用します。同じ版のrootテンプレートを保持して起動部分だけを更新する手順もあります。通常起動の代わりに自動実行するモードではありません。
+To check the boot screen and root/state separation on a PC without an NVIDIA GPU, use [Boot Testing Without a GPU (Japanese)](no-gpu-test.md). That document also provides a procedure for updating only the boot components while retaining the root template from the same version. This mode is not run automatically in place of normal startup.
 
-本システムでは、Linux本体を含むrootイメージと、設定情報などrootのバージョンが変わっても維持する情報を入れるstateイメージからなります。初回起動時にはrootとstateのテンプレートをコピーし、そのPCの設定情報を初期化します。署名鍵は従来の管理済み鍵を使えますが、対象kernel/moduleや公開証明書の整合性は通常どおり検査します。
+The system consists of a root image containing Linux itself and a state image containing settings and other information that must persist across root version changes. On first boot, the root and state templates are copied, and the settings for that PC are initialized. You can use an existing managed signing key, but consistency between the target kernel/modules and the public certificate is checked as usual.
 
-起動バナー、Normal/Unlock表示、PAIRの起動・終了・再起動、PC再起動後の設定保持、正常終了を順に確認します。異常終了後にプロセスが残る場合は次のPAIR起動を止めます。
+Check the boot banner, Normal/Unlock display, PAIR startup/shutdown/restart, settings persistence after a PC restart, and clean shutdown, in that order. If processes remain after an abnormal termination, the next PAIR startup is blocked.
 
-root交換は0.9以降の同じstate schemaを使う更新に限ります。0.9.1の現在の構築はroot revision 3で、独立したリビジョンを使い、0.9.0の既存rootをrevision 0として扱います。revision 3では、終了時に解除済みのstate loopを再解除して電源断を止める問題を修正しました。詳しくは[利用方法](user-guide.md)を参照します。
+Root replacement is limited to updates using the same state schema from version 0.9 onward. The current 0.9.1 build uses root revision 3, with an independent revision counter; existing 0.9.0 roots are treated as revision 0. Revision 3 fixes an issue where shutdown attempted to detach an already detached state loop device again, preventing power-off. See the [User Guide (Japanese)](user-guide.md) for details.
 
-## 構成情報とrootリビジョン
+## Configuration Metadata and Root Revisions
 
-`config/release.json` がプロジェクト版、root release、root revision、boot ABI、state schemaの定義です。rootを変更するときはrevisionを増やします。同じリビジョンで配布元のSHA-256が異なる場合は、起動を停止します。完成rootを再生成するとUUID等でもSHAが変わるため、rootを作り直す場合もリビジョンを増やし、既存配布物と区別してください。
+`config/release.json` defines the project version, root release, root revision, boot ABI, and state schema. Increment the revision whenever you change the root. Boot is blocked if the distribution source has a different SHA-256 for the same revision. Regenerating a completed root also changes its SHA because of UUIDs and other details, so increment the revision whenever you rebuild the root to distinguish it from existing distributions.
 
-`GPU-LOGS/MEDIA-INFO.txt` とFedoraパーティション直下に、使用した外部資料の版などをまとめた構成一覧を配置します。Debian、kernel、gpu-unlock commit、NVIDIA、PAIR、llama.cpp、Fedoraの版を確認できます。これは媒体の情報であり、起動中rootの情報とは区別します。バナーはroot内の同じ形式のメタデータから版・revisionを、起動状態からNormal/Unlock/TESTを表示します。
+A component inventory summarizing the versions of external inputs is placed at `GPU-LOGS/MEDIA-INFO.txt` and in the root directory of the Fedora partition. It lists the Debian, kernel, gpu-unlock commit, NVIDIA, PAIR, llama.cpp, and Fedora versions. This describes the media and is distinct from information about the currently running root. The banner reads the version and revision from metadata in the same format inside the root, and displays Normal/Unlock/TEST based on the boot state.
 
-boot ABIはinitramfs・root・stateの取り決めです。kernelだけでなくGPUドライバとgpu-unlockの版も照合します。起動・終了・設定保存の互換性を変える開発では、ABIとstate schemaを見直して、互換性のない組合せを許可しないでください。
+The boot ABI defines the contract between initramfs, root, and state. Version checks cover not only the kernel but also the GPU drivers and gpu-unlock. When development changes compatibility for startup, shutdown, or settings persistence, review the ABI and state schema and ensure that incompatible combinations are rejected.
 
-確認済みの範囲と残っている確認項目は [TODO](../TODO.md) にまとめています。
+Verified areas and remaining checks are summarized in [TODO (Japanese)](../TODO.md).

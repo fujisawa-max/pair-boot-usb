@@ -53,6 +53,8 @@ def main():
     info = runpy.run_path(str(ROOT / 'scripts/release-metadata.py'))
     if args.root_version != VERSION or args.media_version != RELEASE['version']:
         parser.error('Media information requires the configured release version')
+    docs = runpy.run_path(str(ROOT / 'scripts/usb-documents.py'))
+    documents = docs['document_plan'](ROOT)
     output.mkdir(parents=True)
     (output / 'MEDIA-INFO.txt').write_text(info['text'](), encoding='utf-8')
     tools = output / 'tools'
@@ -60,10 +62,7 @@ def main():
     shutil.copy2(ROOT / 'runtime/fleet-registry.py', tools / 'fleet-registry.py')
     shutil.copy2(ROOT / 'runtime/storage-target.py', tools / 'storage-target.py')
     shutil.copy2(ROOT / 'config/rtx30-gpu-policy.json', tools / 'rtx30-gpu-policy.json')
-    shutil.copy2(ROOT / 'docs/quick-start.md', tools / 'QUICK-START.md')
-    shutil.copy2(ROOT / 'docs/user-guide.md', tools / 'DETAILS.md')
-    shutil.copy2(ROOT / 'docs/no-gpu-test.md', tools / 'NO-GPU-TEST.md')
-    shutil.copy2(ROOT / 'docs/windows-fleet.md', tools / 'WINDOWS-FLEET.md')
+    docs['write_documents'](tools, documents)
 
     (output / 'usb-config.json').write_text(json.dumps({'schema': 1, 'kind': 'gpu-linux-config', 'root_version': args.root_version}, indent=2) + '\n')
     fleet = runpy.run_path(str(ROOT / 'runtime/fleet-registry.py'))
