@@ -29,6 +29,11 @@ PAIR BOOTでは Secure Boot の利用が前提となっています。Secure Boo
 
 ---
 
+## 他言語ドキュメント
+* [English Version (英語ドキュメント)](./README.md)
+
+---
+
 ## ドキュメント一覧
 
 ### 初めて利用する方へ
