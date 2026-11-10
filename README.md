@@ -11,11 +11,17 @@ RTX 30シリーズのうち対応GPUでは、gpu-unlockによる高速化（Unlo
 本システムを利用する大まかな流れは以下のとおりです。
 
 ```mermaid
+---
+config:
+  flowchart:
+    rankSpacing: 20
+    wrappingWidth: 640
+---
 flowchart TD
-    A[1. USBイメージ構築<br>Linux/WSL2でビルド・署名] --> B[2. 起動USBを作成<br>イメージを実際のUSBへ書込み]
-    B --> C[3. Windowsで情報取得<br>GPU・保存先フォルダをUSBへ出力]
-    C --> D[4. 同梱Fedoraで登録<br>Secure Boot MOK登録 & PC情報登録]
-    D --> E[5. PAIR BOOT起動<br>推論エンジン起動 & モデル推論]
+    A["1. USBイメージ構築：Linux/WSL2でビルド・署名"] --> B["2. 起動USBを作成：イメージを実際のUSBへ書込み"]
+    B --> C["3. Windowsで情報取得：GPU・保存先フォルダをUSBへ出力"]
+    C --> D["4. 同梱Fedoraで登録：Secure Boot MOK登録・PC情報登録"]
+    D --> E["5. PAIR BOOT起動：推論エンジン起動・モデル推論"]
 ```
 
 ### 署名鍵の作成・管理について（重要）
