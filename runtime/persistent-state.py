@@ -53,26 +53,32 @@ def create(api, master, parent, value, hardware, free_bytes=None):
         if path.exists():
             raise api.SafetyError('State output exists; no automatic replacement or retry')
     api.regular(master)
-    if master.stat().st_size != value['size'] or api.digest(master) != value['sha256']:
-        raise api.SafetyError('State master size/hash mismatch')
-    api.validate_ext4(master)
+    progress = api.ImageProgress('Creating state.img', 5)
+    with progress.step('Verifying state.img source', value['size']):
+        if master.stat().st_size != value['size'] or api.digest(master, progress) != value['sha256']:
+            raise api.SafetyError('State master size/hash mismatch')
+        api.validate_ext4(master)
     available = shutil.disk_usage(parent).free if free_bytes is None else free_bytes
     if available < value['size'] + 1024**3:
         raise api.SafetyError('Insufficient storage for state and reserve')
     api.new_json(marker, {'schema': 1, 'state': 'copying'})
     with master.open('rb') as source, temporary.open('xb') as output:
-        shutil.copyfileobj(source, output, 8 * 1024**2)
-        output.flush()
-        os.fsync(output.fileno())
-    if temporary.stat().st_size != value['size'] or api.digest(temporary) != value['sha256']:
-        raise api.SafetyError('State copy verification failed; transaction retained')
-    api.atomic_new(temporary, target)
-    api.sync_directory(parent)
-    api.new_json(receipt, {'schema': 1, 'state_schema': SCHEMA, 'version': 'state-v1',
-                          'size': value['size'], 'original_sha256': value['sha256'],
-                          'hardware_sha256': hashlib.sha256(hardware.strip().lower().encode()).hexdigest()})
-    marker.unlink()
-    api.sync_directory(parent)
+        with progress.step('Copying state.img', value['size']):
+            api.copy_image(source, output, progress)
+        with progress.step('Flushing state.img to storage'):
+            output.flush()
+            os.fsync(output.fileno())
+    with progress.step('Verifying written state.img', value['size']):
+        if temporary.stat().st_size != value['size'] or api.digest(temporary, progress) != value['sha256']:
+            raise api.SafetyError('State copy verification failed; transaction retained')
+    with progress.step('Finalizing state.img'):
+        api.atomic_new(temporary, target)
+        api.sync_directory(parent)
+        api.new_json(receipt, {'schema': 1, 'state_schema': SCHEMA, 'version': 'state-v1',
+                               'size': value['size'], 'original_sha256': value['sha256'],
+                               'hardware_sha256': hashlib.sha256(hardware.strip().lower().encode()).hexdigest()})
+        marker.unlink()
+        api.sync_directory(parent)
     return target
 
 

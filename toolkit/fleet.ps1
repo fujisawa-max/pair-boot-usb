@@ -18,10 +18,6 @@ function Hash-Bytes([byte[]]$Bytes) {
     try { return ([BitConverter]::ToString($hash.ComputeHash($Bytes))).Replace('-','').ToLowerInvariant() } finally { $hash.Dispose() }
 }
 function Test-Integer($Value) { return ($Value -is [int] -or $Value -is [long]) }
-function Compatible-Version([string]$From, [string]$To) {
-    return ($From -ceq $To -or ($From -ceq '0.7.8-shared' -and $To -ceq '0.8.0-shared') -or
-            ($From -ceq '0.9.0-shared' -and $To -ceq '0.9.1-shared'))
-}
 function Canonical-Json($Value) {
     if ($null -eq $Value) { return 'null' }
     if ($Value -is [Collections.IDictionary]) {
@@ -58,9 +54,10 @@ function Check-Host($Value) {
     }
     if ($Value.checked_at_unix -isnot [long] -and $Value.checked_at_unix -isnot [int] -and $Value.checked_at_unix -isnot [double]) { throw 'Invalid timestamp type.' }
     $age = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds() - [double]$Value.checked_at_unix
-    if ([double]::IsNaN($age) -or [double]::IsInfinity($age) -or $age -lt 0 -or $age -gt 2592000) { throw 'Inventory expired or future dated.' }
+    if ([double]::IsNaN($age) -or [double]::IsInfinity($age) -or [double]$Value.checked_at_unix -lt 0 -or $age -lt 0) { throw 'Invalid or future-dated inventory timestamp.' }
     if ($Value.bitlocker_volume_status -cne 'FullyDecrypted' -or $Value.bitlocker_protection -cne 'Off') { throw 'BitLocker encrypted/protected/unknown.' }
-    foreach ($key in @('fast_startup_enabled','partition_is_system','partition_is_hidden')) {
+    if ($Value.fast_startup_enabled -isnot [bool]) { throw 'Invalid Fast Startup observation.' }
+    foreach ($key in @('partition_is_system','partition_is_hidden')) {
         if ($Value.$key -isnot [bool] -or $Value.$key -ne $false) { throw "Unsafe or unknown: $key" }
     }
     if ($Value.partition_is_boot -isnot [bool]) { throw 'Unknown boot partition flag.' }
@@ -112,11 +109,11 @@ function Read-Input([string]$Path) {
     if ($item.PSIsContainer -or ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) -or $item.Length -gt 1048576) { throw 'Expected bounded regular input file.' }
     $value = [IO.File]::ReadAllText($item.FullName, $utf8) | ConvertFrom-Json
     if ($null -ne $value.PSObject.Properties['payload_base64']) {
-        if ($value.schema -ne 1) { throw 'Unknown registry envelope.' }
+        if (-not (Test-Integer $value.schema) -or $value.schema -ne 1) { throw 'Unknown registry envelope.' }
         $raw = [Convert]::FromBase64String($value.payload_base64)
         if ((Hash-Bytes $raw) -cne $value.sha256) { throw 'Registry checksum mismatch.' }
         $value = $utf8.GetString($raw) | ConvertFrom-Json
-        if (-not (Test-Integer $value.schema) -or $value.schema -ne 1 -or -not (Test-Integer $value.generation) -or $value.generation -lt 1 -or $value.root_version -cnotmatch '^[a-zA-Z0-9._-]{1,80}$') { throw 'Invalid registry metadata.' }
+        if (-not (Test-Integer $value.schema) -or $value.schema -ne 1 -or -not (Test-Integer $value.generation) -or $value.generation -lt 1 -or $value.root_version -isnot [string] -or $value.root_version -cnotmatch '^[a-zA-Z0-9._-]{1,80}$') { throw 'Invalid registry metadata.' }
         $ids = @{}
         $records = @()
         foreach ($record in @($value.records)) {
@@ -136,7 +133,7 @@ function New-Registry($Values, [int]$NewGeneration, [string]$Version) {
     $prior = 0
     foreach ($value in @($Values)) {
         if ($null -ne $value.PSObject.Properties['records']) {
-            if (-not (Compatible-Version $value.root_version $Version)) { throw 'Registry versions conflict.' }
+            if (-not (Test-Integer $value.schema) -or $value.schema -ne 1) { throw 'Unsupported registry schema.' }
             $prior = [Math]::Max($prior, $value.generation)
             $items = @($value.records)
         } else { $items = @($value) }
@@ -194,8 +191,7 @@ function Check-Usb([string]$Path) {
     } elseif ($env:OS -eq 'Windows_NT') { throw 'OfflineFixture is for Linux fixture tests only.' }
     $markerPath = Join-Path $full 'usb-config.json'
     $marker = Get-Content -Raw -LiteralPath $markerPath | ConvertFrom-Json
-    if ($marker.schema -ne 1 -or $marker.kind -cne 'gpu-linux-config' -or $marker.root_version -cnotmatch '^[a-zA-Z0-9._-]{1,80}$') { throw 'USB marker/version mismatch.' }
-    if ($RootVersion -and $marker.root_version -cne $RootVersion) { throw 'USB marker/version mismatch.' }
+    if (-not (Test-Integer $marker.schema) -or $marker.schema -ne 1 -or $marker.kind -cne 'gpu-linux-config' -or $marker.root_version -isnot [string] -or $marker.root_version -cnotmatch '^[a-zA-Z0-9._-]{1,80}$') { throw 'Invalid USB configuration marker.' }
     if (-not $RootVersion) { $script:RootVersion = $marker.root_version }
     return $full
 }
@@ -205,24 +201,21 @@ if ($Action -eq 'Merge') {
     $values = @($Inputs | ForEach-Object { Read-Input $_ })
     if (-not $RootVersion) {
         $versions = @($values | Where-Object { $null -ne $_.PSObject.Properties['root_version'] } | ForEach-Object { $_.root_version } | Select-Object -Unique)
-        $targets = @($versions | Where-Object { $candidate = $_; @($versions | Where-Object { -not (Compatible-Version $_ $candidate) }).Count -eq 0 })
-        if ($targets.Count -ne 1) { throw 'Specify one compatible root version, or use -RootVersion for raw records.' }
-        $RootVersion = $targets[0]
+        $RootVersion = if ($versions.Count -gt 0) { $versions[0] } else { 'registry-v1' }
     }
     $registry = New-Registry $values $Generation $RootVersion
     Atomic-Write $OutputFile (Encode-Registry $registry)
-    Write-Output "Merged $(@($registry.records).Count) hosts; generation $Generation; version $RootVersion"
+    Write-Output "Merged $(@($registry.records).Count) hosts; schema 1; generation $Generation"
 } elseif ($Action -eq 'Status') {
     foreach ($path in $Inputs) {
         $registry = Read-Input $path
-        Write-Output "$path : generation=$($registry.generation) version=$($registry.root_version) hosts=$(@($registry.records).Count)"
+        Write-Output "$path : schema=$($registry.schema) generation=$($registry.generation) hosts=$(@($registry.records).Count)"
     }
 } elseif ($Action -eq 'Collect') {
     $target = Check-Usb $UsbRoot
     if (-not $OutputFile -or (Test-Path -LiteralPath $OutputFile)) { throw 'Fresh output filename required.' }
     $path = Join-Path $target 'gpu-config/registry.json'
     $registry = Read-Input $path
-    if ($registry.root_version -cne $RootVersion) { throw 'Collected registry version differs from USB marker.' }
     Atomic-Write $OutputFile (Encode-Registry $registry)
     Write-Output 'Registry collected.'
 } else {
@@ -231,10 +224,6 @@ if ($Action -eq 'Merge') {
     if ($null -eq $registry.PSObject.Properties['records']) { throw 'Deploy requires a registry.' }
     # Validate the selected physical GPU-LOGS USB before reading its marker.
     $target = Check-Usb $UsbRoot
-    if (-not (Compatible-Version $registry.root_version $RootVersion)) { throw 'Unsupported registry version migration.' }
-    if ($registry.root_version -cne $RootVersion) {
-        $registry = New-Registry @($registry) ($registry.generation + 1) $RootVersion
-    }
     $directory = Join-Path $target 'gpu-config'
     if (-not (Test-Path -LiteralPath $directory)) { [void][IO.Directory]::CreateDirectory($directory) }
     Assert-OrdinaryDirectory $directory
@@ -242,7 +231,7 @@ if ($Action -eq 'Merge') {
     if (Test-Path -LiteralPath $current) {
         $old = Read-Input $current
         if ($old.generation -gt $registry.generation) { throw 'Refusing registry rollback.' }
-        if ($old.generation -eq $registry.generation -and (Canonical-Json $old) -cne (Canonical-Json $registry)) { throw 'Same generation has different contents.' }
+        if ($old.generation -eq $registry.generation -and (Canonical-Json $old.records) -cne (Canonical-Json $registry.records)) { throw 'Same generation has different contents.' }
         foreach ($item in @($old.records)) {
             $matching = @($registry.records | Where-Object { $_.hardware_uuid -eq $item.hardware_uuid })
             if ($matching.Count -ne 1) { throw 'Deployment would remove a host.' }

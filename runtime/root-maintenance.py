@@ -111,50 +111,54 @@ def maintain(api, target, receipt, manifest, payload, workspace, free_bytes=None
     api.new_json(marker, {'schema': 1, 'state': 'copy-repair-upgrade', 'backup': backup.name,
                           'old_receipt': receipt, 'new_version': manifest['version'], 'log': log_path.name})
     print('GPU-ROOT: preparing preserved-copy recovery/upgrade; do not remove root storage', flush=True)
+    progress = api.ImageProgress('Recovering ' + prefix + '.img on a preserved copy', 5)
     with target.open('rb') as source, candidate.open('xb') as output:
         expected = hashlib.sha256()
-        while block := source.read(8 * 1024 * 1024):
-            expected.update(block)
-            output.write(block)
-        output.flush()
-        os.fsync(output.fileno())
-    if candidate.stat().st_size != size or api.digest(candidate) != expected.hexdigest():
-        raise api.SafetyError('Recovery copy verification failed; original preserved')
-    with log_path.open('xb') as log:
-        try:
-            result = subprocess.run(['e2fsck', '-p', '-f', str(candidate)], stdout=log,
-                                    stderr=subprocess.STDOUT, timeout=600)
-        except subprocess.TimeoutExpired as error:
-            raise api.SafetyError('Automatic fsck timed out; original preserved; review from Fedora') from error
-        finally:
-            log.flush()
-            os.fsync(log.fileno())
-    if result.returncode not in (0, 1):
-        raise api.SafetyError(f'Automatic fsck stopped (exit={result.returncode}); original preserved; see {log_path.name}')
-    api.validate_ext4(candidate)
-    if migration:
-        release = json.loads(api.run('debugfs', '-R', 'cat /usr/lib/gpu-root/image.json', str(candidate)))
-        if release.get('version') != receipt['version'] or release.get('kernel_release') != manifest['kernel_release']:
-            raise api.SafetyError('Legacy root release/kernel mismatch; original preserved')
-        if upgrade is None:
-            apply_upgrade(api, candidate, payload, manifest['migration'], workspace)
-        else:
-            upgrade(candidate)
+        with progress.step('Copying ' + prefix + '.img for recovery', size):
+            api.copy_image(source, output, progress, hasher=expected)
+        with progress.step('Flushing recovery copy to storage'):
+            output.flush()
+            os.fsync(output.fileno())
+    with progress.step('Verifying recovery copy', size):
+        if candidate.stat().st_size != size or api.digest(candidate, progress) != expected.hexdigest():
+            raise api.SafetyError('Recovery copy verification failed; original preserved')
+    with progress.step('Checking and repairing recovery copy'):
+        with log_path.open('xb') as log:
+            try:
+                result = subprocess.run(['e2fsck', '-p', '-f', str(candidate)], stdout=log,
+                                        stderr=subprocess.STDOUT, timeout=600)
+            except subprocess.TimeoutExpired as error:
+                raise api.SafetyError('Automatic fsck timed out; original preserved; review from Fedora') from error
+            finally:
+                log.flush()
+                os.fsync(log.fileno())
+        if result.returncode not in (0, 1):
+            raise api.SafetyError(f'Automatic fsck stopped (exit={result.returncode}); original preserved; see {log_path.name}')
         api.validate_ext4(candidate)
-        release = json.loads(api.run('debugfs', '-R', 'cat /usr/lib/gpu-root/image.json', str(candidate)))
-        if release.get('version') != manifest['version'] or release.get('kernel_release') != manifest['kernel_release']:
-            raise api.SafetyError('Upgraded root version/kernel mismatch; original preserved')
-    api.new_json(backup_receipt, receipt)
-    api.new_json(pending_receipt, {**receipt, 'schema': 1, 'version': manifest['version'], 'size': size,
-                                 'original_sha256': manifest['sha256']})
-    api.sync_directory(parent)
-    api.atomic_new(target, backup)
-    api.sync_directory(parent)
-    api.atomic_new(candidate, target)
-    api.sync_directory(parent)
-    os.replace(pending_receipt, parent / (prefix + '-image.json'))
-    api.sync_directory(parent)
-    marker.unlink()
-    api.sync_directory(parent)
+        if migration:
+            release = json.loads(api.run('debugfs', '-R', 'cat /usr/lib/gpu-root/image.json', str(candidate)))
+            if release.get('version') != receipt['version'] or release.get('kernel_release') != manifest['kernel_release']:
+                raise api.SafetyError('Legacy root release/kernel mismatch; original preserved')
+            if upgrade is None:
+                apply_upgrade(api, candidate, payload, manifest['migration'], workspace)
+            else:
+                upgrade(candidate)
+            api.validate_ext4(candidate)
+            release = json.loads(api.run('debugfs', '-R', 'cat /usr/lib/gpu-root/image.json', str(candidate)))
+            if release.get('version') != manifest['version'] or release.get('kernel_release') != manifest['kernel_release']:
+                raise api.SafetyError('Upgraded root version/kernel mismatch; original preserved')
+    with progress.step('Finalizing recovery; retaining previous image'):
+        api.new_json(backup_receipt, receipt)
+        api.new_json(pending_receipt, {**receipt, 'schema': 1, 'version': manifest['version'], 'size': size,
+                                     'original_sha256': manifest['sha256']})
+        api.sync_directory(parent)
+        api.atomic_new(target, backup)
+        api.sync_directory(parent)
+        api.atomic_new(candidate, target)
+        api.sync_directory(parent)
+        os.replace(pending_receipt, parent / (prefix + '-image.json'))
+        api.sync_directory(parent)
+        marker.unlink()
+        api.sync_directory(parent)
     print('GPU-ROOT: recovery/upgrade verified; previous root retained as ' + backup.name, flush=True)
     return target

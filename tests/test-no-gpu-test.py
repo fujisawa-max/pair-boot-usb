@@ -130,11 +130,11 @@ class NoGpuTests(unittest.TestCase):
 
     def test_test_record_keeps_all_storage_guards(self):
         self.assertEqual(fleet.record(record())['boot_mode'], 'no-gpu-test')
-        for key, value in [('bitlocker_protection', 'Unknown'), ('fast_startup_enabled', True),
+        for key, value in [('bitlocker_protection', 'Unknown'), ('fast_startup_enabled', None),
                            ('secure_boot_enabled', None), ('partition_is_hidden', None),
                            ('partition_is_boot', True), ('storage_directory', '../bad'),
                            ('gpu_bdf', '0000:01:00.0'), ('gpu_pci_id', '10de:2504'),
-                           ('boot_mode', 'arbitrary'), ('checked_at_unix', 0)]:
+                           ('boot_mode', 'arbitrary'), ('checked_at_unix', -1)]:
             with self.subTest(key=key), self.assertRaises(ValueError):
                 fleet.record({**record(), key: value})
         for key in ('boot_mode', 'storage_target'):

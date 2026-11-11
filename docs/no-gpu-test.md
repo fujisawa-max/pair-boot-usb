@@ -1,10 +1,10 @@
-# GPUなしで0.9.1の起動を確認する
+# GPUなしで0.9.2の起動を確認する
 
 対応NVIDIA GPUのないPCで、起動バナー、3択メニュー、rootとstateの分離、再起動後の状態保持を確認するための専用起動です。GPU推論・Unlock・PAIR参加の試験にはなりません。
 
-通常の0.9.1イメージにもTESTエントリが含まれるため、GPUなし専用イメージは不要です。以下のboot-only更新は、同じ版のrootを保持して起動部分だけを再構築する場合の手順です。root・stateテンプレートとmaster.jsonを保持します。0.9.0から0.9.1への更新は通常のrootリビジョン更新になります。確認起動で使用するrootとstateには、通常と同じ初期化・設定保存・回復処理による書込みが発生します。「root.imgを変更しない」はUSB内の配布テンプレートを再生成しないという意味です。
+通常の0.9.2イメージにもTESTエントリが含まれるため、GPUなし専用イメージは不要です。以下のboot-only更新は、同じ版のrootを保持して起動部分だけを再構築する場合の手順です。root・stateテンプレートとmaster.jsonを保持します。0.9.0や0.9.1から0.9.2への更新は、通常のroot交換を使用します。確認起動で使用するrootとstateには、通常と同じ初期化・設定保存・回復処理による書込みが発生します。「root.imgを変更しない」はUSB内の配布テンプレートを再生成しないという意味です。
 
-終了処理を修正したroot revision 3を適用するときは、通常のroot更新を行います。root内の終了用initramfsも変わるため、旧revisionのrootを保持するboot-only更新では電源断の修正を適用できません。以下の手順は、現在のソースに対応するrevision 3のrootを準備済みの場合に使います。
+終了処理を修正したroot revision 3以降を適用するときは、通常のroot更新を行います。root内の終了用initramfsも変わるため、旧revisionのrootを保持するboot-only更新では電源断の修正を適用できません。以下の手順は、現在のソースに対応する0.9.2のrootを準備済みの場合に使います。
 
 ## イメージを作る
 
@@ -39,7 +39,7 @@ python3 scripts/verify-shared-media.py \
 2. 対象PCのWindowsで、USBのNTFSデータ領域を明示的に選択して候補JSONを作ります。既存の0.8以前の保存先は使用せず、新しいフォルダを選びます。
 3. 同じPCでFedora Liveを起動し、保存先NTFSが自動マウントされていれば、使用中のファイルを閉じてそのNTFS領域だけを安全にアンマウントします。GPU-LOGS・GPU-FEDORAやUSB全体は取り外しません。管理GUIの「GPUなし確認用PC・USB保存先を登録（TEST）」を選び、候補とBitLocker確認情報を選択し、登録内容を確認して確定します。GPU BDFの入力は不要です。PC識別、Secure Boot、暗号化、Fast Startup、パーティション属性、USBの実体・予約領域との重複の確認は通常どおり行います。BitLockerのUnknownは許可しません。
 4. 再起動し、GRUBで **TEST / no NVIDIA GPU / USB storage only** を明示的に選びます。自動選択はされません。Normal/Unlockを選んでも確認モードへ自動で切り替わりません。
-5. バナーがバージョン0.9.1と `Mode: TEST / no GPU` を示すこと、3択メニュー、再起動・停止を確認します。PAIR開始を選ぶと、試験用に推論サービスを無効化しているため開始を拒否し、メニューに戻ります。
+5. バナーがバージョン0.9.2と `Mode: TEST / no GPU` を示すこと、3択メニュー、再起動・停止を確認します。PAIR開始を選ぶと、試験用に推論サービスを無効化しているため開始を拒否し、メニューに戻ります。
 
 同じPCでも通常登録と確認用登録は区別します。既存の登録を自動で書き換えません。確認用登録をNormal/Unlockで使うこと、通常登録をTESTで使うこと、NVIDIA機器のあるPCをTESTで起動すること、内蔵領域を確認用保存先にすることは許可しません。
 
@@ -53,7 +53,7 @@ python3 scripts/verify-shared-media.py \
 
 このスクリプトは状態照会のみを行います。WMIの復号状態・暗号化率・保護状態を確認し、PC識別とNTFS UUIDに結び付けて保存します。取得失敗・不明・暗号化中などの場合はJSONを作らず停止します。既存出力は上書きしません。暗号化設定や鍵は変更・取得しません。
 
-Fedoraの登録画面で従来の候補JSONを選び、BitLocker確認情報で「別の観測JSONを選択する」から `bitlocker-admin.json` を指定します。FedoraはPCとNTFS UUID・期限を照合し、保存先の確認も通常どおり行います。候補のShell観測はUnknownのまま保持します。Windowsの版や権限によって状態を取得できない場合は停止します。
+Fedoraの登録画面で従来の候補JSONを選び、BitLocker確認情報で「別の観測JSONを選択する」から `bitlocker-admin.json` を指定します。FedoraはPCとNTFS UUIDを照合し、保存先の確認も通常どおり行います。観測情報に日数による有効期限はありません。候補のShell観測はUnknownのまま保持します。Windowsの版や権限によって状態を取得できない場合は停止します。
 
 スクリプトがまだ媒体にない場合は、このリポジトリの `toolkit/save-admin-bitlocker.ps1` だけをGPU-LOGSの `tools` へコピーできます。既存媒体のFedora側はこの確認JSONを受け取れるため、rootやUSBイメージを作り直す必要はありません。
 

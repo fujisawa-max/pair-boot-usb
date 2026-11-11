@@ -11,6 +11,7 @@ import time
 import uuid
 
 MAX_BYTES = 1024 * 1024
+REGISTRY_SCHEMA = 1
 # Generated from config/rtx30-gpu-policy.json; fixture checks prevent drift.
 GPU_NORMAL_IDS = frozenset('10de:2203 10de:2204 10de:2206 10de:2207 10de:2208 10de:220a 10de:2216 10de:2414 10de:2420 10de:2460 10de:2482 10de:2484 10de:2486 10de:2487 10de:2488 10de:2489 10de:249c 10de:249d 10de:24a0 10de:24c7 10de:24c9 10de:24dc 10de:24dd 10de:24e0 10de:2503 10de:2504 10de:2507 10de:2508 10de:2520 10de:2521 10de:2523 10de:2544 10de:2560 10de:2563 10de:2582 10de:2584 10de:25a0 10de:25a2 10de:25a5 10de:25ab 10de:25ac 10de:25e0 10de:25e2 10de:25e5 10de:25ec 10de:2822 10de:28a3 10de:28e3'.split())
 GPU_UNLOCK_IDS = frozenset('10de:2203 10de:2204 10de:2206 10de:2207 10de:2208 10de:220a 10de:2216 10de:2414 10de:2482 10de:2484 10de:2486 10de:2487 10de:2488 10de:2489 10de:249c 10de:249d 10de:24a0 10de:24c7 10de:24c9 10de:24dc 10de:24dd 10de:24e0 10de:2503 10de:2504 10de:2507 10de:2508 10de:2544'.split())
@@ -91,15 +92,15 @@ def record(value, now=None):
     if not test and value.get('gpu_pci_id') not in GPU_NORMAL_IDS:
         raise ValueError('GPU is not in this release RTX30 normal-mode PCI policy')
     checked = value.get('checked_at_unix')
-    if type(checked) not in (int, float) or not math.isfinite(checked):
+    if type(checked) not in (int, float) or not math.isfinite(checked) or checked < 0:
         raise ValueError('Invalid Windows inventory timestamp')
     age = (time.time() if now is None else now) - checked
-    if age < 0 or age > 30 * 86400:
-        raise ValueError('Windows inventory expired/future dated; refresh it')
+    if age < 0:
+        raise ValueError('Windows inventory is future dated')
     if value.get('bitlocker_volume_status') != 'FullyDecrypted' or value.get('bitlocker_protection') != 'Off':
         raise ValueError('BitLocker encrypted/protected/unknown')
-    if value.get('fast_startup_enabled') is not False or value.get('secure_boot_enabled') is not True:
-        raise ValueError('Fast Startup must be off and Secure Boot explicitly checked')
+    if type(value.get('fast_startup_enabled')) is not bool or value.get('secure_boot_enabled') is not True:
+        raise ValueError('Fast Startup observation must be boolean and Secure Boot explicitly checked')
     consent = validate_partition_policy(value)
     usb_target = None
     if 'storage_target' in value:
@@ -133,15 +134,17 @@ def decode(data, now=None):
     if len(data) > MAX_BYTES:
         raise ValueError('Registry too large')
     envelope = json.loads(data)
-    if envelope.get('schema') != 1:
+    if type(envelope.get('schema')) is not int or envelope['schema'] != REGISTRY_SCHEMA:
         raise ValueError('Unknown registry envelope')
     raw = base64.b64decode(envelope['payload_base64'], validate=True)
     if hashlib.sha256(raw).hexdigest() != envelope.get('sha256'):
         raise ValueError('Registry checksum mismatch')
     value = json.loads(raw)
-    if value.get('schema') != 1 or type(value.get('generation')) is not int or value['generation'] < 1:
+    if type(value.get('schema')) is not int or value['schema'] != REGISTRY_SCHEMA:
+        raise ValueError('Unsupported registry schema')
+    if type(value.get('generation')) is not int or value['generation'] < 1:
         raise ValueError('Invalid registry generation')
-    if not re.fullmatch(r'[a-zA-Z0-9._-]{1,80}', value.get('root_version', '')):
+    if not isinstance(value.get('root_version'), str) or not re.fullmatch(r'[a-zA-Z0-9._-]{1,80}', value['root_version']):
         raise ValueError('Invalid root version')
     hosts = value.get('records')
     if not isinstance(hosts, list) or len(hosts) > 1000:
@@ -160,20 +163,18 @@ def load(path, now=None):
 
 
 def for_version(registry, version, now=None):
-    if registry['root_version'] == version:
-        return decode(encode(registry), now)
-    if (registry['root_version'], version) not in (('0.7.8-shared', '0.8.0-shared'), ('0.9.0-shared', '0.9.1-shared')):
-        raise ValueError('Unsupported registry version migration')
-    return merge([registry], registry['generation'] + 1, version, now)
+    """Legacy caller adapter. The root release does not change registry data."""
+    return decode(encode(registry), now)
 
 
-def merge(inputs, generation, root_version, now=None):
+def merge(inputs, generation, root_version=None, now=None):
     hosts = {}
     prior = 0
     for value in inputs:
         if 'records' in value:
-            if value['root_version'] != root_version and (value['root_version'], root_version) not in (('0.7.8-shared', '0.8.0-shared'), ('0.9.0-shared', '0.9.1-shared')):
-                raise ValueError('Registry root versions conflict')
+            value = decode(encode(value), now)
+            if root_version is None:
+                root_version = value['root_version']
             prior = max(prior, value['generation'])
             values = value['records']
         else:
@@ -191,7 +192,8 @@ def merge(inputs, generation, root_version, now=None):
             hosts[host] = item
     if type(generation) is not int or generation <= prior:
         raise ValueError('New generation must exceed all input generations')
-    value = {'schema': 1, 'generation': generation, 'root_version': root_version,
+    # Keep the schema-1 field for existing readers as origin information.
+    value = {'schema': REGISTRY_SCHEMA, 'generation': generation, 'root_version': root_version or 'registry-v1',
              'records': [hosts[key] for key in sorted(hosts)]}
     return decode(encode(value), now)
 
@@ -227,6 +229,15 @@ def environment(bdf, unlock=True, default_normal=False):
     return raw + b'#' * (1024 - len(raw))
 
 
+def configuration_marker(value):
+    if (not isinstance(value, dict) or type(value.get('schema')) is not int
+            or value['schema'] != 1 or value.get('kind') != 'gpu-linux-config'
+            or not isinstance(value.get('root_version'), str)
+            or not re.fullmatch(r'[a-zA-Z0-9._-]{1,80}', value['root_version'])):
+        raise ValueError('Invalid USB configuration marker')
+    return value
+
+
 def deploy(registry, mount, now=None):
     mount = Path(mount)
     if mount.is_symlink() or not mount.is_dir():
@@ -234,10 +245,8 @@ def deploy(registry, mount, now=None):
     marker_path = mount / 'usb-config.json'
     if marker_path.is_symlink():
         raise ValueError('Unsafe USB marker')
-    marker = json.loads(marker_path.read_text())
+    configuration_marker(json.loads(marker_path.read_text()))
     value = decode(encode(registry), now)
-    if marker != {'schema': 1, 'kind': 'gpu-linux-config', 'root_version': value['root_version']}:
-        raise ValueError('USB configuration marker/version mismatch')
     config = mount / 'gpu-config'
     config.mkdir(exist_ok=True)
     if config.is_symlink():
@@ -247,7 +256,9 @@ def deploy(registry, mount, now=None):
         old = load(current, now)
         if old['generation'] > value['generation']:
             raise ValueError('Refusing registry rollback')
-        if old['generation'] == value['generation'] and old != value:
+        prior_content = {key: item for key, item in old.items() if key != 'root_version'}
+        new_content = {key: item for key, item in value.items() if key != 'root_version'}
+        if old['generation'] == value['generation'] and prior_content != new_content:
             raise ValueError('Same generation has different contents')
         # Deployment must never silently remove a host or change its destination.
         prior = {v['hardware_uuid']: v for v in old['records']}

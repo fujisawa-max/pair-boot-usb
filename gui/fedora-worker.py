@@ -290,8 +290,7 @@ def dispatch(request, password=None):
         return {'message': '台帳をマージしました。', 'output': str(target), 'generation': registry['generation']}
     if operation == 'deploy':
         source = bounded_input(request.get('registry'), mount)
-        version = core.read_input(mount / 'usb-config.json')['root_version']
-        registry = core.fleet.for_version(core.fleet.load(source), version)
+        registry = core.fleet.load(source)
         core.fleet.deploy(registry, mount)
         return {'message': 'この起動USBの設定領域へ台帳を配布しました。'}
     raise ValueError('対応していない操作です。')

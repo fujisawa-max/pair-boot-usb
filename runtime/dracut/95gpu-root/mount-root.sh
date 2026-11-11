@@ -15,7 +15,9 @@ if [ "${root:-}" = gpu-root ] && ! ismounted /sysroot; then
   modprobe loop || gpu_root_stop 'loop module unavailable'
   modprobe ext4 || gpu_root_stop 'ext4 module unavailable'
   gpu_root_result=0
-  /usr/bin/python3 /usr/lib/gpu-root.py boot 2>/run/gpu-root-boot-error.txt || gpu_root_result=$?
+  # dracut's service stdout normally goes only to the journal. Show progress
+  # on the physical console while retaining stderr for the failure prompt.
+  /usr/bin/python3 /usr/lib/gpu-root.py boot >/dev/console 2>/run/gpu-root-boot-error.txt || gpu_root_result=$?
   if [ "$gpu_root_result" = 64 ]; then
     systemctl --no-block poweroff || gpu_root_stop 'Poweroff request failed'
     while :; do sleep 1; done

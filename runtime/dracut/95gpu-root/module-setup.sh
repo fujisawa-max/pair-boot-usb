@@ -35,6 +35,8 @@ install() {
   inst_simple "$moddir/replace-root.py" /usr/lib/replace-root.py
   inst_simple "$moddir/release-info.py" /usr/lib/release-info.py
   inst_simple "$moddir/detach-loop.py" /usr/lib/detach-loop.py
+  inst_simple "$moddir/ntfs-hibernation.py" /usr/lib/ntfs-hibernation.py
+  inst_binary /usr/lib/x86_64-linux-gnu/libntfs-3g.so.89
   inst_simple "$moddir/no-gpu-test.py" /usr/lib/no-gpu-test.py
   inst_simple "$moddir/root-maintenance.py" /usr/lib/root-maintenance.py
   inst_simple "$moddir/gpu-diagnostic.py" /usr/lib/gpu-diagnostic.py

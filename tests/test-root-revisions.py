@@ -196,26 +196,28 @@ class MetadataTests(unittest.TestCase):
             with self.subTest(changed=changed):
                 self.assertFalse(policy['compatible']({**info, **changed}, KERNEL, info))
 
-    def test_registry_version_conversion_preserves_all_safety_evidence(self):
+    def test_root_release_change_preserves_registry_schema_generation_and_records(self):
         fleet = runpy.run_path(str(ROOT / 'runtime/fleet-registry.py'))
         old = fleet['merge']([], 2, '0.9.0-shared')
         new = fleet['for_version'](old, '0.9.1-shared')
-        self.assertEqual(new['generation'], 3)
-        self.assertEqual(old['records'], new['records'])
-        with self.assertRaises(ValueError):
-            fleet['for_version'](new, '0.9.0-shared')
+        self.assertEqual(new, old)
+        self.assertEqual(fleet['for_version'](new, '0.9.0-shared'), old)
 
     def test_media_information_comes_from_fixed_inputs_and_shared_formatter(self):
         metadata = runpy.run_path(str(ROOT / 'scripts/release-metadata.py'))
         info = metadata['metadata']()
         text = metadata['text']()
-        self.assertEqual(info['project_version'], '0.9.1')
-        self.assertIn('Root revision: 3', text)
+        self.assertEqual(info['project_version'], '0.9.2')
+        self.assertEqual(info['version'], '0.9.2')
+        self.assertEqual(info['registry_schema'], 1)
+        self.assertIn('Registry schema: 1', text)
+        self.assertNotIn('root_revision', info)
+        self.assertNotIn('Root revision:', text)
         self.assertIn('Debian 13 trixie', text)
         self.assertIn('44-1.7', text)
         self.assertNotIn(str(Path.home()), text)
         line = policy['banner_line'](info, 'Unlock')
-        self.assertIn('Version: 0.9.1', line)
-        self.assertIn('Root rev: 3', line)
+        self.assertIn('Version: 0.9.2', line)
+        self.assertNotIn('Root rev:', line)
         self.assertIn('Mode: Unlock', line)
         self.assertLessEqual(len(line), 100)

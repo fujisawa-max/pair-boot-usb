@@ -123,7 +123,7 @@ GPU-MASTERは配布元の領域です。root.imgの論理サイズ6GiBとstate.i
 
 余りの領域をモデルの手動配布用に使う場合、利用者がUSB上に追加のNTFS領域を作成してモデルをコピーします。構築ツールはその追加領域を自動作成しません。配布用モデルの置き場と、起動時に使用する登録済みのroot・state・Models保存先は別に扱います。
 
-既存出力を保持して再組立する場合は、すべて新しい名前を指定します。
+新しいrootを構築して配布する場合は全体版を進め、既存出力を保持して、すべて新しい出力先を指定します。
 
 ```sh
 python scripts/build-usb.py image \
@@ -134,6 +134,19 @@ python scripts/build-usb.py image \
 ```
 
 これらの出力は `build/` 内の、互いに重ならない新規ディレクトリに限定します。
+
+同じ配布済みrootから追加のUSBイメージを作る場合は、既存のappliance・tools・Fedoraツリーを使って組み立てます。以下は標準の出力先を使った例です。
+
+```sh
+python scripts/assemble-usb-image.py \
+  --tree build/appliance/usb-tree --sysroot build/appliance/root-tree \
+  --config-tree build/shared-usb-tools --fedora-tree build/fedora-live-tools \
+  --data-mib 4608 --log-mib 256 --output build/usb-image-copy
+python scripts/verify-shared-media.py \
+  --tree build/appliance/usb-tree --sysroot build/appliance/root-tree \
+  --config-tree build/shared-usb-tools --fedora-tree build/fedora-live-tools \
+  --image-directory build/usb-image-copy
+```
 
 ## ソース試験と実機試験
 
@@ -164,13 +177,15 @@ NVIDIA GPUのないPCで起動画面・root/stateの分離を調べる場合は�
 
 起動バナー、Normal/Unlock表示、PAIRの起動・終了・再起動、PC再起動後の設定保持、正常終了を順に確認します。異常終了後にプロセスが残る場合は次のPAIR起動を止めます。
 
-root交換は0.9以降の同じstate schemaを使う更新に限ります。0.9.1の現在の構築はroot revision 3で、独立したリビジョンを使い、0.9.0の既存rootをrevision 0として扱います。revision 3では、終了時に解除済みのstate loopを再解除して電源断を止める問題を修正しました。詳しくは[利用方法](user-guide.md)を参照します。
+0.9.2では全体版とrootの版を統一しています。従来の0.9.0および0.9.1-r3/r4などのrootからも、同じstate schemaを使う更新ができます。初回コピー・root交換・検証は工程番号と進捗を表示し、保存先のBitLockerやWindowsの実際の休止状態を検出すると書込み前に停止します。登録情報の有効期限は廃止しています。詳しくは[利用方法](user-guide.md)を参照します。
 
-## 構成情報とrootリビジョン
+## 構成情報と版管理
 
-`config/release.json` がプロジェクト版、root release、root revision、boot ABI、state schemaの定義です。rootを変更するときはrevisionを増やします。同じリビジョンで配布元のSHA-256が異なる場合は、起動を停止します。完成rootを再生成するとUUID等でもSHAが変わるため、rootを作り直す場合もリビジョンを増やし、既存配布物と区別してください。
+`config/release.json` が全体版、boot ABI、state schemaを定義します。rootには同じ全体版を記録します。新しいrootを配布するときは全体版を進め、同じ版の異なるrootを混在させないでください。同じ版で配布元のSHA-256が異なる場合は、起動を停止します。完成rootを再生成するとUUID等でもSHAが変わるため、配布したrootは保持し、追加のUSBは同じrootから組み立てます。旧0.9.1のroot revisionは、旧rootを認識するために読み取ります。
 
-`GPU-LOGS/MEDIA-INFO.txt` とFedoraパーティション直下に、使用した外部資料の版などをまとめた構成一覧を配置します。Debian、kernel、gpu-unlock commit、NVIDIA、PAIR、llama.cpp、Fedoraの版を確認できます。これは媒体の情報であり、起動中rootの情報とは区別します。バナーはroot内の同じ形式のメタデータから版・revisionを、起動状態からNormal/Unlock/TESTを表示します。
+PC登録台帳は形式版 `schema=1` と内容の更新順を示す `generation` で管理します。台帳の互換性は形式と各PCの登録内容で検査します。全体版・root版の変更や、別の版のUSBへの配布では、台帳の形式版や世代番号を自動で増やしません。
+
+`GPU-LOGS/MEDIA-INFO.txt` とFedoraパーティション直下に、使用した外部資料の版などをまとめた構成一覧を配置します。Debian、kernel、gpu-unlock commit、NVIDIA、PAIR、llama.cpp、Fedoraの版を確認できます。これは媒体の情報であり、起動中rootの情報とは区別します。バナーはroot内の同じ形式のメタデータから版を、起動状態からNormal/Unlock/TESTを表示します。
 
 boot ABIはinitramfs・root・stateの取り決めです。kernelだけでなくGPUドライバとgpu-unlockの版も照合します。起動・終了・設定保存の互換性を変える開発では、ABIとstate schemaを見直して、互換性のない組合せを許可しないでください。
 

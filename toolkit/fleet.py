@@ -77,8 +77,8 @@ def check_candidate(value, hardware, now=None):
     for name in ('partition_offset_bytes', 'partition_size_bytes'):
         if type(value.get(name)) is not int or value[name] <= 0 or value[name] % 512:
             raise ValueError('Invalid partition offset/size')
-    if value.get('filesystem') != 'NTFS' or value.get('fast_startup_enabled') is not False:
-        raise ValueError('NTFS and Fast Startup off must be confirmed')
+    if value.get('filesystem') != 'NTFS' or type(value.get('fast_startup_enabled')) is not bool:
+        raise ValueError('NTFS and a valid Fast Startup observation must be confirmed')
     if value.get('usb_target_requested') is True:
         if value.get('partition_is_boot') is not False or value.get('partition_is_system') is not False or value.get('personal_os_volume_consent') is not None:
             raise ValueError('USB data target cannot be boot/system/unknown or use OS consent')
@@ -98,8 +98,8 @@ def check_candidate(value, hardware, now=None):
     fleet.validate_storage_directory(value.get('storage_directory'))
     checked = value.get('checked_at_unix')
     current = time.time() if now is None else now
-    if type(checked) not in (int, float) or not math.isfinite(checked) or not 0 <= current - checked <= 30 * 86400:
-        raise ValueError('Windows candidate expired/future dated')
+    if type(checked) not in (int, float) or not math.isfinite(checked) or checked < 0 or checked > current:
+        raise ValueError('Invalid or future-dated Windows candidate timestamp')
 
 
 def secure_boot_state(efivars=Path('/sys/firmware/efi/efivars')):
@@ -147,8 +147,8 @@ def shell_evidence_timestamp(evidence, value, hardware, now=None):
         raise ValueError('Shell observation reported an error or omitted its error state')
     checked = evidence.get('checked_at_unix')
     current = time.time() if now is None else now
-    if type(checked) not in (int, float) or not math.isfinite(checked) or not 0 <= current - checked <= 30 * 86400:
-        raise ValueError('Shell evidence expired/future dated')
+    if type(checked) not in (int, float) or not math.isfinite(checked) or checked < 0 or checked > current:
+        raise ValueError('Invalid or future-dated Shell evidence timestamp')
     return checked
 
 
@@ -173,8 +173,8 @@ def complete_candidate(value, hardware, partition, ntfs_uuid, secure_boot, evide
             raise ValueError('BitLocker evidence encrypted/protected/unknown')
         checked = evidence.get('checked_at_unix')
         current = time.time() if now is None else now
-        if type(checked) not in (int, float) or not math.isfinite(checked) or not 0 <= current - checked <= 30 * 86400:
-            raise ValueError('BitLocker evidence expired/future dated')
+        if type(checked) not in (int, float) or not math.isfinite(checked) or checked < 0 or checked > current:
+            raise ValueError('Invalid or future-dated BitLocker evidence timestamp')
     if value.get('usb_target_requested') is True:
         checked_target = fleet.validate_usb_storage_target(usb_verification)
         if mbr is not None and checked_target != mbr:
@@ -351,7 +351,7 @@ def main():
     merge = sub.add_parser('merge')
     merge.add_argument('inputs', nargs='+', type=Path)
     merge.add_argument('--generation', type=int, required=True)
-    merge.add_argument('--root-version', required=True)
+    merge.add_argument('--root-version', help='legacy origin label; registry compatibility uses schema')
     merge.add_argument('--output', type=Path, required=True)
     deploy = sub.add_parser('deploy')
     deploy.add_argument('registry', type=Path)
@@ -376,8 +376,7 @@ def main():
         print('Merged', len(value['records']), 'hosts; generation', value['generation'])
     elif args.operation == 'deploy':
         live_config(args.mount)
-        version = read_input(args.mount / 'usb-config.json')['root_version']
-        fleet.deploy(fleet.for_version(fleet.load(args.registry), version), args.mount)
+        fleet.deploy(fleet.load(args.registry), args.mount)
         print('Registry deployed to this USB configuration partition')
     else:
         register(args.inventory, args.gpu_bdf, args.mount, args.confirm, args.bitlocker_evidence, no_gpu_test=args.no_gpu_test)

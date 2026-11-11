@@ -52,15 +52,18 @@ class FleetTests(unittest.TestCase):
             fleet.decode(json.dumps(envelope).encode())
         with self.assertRaisesRegex(ValueError, 'generation'):
             fleet.merge([value], 1, 'fixture')
-        with self.assertRaisesRegex(ValueError, 'versions'):
-            fleet.merge([value], 2, 'different')
+        merged = fleet.merge([value], 2, 'different')
+        self.assertEqual(merged['records'], value['records'])
+        unsupported = {**value, 'schema': 2}
+        with self.assertRaisesRegex(ValueError, 'schema'):
+            fleet.merge([unsupported], 2, 'different')
         value['records'] *= 2
         with self.assertRaisesRegex(ValueError, 'Duplicate'):
             fleet.decode(fleet.encode(value))
 
-    def test_unknown_and_expired_safety_states_rejected(self):
+    def test_unknown_safety_states_and_invalid_timestamps_rejected(self):
         a = host()
-        changes = {'checked_at_unix': 0, 'bitlocker_protection': 'Unknown', 'fast_startup_enabled': True,
+        changes = {'checked_at_unix': -1, 'bitlocker_protection': 'Unknown', 'fast_startup_enabled': None,
                    'partition_is_system': True, 'partition_is_boot': None, 'secure_boot_enabled': False,
                    'gpu_pci_id': '10de:9999', 'storage_directory': '../Windows'}
         for key, value in changes.items():

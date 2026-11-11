@@ -125,7 +125,7 @@ GPU-MASTER is the distribution source partition. The logical sizes of `root.img`
 
 If you want to use the remaining space for manually distributing models, create an additional NTFS partition on the USB drive and copy the models there yourself. The build tools do not create this additional partition automatically. The storage location for models being distributed is treated separately from the registered root, state, and Models storage locations used at boot.
 
-To reassemble the image while preserving existing outputs, specify new names for all output directories:
+To build a new root while preserving previous outputs, advance the project version for distribution and specify fresh output directories:
 
 ```sh
 python scripts/build-usb.py image \
@@ -136,6 +136,19 @@ python scripts/build-usb.py image \
 ```
 
 These outputs must be new, non-overlapping directories under `build/`.
+
+To assemble another USB using the same distributed root, reuse the existing appliance, tools, and Fedora trees:
+
+```sh
+python scripts/assemble-usb-image.py \
+  --tree build/appliance/usb-tree --sysroot build/appliance/root-tree \
+  --config-tree build/shared-usb-tools --fedora-tree build/fedora-live-tools \
+  --data-mib 4608 --log-mib 256 --output build/usb-image-copy
+python scripts/verify-shared-media.py \
+  --tree build/appliance/usb-tree --sysroot build/appliance/root-tree \
+  --config-tree build/shared-usb-tools --fedora-tree build/fedora-live-tools \
+  --image-directory build/usb-image-copy
+```
 
 ## Source Tests and Hardware Tests
 
@@ -166,13 +179,15 @@ The system consists of a root image containing Linux itself and a state image co
 
 Check the boot banner, Normal/Unlock display, PAIR startup/shutdown/restart, settings persistence after a PC restart, and clean shutdown, in that order. If processes remain after an abnormal termination, the next PAIR startup is blocked.
 
-Root replacement is limited to updates using the same state schema from version 0.9 onward. The current 0.9.1 build uses root revision 3, with an independent revision counter; existing 0.9.0 roots are treated as revision 0. Revision 3 fixes an issue where shutdown attempted to detach an already detached state loop device again, preventing power-off. See the [User Guide (Japanese)](user-guide.md) for details.
+Version 0.9.2 uses the project version to identify its root image. It also recognizes existing 0.9.0 and 0.9.1 roots, including revisions 3 and 4, and preserves state when the state schema is compatible. Initial copies, root replacement, and verification show numbered stages and progress. Boot stops before storage writes if it detects BitLocker on the target or Windows hibernation. Registration observations have no age-based expiration. See the [User Guide (Japanese)](user-guide.md) for details.
 
-## Configuration Metadata and Root Revisions
+## Configuration Metadata and Versions
 
-`config/release.json` defines the project version, root release, root revision, boot ABI, and state schema. Increment the revision whenever you change the root. Boot is blocked if the distribution source has a different SHA-256 for the same revision. Regenerating a completed root also changes its SHA because of UUIDs and other details, so increment the revision whenever you rebuild the root to distinguish it from existing distributions.
+`config/release.json` defines the project version, boot ABI, and state schema. The root image uses the same project version. Advance the project version when distributing a new root image. Boot stops if the same release has a different distribution SHA-256. Regeneration changes the SHA through UUIDs and other details, so retain a distributed root and reuse it when assembling additional USB images. Legacy root revisions are read to recognize existing 0.9.1 roots.
 
-A component inventory summarizing the versions of external inputs is placed at `GPU-LOGS/MEDIA-INFO.txt` and in the root directory of the Fedora partition. It lists the Debian, kernel, gpu-unlock commit, NVIDIA, PAIR, llama.cpp, and Fedora versions. This describes the media and is distinct from information about the currently running root. The banner reads the version and revision from metadata in the same format inside the root, and displays Normal/Unlock/TEST based on the boot state.
+The PC registry uses `schema=1` for its format and `generation` for the sequence of content updates. Compatibility checks cover the registry format and each PC record. Changing the project or root release, or deploying a registry to a USB with another release, preserves the registry schema and generation.
+
+A component inventory summarizing the versions of external inputs is placed at `GPU-LOGS/MEDIA-INFO.txt` and in the root directory of the Fedora partition. It lists the Debian, kernel, gpu-unlock commit, NVIDIA, PAIR, llama.cpp, and Fedora versions. This describes the media and is distinct from information about the currently running root. The banner reads the version from metadata in the same format inside the root, and displays Normal/Unlock/TEST based on the boot state.
 
 The boot ABI defines the contract between initramfs, root, and state. Version checks cover not only the kernel but also the GPU drivers and gpu-unlock. When development changes compatibility for startup, shutdown, or settings persistence, review the ABI and state schema and ensure that incompatible combinations are rejected.
 

@@ -34,7 +34,7 @@ def refresh(source, output):
         raise ValueError('Choose a new, non-overlapping output directory')
     tree = source / 'usb-tree'
     manifest = json.loads((tree / 'gpu-linux/master.json').read_text())
-    configured = json.loads((ROOT / 'config/release.json').read_text())['root_version']
+    configured = json.loads((ROOT / 'config/release.json').read_text())['version']
     if (manifest.get('version') not in ('0.9.0-shared', configured) or manifest.get('shared_registry') is not True or
             manifest.get('secure_boot_signed_artifacts') is not True):
         raise ValueError('A signed shared 0.9.0 appliance is required')
@@ -52,7 +52,7 @@ def refresh(source, output):
         raise ValueError('Unsafe dracut module directory')
     shutil.copytree(ROOT / 'runtime/dracut/95gpu-root', moddir, dirs_exist_ok=True)
     for name in ('gpu-root.py', 'fleet-registry.py', 'storage-target.py', 'root-maintenance.py',
-                 'persistent-state.py', 'replace-root.py', 'no-gpu-test.py', 'release-info.py', 'detach-loop.py',
+                 'persistent-state.py', 'replace-root.py', 'no-gpu-test.py', 'release-info.py', 'detach-loop.py', 'ntfs-hibernation.py',
                  'gpu-diagnostic.py', 'gpu-unlock-diagnostic.py'):
         shutil.copy2(ROOT / 'runtime' / name, moddir / name)
     command = ['bwrap', '--unshare-all', '--uid', '0', '--gid', '0', '--die-with-parent',

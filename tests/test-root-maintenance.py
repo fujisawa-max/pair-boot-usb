@@ -164,10 +164,8 @@ class Rtx30PolicyTests(unittest.TestCase):
         host = runpy.run_path(str(ROOT / 'tests/test-fleet-registry.py'))['host']()
         old = fleet['merge']([host], 4, '0.7.8-shared')
         new = fleet['for_version'](old, '0.8.0-shared')
-        self.assertEqual(new['generation'], 5)
-        self.assertEqual(new['records'], old['records'])
-        with self.assertRaisesRegex(ValueError, 'Unsupported registry'):
-            fleet['for_version'](old, 'unknown')
+        self.assertEqual(new, old)
+        self.assertEqual(fleet['for_version'](old, 'unknown'), old)
         host['gpu_pci_id'] = '10de:2484'
         self.assertEqual(fleet['record'](host)['gpu_pci_id'], '10de:2484')
         self.assertIn(b'gpu_targets=unsupported', fleet['environment'](host['gpu_bdf'], False))

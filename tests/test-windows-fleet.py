@@ -39,6 +39,19 @@ def host(test=False, mbr=False):
 
 @unittest.skipUnless(Path(PWSH).is_file(), 'Optional fixed PowerShell fixture runner needed')
 class WindowsFleetTests(unittest.TestCase):
+    def test_old_observations_can_be_collected_merged_and_deployed(self):
+        value = host()
+        value['checked_at_unix'] = 1000
+        value['fast_startup_enabled'] = True
+        source = self.write('old-observation.json', [value])
+        merged = self.base / 'merged-old.json'
+        self.call('Merge', Inputs=[str(source)], OutputFile=str(merged), Generation=2)
+        target = self.usb()
+        self.call('Deploy', Inputs=[str(merged)], UsbRoot=str(target))
+        collected = self.base / 'collected-old.json'
+        self.call('Collect', UsbRoot=str(target), OutputFile=str(collected))
+        self.assertEqual(fleet.load(collected)['records'][0]['checked_at_unix'], 1000)
+
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory(dir=ROOT / 'build')
         self.addCleanup(self.temp.cleanup)
@@ -108,19 +121,24 @@ class WindowsFleetTests(unittest.TestCase):
         self.assertEqual(fleet.load(collected), registry)
         self.call('Status', Inputs=[str(collected)])
 
-    def test_deploy_upgrades_only_known_version_and_preserves_evidence_age(self):
+    def test_deploy_across_root_releases_preserves_registry_generation_and_evidence(self):
         value = host(test=True)
         raw = self.write('old.json', [value], version='0.9.0-shared', generation=3)
         usb = self.usb()
         self.call('Deploy', Inputs=[str(raw)], UsbRoot=str(usb))
         result = fleet.load(usb / 'gpu-config/registry.json')
-        self.assertEqual(result['root_version'], '0.9.1-shared')
-        self.assertEqual(result['generation'], 4)
+        self.assertEqual(result['root_version'], '0.9.0-shared')
+        self.assertEqual(result['generation'], 3)
         self.assertEqual(result['records'][0], fleet.record(value))
+        # A legacy origin label alone may change without changing the data generation.
+        relabelled = self.write('relabelled.json', [value], version='0.9.2-shared', generation=3)
+        self.call('Deploy', Inputs=[str(relabelled)], UsbRoot=str(usb))
+        self.assertEqual(fleet.load(usb / 'gpu-config/registry.json')['generation'], 3)
         future = self.write('future.json', [value], version='0.9.2-shared', generation=5)
-        before = (usb / 'gpu-config/registry.json').read_bytes()
-        self.call('Deploy', expected=False, Inputs=[str(future)], UsbRoot=str(usb))
-        self.assertEqual((usb / 'gpu-config/registry.json').read_bytes(), before)
+        self.call('Deploy', Inputs=[str(future)], UsbRoot=str(usb))
+        result = fleet.load(usb / 'gpu-config/registry.json')
+        self.assertEqual(result['generation'], 5)
+        self.assertEqual(result['records'], [fleet.record(value)])
 
     def test_mixed_gpu_and_test_hosts_generate_same_grub_environment_as_python(self):
         cpu = host(test=True)
@@ -137,25 +155,30 @@ class WindowsFleetTests(unittest.TestCase):
             name = 'gpu-config/hosts/' + record['hardware_uuid'] + '.env'
             self.assertEqual((usb / name).read_bytes(), (reference / name).read_bytes())
 
-    def test_unsupported_merge_and_downgrade_do_not_publish(self):
+    def test_unknown_schema_is_rejected_while_root_release_differences_are_accepted(self):
         old = self.write('old.json', [host(test=True)], version='0.9.0-shared')
         future = self.write('future.json', [host(test=True)], version='0.9.2-shared')
         output = self.base / 'bad-merge.json'
-        self.call('Merge', expected=False, Inputs=[str(old), str(future)], OutputFile=str(output), Generation=2)
-        self.assertFalse(output.exists())
+        self.call('Merge', Inputs=[str(old), str(future)], OutputFile=str(output), Generation=2)
+        self.assertEqual(fleet.load(output)['schema'], 1)
         usb = self.usb('0.9.0-shared')
         current = self.write('current.json', [host(test=True)])
-        self.call('Deploy', expected=False, Inputs=[str(current)], UsbRoot=str(usb))
-        self.assertFalse((usb / 'gpu-config').exists())
+        self.call('Deploy', Inputs=[str(current)], UsbRoot=str(usb))
+        before = (usb / 'gpu-config/registry.json').read_bytes()
+        invalid = fleet.load(future)
+        invalid['schema'] = 2
+        future.write_bytes(fleet.encode(invalid))
+        self.call('Deploy', expected=False, Inputs=[str(future)], UsbRoot=str(usb))
+        self.assertEqual((usb / 'gpu-config/registry.json').read_bytes(), before)
 
-    def test_merge_infers_compatible_version_or_uses_selected_usb(self):
+    def test_merge_retains_origin_information_without_using_it_for_compatibility(self):
         value = host()
         old = self.write('old.json', [value], version='0.9.0-shared')
         new = self.write('new.json', [value])
         for index, extra in enumerate(({}, {'UsbRoot': str(self.usb())})):
             output = self.base / f'merged-{index}.json'
             self.call('Merge', Inputs=[str(old), str(new)], OutputFile=str(output), Generation=2, **extra)
-            self.assertEqual(fleet.load(output)['root_version'], '0.9.1-shared')
+            self.assertEqual(fleet.load(output)['root_version'], '0.9.1-shared' if extra else '0.9.0-shared')
 
     def test_gui_worker_passes_multiple_literal_inputs_and_target_usb_to_merge(self):
         tools = self.base / 'tools'; tools.mkdir()
@@ -216,7 +239,7 @@ class WindowsFleetTests(unittest.TestCase):
         changes = [{'boot_mode': 'arbitrary'}, {'boot_mode': ['no-gpu-test']}, {'gpu_bdf': '0000:01:00.0'},
                    {'gpu_pci_id': '10de:2504'}, {'storage_target': None},
                    {'bitlocker_protection': 'Unknown'}, {'partition_is_hidden': None},
-                   {'fast_startup_enabled': True}, {'secure_boot_enabled': False}, {'checked_at_unix': 0}]
+                   {'fast_startup_enabled': None}, {'secure_boot_enabled': False}, {'checked_at_unix': -1}]
         for index, change in enumerate(changes):
             invalid = self.base / f'invalid-{index}.json'
             invalid.write_bytes(fleet.encode({'schema': 1, 'generation': 1, 'root_version': '0.9.1-shared', 'records': [{**value, **change}]}))

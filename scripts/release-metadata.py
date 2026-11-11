@@ -11,8 +11,9 @@ def metadata():
     release = json.loads((ROOT / 'config/release.json').read_text())
     def lock(name):
         return json.loads((ROOT / 'inputs' / name).read_text())
-    return {'project_version': release['version'], 'version': release['root_version'],
-            **{key: release[key] for key in ('root_revision', 'boot_abi', 'state_schema')},
+    return {'project_version': release['version'], 'version': release['version'],
+            **{key: release[key] for key in ('boot_abi', 'state_schema')},
+            'registry_schema': runpy.run_path(str(ROOT / 'runtime/fleet-registry.py'))['REGISTRY_SCHEMA'],
             'components': {
                 'Kernel': lock('debian-build-inputs.json')['kernel_release'],
                 'gpu-unlock commit': lock('gpu-unlock-source.json')['commit'],

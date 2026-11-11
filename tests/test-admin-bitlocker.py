@@ -27,7 +27,7 @@ class AdminBitLockerTests(unittest.TestCase):
         self.assertEqual(candidate['bitlocker_observation']['observation']['shell_state'], 'Unknown')
         for changes in ({'ntfs_uuid':'FEDCBA9876543210'}, {'hardware_uuid':'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee'},
                         {'bitlocker_protection':'Unknown'}, {'bitlocker_volume_status':'EncryptedOrInProgress'},
-                        {'checked_at_unix':0}):
+                        {'checked_at_unix':-1}):
             with self.subTest(changes=changes), self.assertRaises(ValueError):
                 fixture.tool.complete_candidate(candidate, fixture.HARDWARE,
                     (fixture.PARTITION, 1048576, 8 * 1024**3), '0123456789ABCDEF', True,

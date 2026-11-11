@@ -93,13 +93,19 @@ def check_initramfs_runtime(tree):
                         '--tmpfs', '/tmp', '--clearenv', '--setenv', 'PATH', '/usr/sbin:/usr/bin:/sbin:/bin',
                         '--', 'sh', '-c', 'cd /out && cpio --quiet -id --no-preserve-owner --no-absolute-filenames < /work/boot/initramfs.img'],
                        check=True, capture_output=True)
-        code = ('import ctypes,fcntl,hashlib,json,importlib.util; '
+        code = ('import ctypes,fcntl,hashlib,json,importlib.util,io; '
                 'k=ctypes.CDLL("libkmod.so.2"); '
                 'k.kmod_new.restype=ctypes.c_void_p; k.kmod_new.argtypes=[ctypes.c_char_p,ctypes.c_void_p]; '
                 'context=k.kmod_new(None,None); assert context, "libkmod context failed"; '
                 'k.kmod_unref.argtypes=[ctypes.c_void_p]; k.kmod_unref(context); '
                 's=importlib.util.spec_from_file_location("gpu_root", "/usr/lib/gpu-root.py"); '
                 'm=importlib.util.module_from_spec(s); s.loader.exec_module(m); m.check_volume("ntfs",0); '
+                'out=io.StringIO(); p=m.ImageProgress("Initramfs progress check",1,out); '
+                'step=p.step("Copying fixture",1); step.__enter__(); '
+                'm.copy_image(io.BytesIO(b"x"),io.BytesIO(),p); step.__exit__(None,None,None); '
+                'assert "[step 1/1]" in out.getvalue() and "100%" in out.getvalue(); '
+                's=importlib.util.spec_from_file_location("ntfs_hibernation", "/usr/lib/ntfs-hibernation.py"); '
+                'm=importlib.util.module_from_spec(s); s.loader.exec_module(m); ctypes.CDLL(m.LIBRARY); '
                 's=importlib.util.spec_from_file_location("detach_loop", "/usr/lib/detach-loop.py"); '
                 'm=importlib.util.module_from_spec(s); s.loader.exec_module(m); '
                 's=importlib.util.spec_from_file_location("gpu_diag", "/usr/lib/gpu-diagnostic.py"); '
@@ -163,9 +169,9 @@ def main():
             raise ValueError("Writable per-host llama.cpp cache is missing or has wrong owner")
         if any(".gguf" in line.lower() for line in debug("ls -l /home/gpu/.llamacpp").splitlines()):
             raise ValueError("Master unexpectedly contains cached models")
-    if 'root_revision' in manifest:
+    if 'project_version' in manifest:
         info = json.loads(debug('cat /usr/lib/gpu-root/image.json'))
-        for key in ('version', 'project_version', 'root_revision', 'boot_abi', 'state_schema', 'components'):
+        for key in ('version', 'project_version', 'root_revision', 'boot_abi', 'state_schema', 'registry_schema', 'components'):
             if info.get(key) != manifest.get(key):
                 raise ValueError('Root release metadata differs from master manifest: ' + key)
         for name in ('boot-banner.py', 'release-info.py'):
@@ -181,6 +187,7 @@ def main():
         if data[offset:offset+size] != (Path(__file__).resolve().parents[1] / source).read_bytes():
             raise ValueError('Obsolete shutdown storage helper: ' + name)
     required = ["usr/bin/python3.13", "usr/bin/systemctl", "usr/bin/ntfs-3g", "usr/bin/ntfs-3g.probe", "usr/lib/gpu-root.py", "shutdown",
+                "usr/lib/ntfs-hibernation.py", "usr/lib/x86_64-linux-gnu/libntfs-3g.so.89",
                 "usr/lib/systemd/system/dracut-cmdline.service",
                 "usr/lib/systemd/system/dracut-pre-udev.service",
                 "usr/lib/systemd/system/dracut-pre-mount.service",
@@ -229,6 +236,13 @@ def main():
     controller = data[runtime_entry[0]:runtime_entry[0]+runtime_entry[1]]
     if controller != (Path(__file__).resolve().parents[1] / "runtime/gpu-root.py").read_bytes():
         raise ValueError("Initramfs contains an obsolete controller")
+    offset, size = entries['usr/lib/ntfs-hibernation.py']
+    if data[offset:offset+size] != (Path(__file__).resolve().parents[1] / 'runtime/ntfs-hibernation.py').read_bytes():
+        raise ValueError('Initramfs hibernation inspector differs from source')
+    offset, size = entries['var/lib/dracut/hooks/pre-mount/20-mount-root.sh']
+    if data[offset:offset+size] != (Path(__file__).resolve().parents[1] /
+                                  'runtime/dracut/95gpu-root/mount-root.sh').read_bytes():
+        raise ValueError('Initramfs console progress hook differs from source')
     for name in ("booter_load_ga102.bin", "gsp_ga10x.bin", "gsp_boot_ga102.bin", "gsp_boot_desc_ga102.bin", "v67-ga102-610.43.03.bin"):
         if not any(path.endswith("/gpu-unlock/610.43.03/" + name) for path in entries):
             raise ValueError(f"Missing firmware: {name}")

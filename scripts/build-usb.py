@@ -11,7 +11,7 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 RELEASE = json.loads((ROOT / 'config/release.json').read_text())
 LAYOUT = json.loads((ROOT / 'config/usb-layout.json').read_text())
-VERSION = RELEASE['root_version']
+VERSION = RELEASE['version']
 PREPARED = ('debian-root', 'appliance-root', 'nvidia-runtime-615.71.10', 'pair-v1.0.0-headless',
             'pair-llamacpp-b11146', 'candidate-network-overlay-v1', 'pair-runtime-overlay-v1',
             'efi-inputs', 'assets', 'fedora-live', 'runtime-root')

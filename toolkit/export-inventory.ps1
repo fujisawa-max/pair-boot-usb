@@ -19,7 +19,7 @@ if ($conversion.ReturnValue -ne 0 -or $protection.ReturnValue -ne 0) { throw 'Bi
 $volumeStatus = if ($conversion.ConversionStatus -eq 0) { 'FullyDecrypted' } else { 'EncryptedOrInProgress' }
 $protectionStatus = switch ($protection.ProtectionStatus) { 0 { 'Off' } 1 { 'On' } default { 'Unknown' } }
 $power = Get-ItemProperty -LiteralPath 'HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Power'
-if ($null -eq $power.HiberbootEnabled) { throw 'Fast Startup state is unknown.' }
+if ($power.HiberbootEnabled -isnot [int] -or $power.HiberbootEnabled -notin @(0,1)) { throw 'Fast Startup state is unknown.' }
 $info = & fsutil fsinfo ntfsinfo $Volume 2>&1
 if ($LASTEXITCODE -ne 0) { throw 'Cannot obtain NTFS volume serial number.' }
 # First 64-bit hex value in ntfsinfo is the NTFS volume serial (locale-independent format).
@@ -36,7 +36,7 @@ foreach ($flag in @('IsBoot','IsSystem','IsHidden')) {
 }
 if ($partition.IsSystem -or $partition.IsHidden) { throw 'Refusing boot/system/hidden partition.' }
 if ($disk.BusType -ne 'NVMe' -and $disk.BusType -ne 'SATA') { throw 'Expected explicit internal NVMe/SATA target.' }
-if ($volumeStatus -ne 'FullyDecrypted' -or $protectionStatus -ne 'Off' -or [bool]$power.HiberbootEnabled) { throw 'Windows safety checks failed.' }
+if ($volumeStatus -ne 'FullyDecrypted' -or $protectionStatus -ne 'Off') { throw 'Windows safety checks failed.' }
 if ($secureBoot -ne $true) { throw 'This signed USB release requires confirmed Secure Boot.' }
 $record = [ordered]@{
     schema = 1

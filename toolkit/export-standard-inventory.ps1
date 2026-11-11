@@ -70,7 +70,7 @@ if ($UsbStorageTarget) {
     $capacity = [ordered]@{root_image_bytes=$RootImageSizeBytes; available_bytes=$free; existing_image_bytes=$existingSize; required_bytes=$required}
 }
 $power = Get-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Power' -Name HiberbootEnabled
-if ($power.HiberbootEnabled -isnot [int] -or $power.HiberbootEnabled -ne 0) { throw 'Fast Startup enabled/unknown; no setting was changed.' }
+if ($power.HiberbootEnabled -isnot [int] -or $power.HiberbootEnabled -notin @(0,1)) { throw 'Fast Startup observation is unknown.' }
 $checkedAt = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
 if ($BitlockerObservation) {
     $shellEvidence = [IO.File]::ReadAllText([IO.Path]::GetFullPath($BitlockerObservation)) | ConvertFrom-Json
@@ -107,7 +107,7 @@ $value = [ordered]@{
     partition_is_boot = [bool]$partition.IsBoot
     partition_is_system = $false
     partition_is_hidden = $hidden
-    fast_startup_enabled = $false
+    fast_startup_enabled = [bool]$power.HiberbootEnabled
     storage_directory = $StorageDirectory
     checked_at_unix = $checkedAt
     bitlocker_observation = $shellEvidence
@@ -163,7 +163,7 @@ if ($ShowDialogs) {
         '*Free space is unknown*' { 'USBの空き容量を確認できないため、保存先を受け入れられません。'; break }
         '*USB root target must be GPT basic data*' { '通常のGPTデータ領域であることを確認できません。EFI/回復/予約領域は保存先にできません。'; break }
         '*USB target must not use*' { 'USBのデータ領域では個人利用OS領域の例外は不要です。-PersonalUseOsVolume と -PersonalUseConfirmation を外し、-UsbStorageTarget を指定してください。'; break }
-        '*Fast Startup*' { '高速スタートアップが有効、または状態を確認できません。休止状態のWindows領域をLinuxから書き込む危険があるため、この保存先を受け入れられません。'; break }
+        '*Fast Startup*' { '高速スタートアップの設定値を確認できないため、観測情報を保存できません。'; break }
         '*HiberbootEnabled*' { '高速スタートアップの状態を確認できないため、この保存先を受け入れられません。'; break }
         '*Unsafe partition flag: IsHidden=True*' { 'Windowsがこのパーティションを非表示領域（IsHidden=True）と報告しています。NTFS内の隠しファイルとは別の属性です。安全のため保存先として受け入れません。ドライブ文字が付いていても、この属性の検査は省略しません。'; break }
         '*Unsafe partition flag: IsSystem=True*' { 'Windowsの起動に使用するシステム領域です。個人利用の確認があっても保存先として受け入れません。'; break }

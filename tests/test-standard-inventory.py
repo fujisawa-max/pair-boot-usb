@@ -51,7 +51,7 @@ class StandardInventoryTests(unittest.TestCase):
     def test_unknown_bitlocker_cannot_become_off(self):
         with self.assertRaisesRegex(ValueError, 'BitLocker is unknown'):
             tool.complete_candidate(candidate(), HARDWARE, (PARTITION, 1048576, 8 * 1024**3), '0123456789ABCDEF', True, None, now=NOW)
-        for key, value in (('bitlocker_protection', 'Unknown'), ('ntfs_uuid', 'FEDCBA9876543210'), ('checked_at_unix', 0)):
+        for key, value in (('bitlocker_protection', 'Unknown'), ('ntfs_uuid', 'FEDCBA9876543210'), ('checked_at_unix', -1)):
             with self.subTest(key=key), self.assertRaises(ValueError):
                 self.complete(proof={**evidence(), key: value})
 
@@ -87,7 +87,7 @@ class StandardInventoryTests(unittest.TestCase):
 function Get-CimInstance { [pscustomobject]@{UUID='01234567-89ab-cdef-0123-456789abcdef'} }
 function Get-Volume { param($DriveLetter) [pscustomobject]@{FileSystem='NTFS';Size=[long]8589930496} }
 function Get-Partition { param($DriveLetter) [pscustomobject]@{Guid='{aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee}';Offset=[long]1048576;Size=[long]8589934592;IsBoot=$false;IsSystem=$false;IsHidden=$false} }
-function Get-ItemProperty { param($Path,$Name) [pscustomobject]@{HiberbootEnabled=[int]0} }
+function Get-ItemProperty { param($Path,$Name) [pscustomobject]@{HiberbootEnabled=[int]1} }
 & "''' + str(ROOT / 'toolkit/export-standard-inventory.ps1') + '''" -Volume D: -OutputFile "''' + str(output) + '''"
 ''')
             env = {**os.environ, 'DOTNET_SYSTEM_GLOBALIZATION_INVARIANT': '1',
@@ -102,6 +102,7 @@ function Get-ItemProperty { param($Path,$Name) [pscustomobject]@{HiberbootEnable
             value = json.loads(output.read_text())
             self.assertEqual(value['partition_guid'], PARTITION)
             self.assertEqual(value['bitlocker_protection'], 'Unknown')
+            self.assertTrue(value['fast_startup_enabled'])
             self.assertIsNone(value['secure_boot_enabled'])
             tool.check_candidate(value, HARDWARE)
             source = (ROOT / 'toolkit/export-standard-inventory.ps1').read_text()
@@ -142,10 +143,10 @@ class ShellRegistrationTests(unittest.TestCase):
             with self.subTest(key=key), self.assertRaises(ValueError):
                 self.complete(proof)
 
-    def test_shell_evidence_identity_and_age_are_bound(self):
+    def test_shell_evidence_identity_and_timestamp_are_bound(self):
         for key, bad in (('hardware_uuid', '11111111-2222-3333-4444-555555555555'),
                          ('partition_guid', 'bbbbbbbb-bbbb-cccc-dddd-eeeeeeeeeeee'),
-                         ('checked_at_unix', 0), ('checked_at_unix', NOW + 1), ('kind', 'other')):
+                         ('checked_at_unix', -1), ('checked_at_unix', NOW + 1), ('kind', 'other')):
             proof = self.shell()
             proof[key] = bad
             with self.subTest(key=key), self.assertRaises(ValueError):
@@ -224,7 +225,7 @@ class ShellRegistrationTests(unittest.TestCase):
                 self.assertEqual(proof['windows_candidate']['bitlocker_observation'], self.shell())
 
     @unittest.skipUnless((ROOT / 'build/powershell-7.5.4/pwsh').exists(), 'Workspace PowerShell optional')
-    def test_fast_startup_rejection_is_explained_without_exception_dump(self):
+    def test_unknown_fast_startup_observation_is_explained_without_exception_dump(self):
         with tempfile.TemporaryDirectory(dir=ROOT / 'build') as folder:
             work = Path(folder)
             output = work / 'not-created.json'
@@ -233,7 +234,7 @@ class ShellRegistrationTests(unittest.TestCase):
 function Get-CimInstance { [pscustomobject]@{UUID='01234567-89ab-cdef-0123-456789abcdef'} }
 function Get-Volume { [pscustomobject]@{FileSystem='NTFS';Size=8589930496} }
 function Get-Partition { [pscustomobject]@{Guid='aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee';Offset=1048576;Size=8589934592;IsBoot=$false;IsSystem=$false;IsHidden=$false} }
-function Get-ItemProperty { [pscustomobject]@{HiberbootEnabled=1} }
+function Get-ItemProperty { [pscustomobject]@{HiberbootEnabled=2} }
 & "''' + str(ROOT / 'toolkit/export-standard-inventory.ps1') + '" -Volume D: -OutputFile "' + str(output) + '"\nexit $LASTEXITCODE\n')
             env = {**os.environ, 'DOTNET_SYSTEM_GLOBALIZATION_INVARIANT': '1',
                    'XDG_CACHE_HOME': str(ROOT / '.cache/powershell-xdg'),
@@ -241,6 +242,6 @@ function Get-ItemProperty { [pscustomobject]@{HiberbootEnabled=1} }
             result = subprocess.run([str(ROOT / 'build/powershell-7.5.4/pwsh'), '-NoProfile', '-NonInteractive', '-File', str(wrapper)], env=env, capture_output=True, text=True)
             self.assertNotEqual(result.returncode, 0)
             self.assertIn('高速スタートアップ', result.stderr)
-            self.assertIn('受け入れられません', result.stderr)
+            self.assertIn('観測情報を保存できません', result.stderr)
             self.assertNotIn('CategoryInfo', result.stderr)
             self.assertFalse(output.exists())

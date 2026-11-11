@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 """Fail-closed root image provisioning. Run only from the dedicated initramfs."""
 import argparse
+from contextlib import contextmanager
 import errno
 import fcntl
 import hashlib
 import json
+import math
 import os
 from pathlib import Path
 import re
@@ -42,6 +44,12 @@ def boot_failure(error):
     elif 'gpu_unlock was not loaded' in detail:
         title = 'GPU MODULE COULD NOT LOAD'
         hint = 'Check MOK enrollment and the kernel log from Fedora Live.'
+    elif 'BitLocker volume' in detail:
+        title = 'ROOT STORAGE IS BITLOCKER ENCRYPTED'
+        hint = 'Use an unencrypted registered storage volume, or fully decrypt it in Windows before trying again.'
+    elif 'hibernation/Fast Startup detected' in detail or 'Windows hibernated/Fast Startup' in detail:
+        title = 'WINDOWS HIBERNATION DETECTED'
+        hint = 'Resume Windows and use Restart or a full shutdown, then start PAIR BOOT again.'
     border = '=' * 70
     return '\n\n' + border + '\nPAIR BOOT - STARTUP STOPPED\n\n' + title + '\n\n' + \
         textwrap.fill(hint, width=70) + '\n\nDetails:\n' + textwrap.fill(detail, width=70) + \
@@ -78,9 +86,82 @@ def run(*args, **kwargs):
     return subprocess.run(list(args), check=True, text=True, capture_output=True, **kwargs).stdout.strip()
 
 
-def digest(path):
+class ImageProgress:
+    """Console-only progress for a known sequence; never estimates remaining time."""
+    def __init__(self, operation, steps, stream=None):
+        self.stream = sys.stdout if stream is None else stream
+        self.steps = steps
+        self.number = 0
+        self.tty = self.stream.isatty()
+        self.previous_width = 0
+        print(f'\nPAIR BOOT: {operation} ({steps} steps)', file=self.stream, flush=True)
+
+    @contextmanager
+    def step(self, label, total=None):
+        self.number += 1
+        if self.number > self.steps:
+            raise ValueError('Image progress has more stages than declared')
+        self.total, self.current = total, 0
+        self.last_update = float('-inf')
+        print(f'[step {self.number}/{self.steps}] {label}', file=self.stream, flush=True)
+        if total is None:
+            print('  Working; please wait...', file=self.stream, flush=True)
+        else:
+            self.render()
+        try:
+            yield self
+        except BaseException:
+            if self.tty and total is not None:
+                print(file=self.stream)
+            print('  Failed or interrupted; boot stopped.', file=self.stream, flush=True)
+            raise
+        else:
+            if total is not None:
+                self.render()
+                if self.tty:
+                    print(file=self.stream, flush=True)
+            print('  Done.', file=self.stream, flush=True)
+
+    def advance(self, count):
+        self.current += count
+        now = time.monotonic()
+        if now - self.last_update >= 0.5:
+            self.render()
+
+    def render(self):
+        percent = min(100, self.current * 100 // self.total) if self.total else 100
+        # Keep the changing line below 80 columns, including on the early console.
+        width = 20
+        filled = width * percent // 100
+        line = (f'  [{"#" * filled}{"-" * (width - filled)}] {percent:3d}% '
+                f'({self.current / 1024**3:.1f} / {self.total / 1024**3:.1f} GiB)')
+        if self.tty:
+            print('\r' + line.ljust(self.previous_width), end='', file=self.stream, flush=True)
+            self.previous_width = len(line)
+        else:
+            print(line, file=self.stream, flush=True)
+        self.last_update = time.monotonic()
+
+
+def copy_image(source, output, progress, copy_hook=None, hasher=None):
+    while block := source.read(8 * 1024**2):
+        output.write(block)
+        if hasher is not None:
+            hasher.update(block)
+        progress.advance(len(block))
+        if copy_hook:
+            copy_hook(output)
+
+
+def digest(path, progress=None):
     with path.open("rb") as source:
-        return hashlib.file_digest(source, "sha256").hexdigest()
+        if progress is None:
+            return hashlib.file_digest(source, "sha256").hexdigest()
+        value = hashlib.sha256()
+        while block := source.read(8 * 1024**2):
+            value.update(block)
+            progress.advance(len(block))
+        return value.hexdigest()
 
 
 def sync_directory(path):
@@ -225,8 +306,10 @@ def provision(master, parent, manifest, free_bytes=None, copy_hook=None, mainten
         if receipt.exists():
             raise SafetyError("Receipt exists without image; manual review required")
         regular(master)
-        if master.stat().st_size != manifest["size"] or digest(master) != manifest["sha256"]:
-            raise SafetyError("Master size/SHA-256 mismatch")
+        progress = ImageProgress('Creating root.img', 5)
+        with progress.step('Verifying root.img source', manifest['size']):
+            if master.stat().st_size != manifest["size"] or digest(master, progress) != manifest["sha256"]:
+                raise SafetyError("Master size/SHA-256 mismatch")
         free = shutil.disk_usage(parent).free if free_bytes is None else free_bytes
         # Require full logical size even for sparse files, plus a 1GiB/10% reserve.
         reserve = max(1024**3, manifest["size"] // 10)
@@ -235,24 +318,25 @@ def provision(master, parent, manifest, free_bytes=None, copy_hook=None, mainten
         new_json(marker, {"version": manifest["version"], "state": "copying"})
         out_fd = os.open(temporary, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600)
         with master.open("rb") as source, os.fdopen(out_fd, "wb") as output:
-            while block := source.read(8 * 1024 * 1024):
-                output.write(block)
-                if copy_hook:
-                    copy_hook(output)
-            output.flush()
-            os.fsync(output.fileno())
-        if temporary.stat().st_size != manifest["size"] or digest(temporary) != manifest["sha256"]:
-            raise SafetyError("Copy size/SHA-256 mismatch; transaction retained")
+            with progress.step('Copying root.img', manifest['size']):
+                copy_image(source, output, progress, copy_hook)
+            with progress.step('Flushing root.img to storage'):
+                output.flush()
+                os.fsync(output.fileno())
+        with progress.step('Verifying written root.img', manifest['size']):
+            if temporary.stat().st_size != manifest["size"] or digest(temporary, progress) != manifest["sha256"]:
+                raise SafetyError("Copy size/SHA-256 mismatch; transaction retained")
         if prepare_new is not None:
             prepare_new()
-        atomic_new(temporary, target)
-        sync_directory(parent)
-        new_json(receipt, {"schema": 1, "version": manifest["version"], "size": manifest["size"],
-                           "original_sha256": manifest["sha256"],
-                           **({key: manifest[key] for key in ("root_revision", "boot_abi")} if "root_revision" in manifest else {}),
-                           **({"state_schema": 1} if manifest.get("persistent_state") else {})})
-        marker.unlink()
-        sync_directory(parent)
+        with progress.step('Finalizing root.img'):
+            atomic_new(temporary, target)
+            sync_directory(parent)
+            new_json(receipt, {"schema": 1, "version": manifest["version"], "size": manifest["size"],
+                               "original_sha256": manifest["sha256"],
+                               **{key: manifest[key] for key in ("root_revision", "boot_abi") if key in manifest},
+                               **({"state_schema": 1} if manifest.get("persistent_state") else {})})
+            marker.unlink()
+            sync_directory(parent)
         return target, True
     finally:
         os.close(fd)
@@ -267,6 +351,48 @@ def check_volume(kind, probe_code):
         reason = {13: "inconsistent NTFS", 14: "Windows hibernated/Fast Startup", 15: "unclean NTFS",
                   16: "volume already in use"}.get(probe_code, "NTFS probe failed")
         raise SafetyError(f"{reason} (probe={probe_code}); refusing all NTFS writes")
+
+
+def check_windows_hibernation(selected):
+    """Inspect visible NTFS volumes before granting any target write access."""
+    print('PAIR BOOT: Checking Windows hibernation before root storage access...', flush=True)
+    inventory = json.loads(run('lsblk', '--json', '--paths', '--output', 'PATH,FSTYPE'))
+    pending = list(inventory['blockdevices'])
+    volumes = {}
+    while pending:
+        item = pending.pop()
+        pending.extend(item.get('children', []))
+        kind = item.get('fstype')
+        if isinstance(kind, str) and kind.lower() in ('ntfs', 'bitlocker', 'bitlocker2'):
+            path = item.get('path')
+            if not isinstance(path, str) or not re.fullmatch(r'/dev/[A-Za-z0-9_./:+-]+', path) or '..' in Path(path).parts:
+                raise SafetyError('Invalid Windows volume path in block inventory')
+            volumes[path] = kind.lower()
+    # The registered device was independently identified with blkid above.
+    if selected in volumes:
+        check_volume(volumes[selected], 0)
+    volumes[selected] = 'ntfs'
+    unknown = False
+    for path, kind in sorted(volumes.items()):
+        if kind != 'ntfs':
+            unknown = True
+            continue
+        try:
+            result = subprocess.run(['/usr/bin/python3', '/usr/lib/ntfs-hibernation.py', path],
+                                    capture_output=True, text=True, timeout=30)
+            value = json.loads(result.stdout) if result.returncode == 0 else {}
+        except (subprocess.TimeoutExpired, ValueError):
+            value = {}
+        status = value.get('status') if isinstance(value, dict) and value.get('schema') == 1 else None
+        if status == 'hibernated':
+            raise SafetyError('Windows hibernation/Fast Startup detected; fully shut down Windows before PAIR BOOT')
+        if status != 'not-detected':
+            if path == selected:
+                raise SafetyError('Cannot inspect root storage hibernation state; no root image was mounted')
+            unknown = True
+    if unknown:
+        print('PAIR BOOT: Windows-wide hibernation state is unknown for encrypted or unreadable volumes. '
+              'Root storage checks continue.', flush=True)
 
 
 def device(uuid):
@@ -300,11 +426,13 @@ def host_profile(usb_mount, uuid, now=None):
         raise SafetyError("Host inventory does not match this PC")
     if profile.get("bitlocker_volume_status") != "FullyDecrypted" or profile.get("bitlocker_protection") != "Off":
         raise SafetyError("BitLocker is enabled or state is unknown; stop without changes")
-    if profile.get("fast_startup_enabled") is not False:
-        raise SafetyError("Windows Fast Startup is enabled or unknown; stop without changes")
-    age = (time.time() if now is None else now) - profile.get("checked_at_unix", 0)
-    if age < 0 or age > 30 * 86400:
-        raise SafetyError("Windows safety inventory expired/future dated; refresh from Windows")
+    if type(profile.get('fast_startup_enabled')) is not bool:
+        raise SafetyError('Windows Fast Startup observation is invalid')
+    checked = profile.get('checked_at_unix')
+    if type(checked) not in (int, float) or not math.isfinite(checked) or checked < 0:
+        raise SafetyError('Invalid Windows inventory timestamp')
+    if checked > (time.time() if now is None else now):
+        raise SafetyError('Windows inventory is future dated')
     return profile
 
 
@@ -338,11 +466,8 @@ def shared_host_profile(usb, manifest, hardware, state):
     try:
         marker_path = mountpoint / 'usb-config.json'
         regular(marker_path)
-        marker = json.loads(marker_path.read_text())
-        if marker != {'schema': 1, 'kind': 'gpu-linux-config', 'root_version': manifest['version']}:
-            raise SafetyError('Configuration partition root version mismatch')
+        fleet.configuration_marker(json.loads(marker_path.read_text()))
         value = fleet.load(mountpoint / 'gpu-config/registry.json')
-        value = fleet.for_version(value, manifest['version'])
         hardware = fleet.hardware_uuid(hardware.strip())
         matches = [item for item in value['records'] if item['hardware_uuid'] == hardware]
         if len(matches) != 1:
@@ -495,19 +620,25 @@ def boot(config):
             raise SafetyError("Unlock target must match the explicit GPU BDF in this host inventory")
         master = usb_mount / "gpu-linux/root.img"
         regular(master)
-        if digest(master) != manifest["sha256"]:
-            raise SafetyError("Master SHA-256 mismatch before NTFS mount")
-        validate_ext4(master)
+        progress = ImageProgress('Checking USB images before storage access', 4)
+        with progress.step('Verifying USB root.img SHA-256', manifest['size']):
+            if master.stat().st_size != manifest['size'] or digest(master, progress) != manifest["sha256"]:
+                raise SafetyError("Master SHA-256 mismatch before NTFS mount")
+        with progress.step('Checking USB root.img filesystem'):
+            validate_ext4(master)
         import runpy
         import types
         state_api = types.SimpleNamespace(**globals())
         template = runpy.run_path('/usr/lib/persistent-state.py')['metadata'](state_api, manifest)
         state_master = usb_mount / 'gpu-linux/state.img'
         regular(state_master)
-        if state_master.stat().st_size != template['size'] or digest(state_master) != template['sha256']:
-            raise SafetyError('State master hash/size mismatch before NTFS mount')
-        validate_ext4(state_master)
+        with progress.step('Verifying USB state.img SHA-256', template['size']):
+            if state_master.stat().st_size != template['size'] or digest(state_master, progress) != template['sha256']:
+                raise SafetyError('State master hash/size mismatch before NTFS mount')
+        with progress.step('Checking USB state.img filesystem'):
+            validate_ext4(state_master)
         storage_state = verify_root_storage(profile, ntfs, usb)
+        check_windows_hibernation(ntfs)
         # The readwrite probe opens NTFS with write capability. Run it only
         # after the inventory, device, mount-state, target and master guards.
         probe = subprocess.run(["ntfs-3g.probe", "--readwrite", ntfs], capture_output=True).returncode
@@ -527,7 +658,7 @@ def boot(config):
             if receipt.get('state_schema') != 1:
                 raise SafetyError('0.8 and earlier require a fresh installation in a new storage folder')
             state_image, state_receipt = persistent['inspect'](api, parent, hardware)
-            if 'root_revision' in manifest:
+            if 'root_revision' in manifest or 'project_version' in manifest:
                 replacement = runpy.run_path('/usr/lib/replace-root.py')['replace']
                 result = replacement(api, master, target, receipt, manifest)
                 current = json.loads((parent / 'root-image.json').read_text())
@@ -560,7 +691,8 @@ def boot(config):
         run("mount", "-o", "remount,bind,ro,nodev,nosuid,noexec", "/sysroot/models")
         run("umount", str(usb_mount))
         new_json(state / "state.json", {"loop": loop, "created": created,
-                                        "version": release["version"], "root_revision": policy["root_revision"](release),
+                                        "version": release["version"],
+                                        **({'root_revision': release['root_revision']} if 'root_revision' in release else {}),
                                         "usb_version": manifest["version"], "state_schema": 1, "state_loop": state_loop,
                                         "mode": "TEST" if test else ("Unlock" if selected else "Normal"),
                                         "usb_device": usb, "usb_unmounted": True, **storage_state})

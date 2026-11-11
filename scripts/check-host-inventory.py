@@ -2,6 +2,7 @@
 """Reject unsafe per-PC NTFS records before constructing a USB image."""
 import argparse
 import json
+import math
 from pathlib import Path
 import re
 import sys
@@ -37,16 +38,16 @@ def inspect_directory(directory, profiles, now=None, signed_boot=False):
         if not re.fullmatch(r"[A-Fa-f0-9]{16}", value.get("ntfs_uuid", "")):
             raise ValueError(f"invalid NTFS UUID: {path.name}")
         checked_at = value.get("checked_at_unix")
-        if type(checked_at) not in (int, float):
+        if type(checked_at) not in (int, float) or not math.isfinite(checked_at) or checked_at < 0:
             raise ValueError(f"invalid Windows safety inventory timestamp: {path.name}")
         age = current - checked_at
-        if age < 0 or age > 30 * 86400:
-            raise ValueError(f"Windows safety inventory expired or future dated: {path.name}")
+        if age < 0:
+            raise ValueError(f"Windows safety inventory is future dated: {path.name}")
         reasons = []
         if value.get("bitlocker_volume_status") != "FullyDecrypted" or value.get("bitlocker_protection") != "Off":
             reasons.append("BitLocker is encrypted, protected, or unknown")
-        if value.get("fast_startup_enabled") is not False:
-            reasons.append("Fast Startup is enabled or unknown")
+        if type(value.get('fast_startup_enabled')) is not bool:
+            reasons.append('Fast Startup observation is invalid')
         if value.get("secure_boot_enabled") is not False and not (signed_boot and value.get("secure_boot_enabled") is True):
             reasons.append("Secure Boot is enabled or unknown; current EFI and GPU modules are unsigned")
         if reasons:

@@ -20,6 +20,10 @@ class BootFailureDisplayTests(unittest.TestCase):
                  'BOOT MODE DOES NOT MATCH THE PC REGISTRATION', 'Choose TEST'),
                 ('gpu_unlock was not loaded before storage',
                  'GPU MODULE COULD NOT LOAD', 'MOK'),
+                ('BitLocker volume: no unlock, key retrieval, or changes attempted',
+                 'ROOT STORAGE IS BITLOCKER ENCRYPTED', 'decrypt'),
+                ('Windows hibernation/Fast Startup detected',
+                 'WINDOWS HIBERNATION DETECTED', 'Restart'),
                 ('fixture storage mismatch', 'ROOT SETUP FAILED', 'inspect')):
             with self.subTest(reason=reason):
                 text = BOOT['boot_failure'](RuntimeError(reason))

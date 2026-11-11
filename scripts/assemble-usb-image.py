@@ -5,6 +5,7 @@ import errno
 import hashlib
 import json
 import os
+import runpy
 from pathlib import Path
 import stat
 import subprocess
@@ -114,8 +115,7 @@ def main():
         if config_tree is None:
             parser.error('shared-registry images require --config-tree')
         marker = json.loads((config_tree / 'usb-config.json').read_text())
-        if marker != {'schema': 1, 'kind': 'gpu-linux-config', 'root_version': manifest['version']}:
-            parser.error('configuration marker does not match the master version')
+        runpy.run_path(str(ROOT / 'runtime/fleet-registry.py'))['configuration_marker'](marker)
     usage = payload_usage(tree)
     if args.data_mib * MIB < usage['data_extent_bytes'] + MASTER_RESERVE:
         parser.error('data image requires payload data extents plus 512MiB reserve; '
