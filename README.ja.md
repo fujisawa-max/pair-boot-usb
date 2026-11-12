@@ -39,6 +39,7 @@ PAIR BOOTでは Secure Boot の利用が前提となっています。Secure Boo
 3. [USBの利用開始（クイックスタート）](docs/quick-start.ja.md)：Windowsでの情報取得、FedoraでのMOK・PC登録、PAIR BOOTの起動手順
 
 ### 運用・連携
+- [Windows・Fedoraの管理ツール](docs/management-ui.md)：カテゴリ別の操作、PC名の表示、旧台帳の形式変換
 - [運用・モデル・終了・回復](docs/user-guide.md)：モデルの配置方法、正常終了・USB取り外し手順、トラブル対応
 - [Windowsでの台帳管理](docs/windows-fleet.md)：複数台のPC登録情報を1台のWindowsでまとめる手順
 - [開発ツールからPAIRを利用する準備](docs/pair-client-setup.md)：[VS Code](docs/vscode-pair-parallel-quick-start.md)／[OpenCode](docs/opencode-pair-parallel-quick-start.md)から推論ノードを利用する設定

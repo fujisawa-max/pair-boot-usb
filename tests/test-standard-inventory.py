@@ -191,7 +191,7 @@ class ShellRegistrationTests(unittest.TestCase):
             base = Path(folder)
             mount = base / 'usb'
             mount.mkdir()
-            (mount / 'usb-config.json').write_text(json.dumps({'schema': 1, 'kind': 'gpu-linux-config', 'root_version': '0.7.0-shared'}))
+            (mount / 'usb-config.json').write_text(json.dumps({'schema': 1, 'kind': 'gpu-linux-config', 'registry_schema': 2, 'root_version': '0.7.0-shared'}))
             gpu = base / 'gpu/0000:01:00.0'
             gpu.mkdir(parents=True)
             (gpu / 'vendor').write_text('0x10de')

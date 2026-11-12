@@ -25,6 +25,8 @@ The private key is critical to the PC's security. Never include it on a USB driv
 
 ## Steps
 
+Collected JSON files default to `GPU-LOGS/data/`. Files previously saved at the USB root remain selectable.
+
 ### 1. Collect GPU and Storage Information on Windows
 
 1. Start Windows on the target PC and connect the USB drive.
@@ -33,7 +35,7 @@ The private key is critical to the PC's security. Never include it on a USB driv
 
    Note: If the PC has no partition other than C: and you want to store `root.img` and related files on a USB drive, select “Use USB as the root storage destination” (`USBをroot保存先に指定`). For detailed instructions, see [Storing root.img and Models on a USB Drive (Japanese)](user-guide.md#usbにrootimgやmodelsを保存する場合).
 
-4. Save the candidate configuration (JSON) to `GPU-LOGS` on the USB drive.
+4. Save the candidate configuration (JSON) to `GPU-LOGS/data/` on the USB drive (the default location).
    - If the BitLocker status is shown as Unknown, follow the on-screen instructions to save a BitLocker verification JSON file with administrator privileges.
 
 ### 2. Enroll the Secure Boot MOK Using the Bundled Fedora Environment

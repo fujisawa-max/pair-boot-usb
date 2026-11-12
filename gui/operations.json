@@ -1,0 +1,280 @@
+{
+  "windows": [
+    {
+      "id": "Inventory",
+      "category": "pc-info",
+      "label": "windows.Inventory",
+      "description": "windows.Inventory.description",
+      "fields": [
+        "drive",
+        "folder",
+        "usb_storage",
+        "output"
+      ]
+    },
+    {
+      "id": "ShellObservation",
+      "category": "pc-info",
+      "label": "windows.ShellObservation",
+      "description": "windows.ShellObservation.description",
+      "fields": [
+        "drive",
+        "usb_storage",
+        "output"
+      ]
+    },
+    {
+      "id": "Status",
+      "category": "registry",
+      "label": "windows.Status",
+      "description": "windows.Status.description",
+      "fields": [
+        "files"
+      ],
+      "multiple": false
+    },
+    {
+      "id": "Collect",
+      "category": "registry",
+      "label": "windows.Collect",
+      "description": "windows.Collect.description",
+      "fields": [
+        "usb",
+        "output"
+      ],
+      "multiple": false
+    },
+    {
+      "id": "Merge",
+      "category": "registry",
+      "label": "windows.Merge",
+      "description": "windows.Merge.description",
+      "fields": [
+        "files",
+        "generation",
+        "output"
+      ],
+      "multiple": true
+    },
+    {
+      "id": "Deploy",
+      "category": "registry",
+      "label": "windows.Deploy",
+      "description": "windows.Deploy.description",
+      "fields": [
+        "files",
+        "usb"
+      ],
+      "multiple": false
+    },
+    {
+      "id": "Convert",
+      "category": "registry",
+      "label": "windows.Convert",
+      "description": "windows.Convert.description",
+      "fields": [
+        "files",
+        "generation",
+        "output"
+      ],
+      "multiple": false
+    },
+    {
+      "id": "Name",
+      "category": "registry",
+      "label": "windows.Name",
+      "description": "windows.Name.description",
+      "fields": [
+        "files",
+        "host",
+        "name",
+        "generation",
+        "output"
+      ],
+      "multiple": false
+    },
+    {
+      "id": "Environment",
+      "category": "diagnostics",
+      "label": "windows.Environment",
+      "description": "windows.Environment.description",
+      "fields": [
+        "drive"
+      ],
+      "optional": [
+        "drive"
+      ]
+    },
+    {
+      "id": "ReviewedInventory",
+      "category": "diagnostics",
+      "label": "windows.ReviewedInventory",
+      "description": "windows.ReviewedInventory.description",
+      "fields": [
+        "drive",
+        "folder",
+        "output"
+      ],
+      "admin": true
+    },
+    {
+      "id": "AdminBitLocker",
+      "category": "diagnostics",
+      "label": "windows.AdminBitLocker",
+      "description": "windows.AdminBitLocker.description",
+      "fields": [
+        "drive",
+        "output"
+      ],
+      "admin": true
+    }
+  ],
+  "fedora": [
+    {
+      "id": "Status",
+      "category": "registry",
+      "label": "fedora.Status",
+      "description": "fedora.Status.description",
+      "fields": [],
+      "multiple": false
+    },
+    {
+      "id": "Collect",
+      "category": "registry",
+      "label": "fedora.Collect",
+      "description": "fedora.Collect.description",
+      "fields": [
+        "output"
+      ],
+      "multiple": false
+    },
+    {
+      "id": "Merge",
+      "category": "registry",
+      "label": "fedora.Merge",
+      "description": "fedora.Merge.description",
+      "fields": [
+        "files",
+        "generation",
+        "output"
+      ],
+      "multiple": true
+    },
+    {
+      "id": "Deploy",
+      "category": "registry",
+      "label": "fedora.Deploy",
+      "description": "fedora.Deploy.description",
+      "fields": [
+        "files"
+      ],
+      "multiple": false
+    },
+    {
+      "id": "Convert",
+      "category": "registry",
+      "label": "fedora.Convert",
+      "description": "fedora.Convert.description",
+      "fields": [
+        "files",
+        "generation",
+        "output"
+      ],
+      "multiple": false
+    },
+    {
+      "id": "Name",
+      "category": "registry",
+      "label": "fedora.Name",
+      "description": "fedora.Name.description",
+      "fields": [
+        "files",
+        "host",
+        "name",
+        "generation",
+        "output"
+      ],
+      "multiple": false
+    },
+    {
+      "id": "register",
+      "category": "registration",
+      "label": "fedora.register",
+      "description": "fedora.register.description",
+      "fields": [
+        "inventory",
+        "gpu",
+        "evidence"
+      ]
+    },
+    {
+      "id": "register-test",
+      "category": "registration",
+      "label": "fedora.register-test",
+      "description": "fedora.register-test.description",
+      "fields": [
+        "inventory",
+        "evidence"
+      ]
+    },
+    {
+      "id": "mok-check",
+      "category": "mok",
+      "label": "fedora.mok-check",
+      "description": "fedora.mok-check.description",
+      "fields": [
+        "certificate"
+      ]
+    },
+    {
+      "id": "mok-import",
+      "category": "mok",
+      "label": "fedora.mok-import",
+      "description": "fedora.mok-import.description",
+      "fields": [
+        "certificate"
+      ]
+    },
+    {
+      "id": "mok-delete",
+      "category": "mok",
+      "label": "fedora.mok-delete",
+      "description": "fedora.mok-delete.description",
+      "fields": [
+        "certificate"
+      ]
+    },
+    {
+      "id": "mok-revoke-import",
+      "category": "mok",
+      "label": "fedora.mok-revoke-import",
+      "description": "fedora.mok-revoke-import.description",
+      "fields": [
+        "certificate"
+      ]
+    },
+    {
+      "id": "mok-revoke-delete",
+      "category": "mok",
+      "label": "fedora.mok-revoke-delete",
+      "description": "fedora.mok-revoke-delete.description",
+      "fields": [
+        "certificate"
+      ]
+    },
+    {
+      "id": "environment",
+      "category": "maintenance",
+      "label": "fedora.environment",
+      "description": "fedora.environment.description",
+      "fields": []
+    },
+    {
+      "id": "config-close",
+      "category": "maintenance",
+      "label": "fedora.config-close",
+      "description": "fedora.config-close.description",
+      "fields": []
+    }
+  ]
+}

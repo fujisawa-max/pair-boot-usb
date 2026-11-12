@@ -160,7 +160,7 @@ def main():
     for folder in (stage / "etc/NetworkManager/system-connections", stage / "etc/systemd/network"):
         if folder.exists() and any(folder.iterdir()):
             raise ValueError(f"Source has network profiles; sanitize explicitly: {folder}")
-    write(stage, "/etc/systemd/network/20-gpu-ethernet.network", "[Match]\nName=en* eth*\n\n[Network]\nDHCP=yes\nLinkLocalAddressing=no\n")
+    write(stage, "/etc/systemd/network/20-gpu-ethernet.network", "[Match]\nName=en* eth*\n\n[Network]\nDHCP=yes\nLinkLocalAddressing=no\n\n[DHCPv4]\nUseHostname=no\n\n[DHCPv6]\nUseHostname=no\n")
     pilot_file = stage / "usr/lib/gpu-root/pilot-components.json"
     pilot = json.loads(pilot_file.read_text()) if pilot_file.is_file() else None
     if pilot and pilot.get("kernel_release") != KERNEL:

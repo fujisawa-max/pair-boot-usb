@@ -15,6 +15,8 @@ Set-StrictMode -Version Latest
 try {
 if ($UsbStorageTarget -and $PersonalUseOsVolume) { throw 'USB target must not use the personal OS volume exception.' }
 if (Test-Path -LiteralPath $OutputFile) { throw 'Choose a new output filename.' }
+$computerInfo = Get-CimInstance Win32_ComputerSystem
+$computerName = if ($computerInfo.PSObject.Properties['Name']) { [string]$computerInfo.Name } else { $null }
 $hardware = ([Guid]::Parse((Get-CimInstance Win32_ComputerSystemProduct).UUID)).ToString().ToLowerInvariant()
 if ($hardware -eq [Guid]::Empty.ToString() -or $hardware -eq 'ffffffff-ffff-ffff-ffff-ffffffffffff') { throw 'Invalid PC UUID.' }
 $letter = $Volume.Substring(0,1)
@@ -97,6 +99,7 @@ if ($BitlockerObservation) {
 $value = [ordered]@{
     schema = 1
     kind = 'windows-standard-candidate'
+    windows_computer_name = $computerName
     hardware_uuid = $hardware
     windows_drive = $Volume.ToUpperInvariant()
     filesystem = 'NTFS'

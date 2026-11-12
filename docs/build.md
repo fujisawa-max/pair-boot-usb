@@ -185,7 +185,7 @@ Version 0.9.2 uses the project version to identify its root image. It also recog
 
 `config/release.json` defines the project version, boot ABI, and state schema. The root image uses the same project version. Advance the project version when distributing a new root image. Boot stops if the same release has a different distribution SHA-256. Regeneration changes the SHA through UUIDs and other details, so retain a distributed root and reuse it when assembling additional USB images. Legacy root revisions are read to recognize existing 0.9.1 roots.
 
-The PC registry uses `schema=1` for its format and `generation` for the sequence of content updates. Compatibility checks cover the registry format and each PC record. Changing the project or root release, or deploying a registry to a USB with another release, preserves the registry schema and generation.
+Version 0.9.3 writes registry schema 2 with Windows PC names and can read and convert schema 1. Content updates use `generation`. Schema 2 requires updated boot files. This update also includes the initramfs inside root, so both project and root releases advance to 0.9.3; state schema remains 1. See [Management tools (Japanese)](management-ui.md).
 
 A component inventory summarizing the versions of external inputs is placed at `GPU-LOGS/MEDIA-INFO.txt` and in the root directory of the Fedora partition. It lists the Debian, kernel, gpu-unlock commit, NVIDIA, PAIR, llama.cpp, and Fedora versions. This describes the media and is distinct from information about the currently running root. The banner reads the version from metadata in the same format inside the root, and displays Normal/Unlock/TEST based on the boot state.
 

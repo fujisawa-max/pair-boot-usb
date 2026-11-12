@@ -55,6 +55,27 @@ def read_input(path):
     return fleet.load(path) if 'payload_base64' in raw else raw
 
 
+def set_computer_names(registry, updates, generation):
+    """Apply a validated name-only batch as one new registry generation."""
+    if not isinstance(updates, list) or not 1 <= len(updates) <= len(registry['records']):
+        raise ValueError('A nonempty PC name update list is required')
+    pending = {}
+    registered = {item['hardware_uuid'] for item in registry['records']}
+    for update in updates:
+        if not isinstance(update, dict) or set(update) != {'hardware_uuid', 'windows_computer_name'}:
+            raise ValueError('Only PC UUID and name may be updated')
+        host = fleet.hardware_uuid(update['hardware_uuid'])
+        name = fleet.computer_name(update['windows_computer_name'])
+        if name is None or host not in registered or host in pending:
+            raise ValueError('Missing PC name, unknown PC, or duplicate update')
+        pending[host] = name
+    value = fleet.convert(registry, generation)
+    for item in value['records']:
+        if item['hardware_uuid'] in pending:
+            item['windows_computer_name'] = pending[item['hardware_uuid']]
+    return fleet.decode(fleet.encode(value))
+
+
 def mbr_candidate_target(value):
     identity = value.get('partition_identity')
     if not isinstance(identity, dict) or identity.get('style') != 'mbr':
@@ -95,6 +116,8 @@ def check_candidate(value, hardware, now=None):
         if value.get('usb_target_requested') not in (None, False) or value.get('partition_flags_pending') not in (None, False):
             raise ValueError('Invalid USB candidate selection')
         fleet.validate_partition_policy(value, 'partition_guid')
+    if 'windows_computer_name' in value:
+        fleet.computer_name(value['windows_computer_name'])
     fleet.validate_storage_directory(value.get('storage_directory'))
     checked = value.get('checked_at_unix')
     current = time.time() if now is None else now
@@ -253,6 +276,7 @@ def registration_context(inventory, gpu_bdf, mount, bitlocker_evidence=None, no_
     config_device = live_config(mount)
     value = read_input(inventory)
     original_inventory = value
+    value = {**value, 'windows_computer_name': value.get('windows_computer_name')}
     evidence = None
     hardware = fleet.hardware_uuid(Path('/sys/class/dmi/id/product_uuid').read_text().strip())
     if hardware != value.get('hardware_uuid', '').lower():
@@ -353,6 +377,14 @@ def main():
     merge.add_argument('--generation', type=int, required=True)
     merge.add_argument('--root-version', help='legacy origin label; registry compatibility uses schema')
     merge.add_argument('--output', type=Path, required=True)
+    for operation in ('convert', 'name'):
+        command = sub.add_parser(operation)
+        command.add_argument('registry', type=Path)
+        command.add_argument('--generation', type=int, required=True)
+        command.add_argument('--output', type=Path, required=True)
+        if operation == 'name':
+            command.add_argument('--host-uuid', required=True)
+            command.add_argument('--computer-name', required=True)
     deploy = sub.add_parser('deploy')
     deploy.add_argument('registry', type=Path)
     deploy.add_argument('--mount', type=Path, required=True)
@@ -368,6 +400,13 @@ def main():
     if args.operation == 'status':
         value = fleet.load(args.registry)
         print(json.dumps(value, indent=2))
+    elif args.operation in ('convert', 'name'):
+        if args.output.exists() or args.output.is_symlink():
+            raise ValueError('Choose a new output filename')
+        value = fleet.load(args.registry)
+        value = fleet.set_computer_name(value, args.host_uuid, args.computer_name, args.generation) if args.operation == 'name' else fleet.convert(value, args.generation)
+        fleet.atomic_write(args.output, fleet.encode(value))
+        print('Saved schema 2; generation', value['generation'])
     elif args.operation == 'merge':
         if args.output.exists():
             raise ValueError('Choose a new merged output filename')

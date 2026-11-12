@@ -1,6 +1,7 @@
 ﻿# Headless child: JSON stdin only; fixed scripts and structured splatting.
 param([string]$ToolsPath = $(if (Test-Path -LiteralPath (Join-Path $PSScriptRoot '..\tools')) { Join-Path $PSScriptRoot '..\tools' } else { Join-Path $PSScriptRoot '..\toolkit' }))
 $ErrorActionPreference = 'Stop'
+$ProgressPreference = 'SilentlyContinue'
 Set-StrictMode -Version Latest
 [Console]::InputEncoding = [Text.UTF8Encoding]::new($false)
 [Console]::OutputEncoding = [Text.UTF8Encoding]::new($false)
@@ -31,13 +32,20 @@ try {
             if ($request.usb_storage_target -isnot [bool]) { throw 'USB指定が不正です。' }
             if ($request.usb_storage_target) { $parameters.UsbStorageTarget = $true }
         }
-        { $_ -in @('Status','Collect','Merge','Deploy') } {
+        { $_ -in @('Status','Collect','Merge','Deploy','Convert','Name') } {
             $scriptName = 'fleet.ps1'
             $parameters = @{Action=[string]$request.operation}
-            if ($request.operation -in @('Status','Merge','Deploy')) { $parameters.Inputs = [string[]]@($request.inputs) }
+            if ($request.operation -in @('Status','Merge','Deploy','Convert','Name')) { $parameters.Inputs = [string[]]@($request.inputs) }
             if ($request.operation -in @('Collect','Merge','Deploy') -and $request.usb_root) { $parameters.UsbRoot = [string]$request.usb_root }
-            if ($request.operation -in @('Collect','Merge')) { $parameters.OutputFile = [string]$request.output_file }
-            if ($request.operation -eq 'Merge') { $parameters.Generation = [int]$request.generation }
+            if ($request.operation -in @('Collect','Merge','Convert','Name')) { $parameters.OutputFile = [string]$request.output_file }
+            if ($request.operation -in @('Merge','Convert','Name')) { $parameters.Generation = [int]$request.generation }
+            if ($request.operation -eq 'Name') {
+                if ($null -ne $request.PSObject.Properties['name_updates']) {
+                    if ($request.name_updates -isnot [array] -or $request.PSObject.Properties['host_uuid'] -or $request.PSObject.Properties['computer_name']) {throw 'Invalid PC name update batch.'}
+                    $parameters.NameUpdates=[object[]]@($request.name_updates)
+                } else {$parameters.HostUuid=[string]$request.host_uuid;$parameters.ComputerName=[string]$request.computer_name}
+            }
+            if ($request.operation -eq 'Status') { $parameters.AsJson=$true }
         }
         default { throw '対応していない操作です。' }
     }

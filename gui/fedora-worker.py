@@ -23,7 +23,7 @@ core = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(core)
 RUN_ROOT = Path('/run/gpu-linux-gui')
 OPERATIONS = {'environment', 'config-open', 'config-close', 'status', 'collect', 'merge', 'deploy',
-              'registration-preview', 'register', 'mok-check', 'mok-import', 'mok-delete',
+              'registry-read', 'candidate-name', 'convert', 'name', 'registration-preview', 'register', 'mok-check', 'mok-import', 'mok-delete',
               'mok-revoke-import', 'mok-revoke-delete'}
 
 
@@ -111,24 +111,37 @@ def bounded_input(value, mount):
     return path
 
 
-def new_output(name, mount):
+def new_output(name, mount, directory_name='data'):
     core.fleet.validate_storage_directory(name)
     if not name.endswith('.json'):
         raise ValueError('出力名は単一の.jsonファイル名にしてください。')
-    path = mount / name
+    if directory_name not in ('data', 'gpu-config'):
+        raise ValueError('Unknown output directory')
+    directory = mount / directory_name
+    if directory.is_symlink() or (directory.exists() and not directory.is_dir()):
+        raise ValueError('Output directory is not an ordinary directory')
+    directory.mkdir(mode=0o700, exist_ok=True)
+    path = directory / name
     if path.exists() or path.is_symlink():
         raise ValueError('出力ファイルが存在します。別のファイル名を指定してください。')
     return path
 
 
 def write_new(path, data):
-    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600)
-    with os.fdopen(fd, 'wb') as stream:
-        stream.write(data)
-        stream.flush()
-        os.fsync(stream.fileno())
-    if path.read_bytes() != data:
-        raise ValueError('出力ファイルの読み戻しが一致しません。')
+    parent = os.open(path.parent, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+    try:
+        fd = os.open(path.name, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600, dir_fd=parent)
+        with os.fdopen(fd, 'wb') as stream:
+            stream.write(data)
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.fsync(parent)
+        check = os.open(path.name, os.O_RDONLY | os.O_NOFOLLOW, dir_fd=parent)
+        with os.fdopen(check, 'rb') as stream:
+            if stream.read() != data:
+                raise ValueError('Output readback mismatch')
+    finally:
+        os.close(parent)
 
 
 def environment():
@@ -248,12 +261,39 @@ def dispatch(request, password=None):
             raise ValueError('設定USBを書込み可能にする確認が必要です。')
         mount = configuration(request.get('mode', 'ro'))
         return {'mount': str(mount), 'mode': request.get('mode', 'ro')}
-    writes = {'register', 'collect', 'merge', 'deploy'}
+    writes = {'register', 'collect', 'merge', 'deploy', 'convert', 'name'}
     if operation in writes and request.get('confirm') != operation.upper():
         raise ValueError('書込み操作の確認が必要です。')
     mount = configuration('rw' if operation in writes else 'ro')
     if operation.startswith('mok-'):
         return mok_action(operation, request, mount, password)
+    if operation == 'registry-read':
+        return core.fleet.load(bounded_input(request.get('registry'), mount))
+    if operation == 'candidate-name':
+        value = core.read_input(bounded_input(request.get('inventory'), mount))
+        if core.fleet.hardware_uuid(value.get('hardware_uuid')) != core.fleet.hardware_uuid(request.get('host_uuid')):
+            raise ValueError('Windows candidate UUID does not match the selected PC')
+        name = core.fleet.computer_name(value.get('windows_computer_name'))
+        if name is None:
+            raise ValueError('Windows candidate has no PC name; collect it with updated Windows tools')
+        return {'windows_computer_name': name}
+    if operation in ('convert', 'name'):
+        paths = request.get('inputs')
+        if not isinstance(paths, list) or len(paths) != 1:
+            raise ValueError('Exactly one registry is required')
+        value = core.fleet.load(bounded_input(paths[0], mount))
+        if operation == 'name':
+            if 'name_updates' in request:
+                if 'host_uuid' in request or 'computer_name' in request:
+                    raise ValueError('Batch and single-PC updates cannot be combined')
+                value = core.set_computer_names(value, request['name_updates'], request.get('generation'))
+            else:
+                value = core.fleet.set_computer_name(value, request.get('host_uuid'), request.get('computer_name'), request.get('generation'))
+        else:
+            value = core.fleet.convert(value, request.get('generation'))
+        target = new_output(request.get('output_name'), mount, 'gpu-config')
+        write_new(target, core.fleet.encode(value))
+        return {'message': 'Saved a new registry; source and host mappings preserved', 'schema': value['schema'], 'generation': value['generation'], 'output': str(target)}
     if operation in ('registration-preview', 'register'):
         core.secure_boot_state()
         inventory = bounded_input(request.get('inventory'), mount)
@@ -285,7 +325,7 @@ def dispatch(request, password=None):
         files = [bounded_input(name, mount) for name in names]
         marker = core.read_input(mount / 'usb-config.json')
         registry = core.fleet.merge([core.read_input(path) for path in files], request.get('generation'), marker['root_version'])
-        target = new_output(request.get('output_name'), mount)
+        target = new_output(request.get('output_name'), mount, 'gpu-config')
         write_new(target, core.fleet.encode(registry))
         return {'message': '台帳をマージしました。', 'output': str(target), 'generation': registry['generation']}
     if operation == 'deploy':

@@ -30,7 +30,7 @@ Secure Boot環境で利用する場合、モジュール署名に使う秘密鍵
 
    ※ PC本体にC:以外の領域がなく、USBにroot.img等を保存する場合は、「USBをroot保存先に指定」にチェックします。詳しい手順は[USBに保存する場合](user-guide.md#usbにrootimgやmodelsを保存する場合)を参照してください。
 
-4. 候補情報（JSON）をUSB（`GPU-LOGS`）へ保存します。
+4. 候補情報（JSON）をUSBの `GPU-LOGS/data/` へ保存します（既定の保存先です）。
    - ※ BitLocker状態が不明（Unknown）と表示される場合は、画面の指示に従い管理者権限でBitLocker確認JSONを保存してください。
 
 ### 2. 同梱FedoraでSecure BootのMOK登録を行う

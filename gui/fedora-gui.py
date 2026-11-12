@@ -14,6 +14,8 @@ import sys
 
 HERE = Path(__file__).resolve().parent
 HELP_PROCESS = None
+UI = runpy.run_path(str(HERE / 'ui-model.py'))
+T = UI['text']
 
 
 class Cancelled(Exception):
@@ -21,10 +23,11 @@ class Cancelled(Exception):
 
 
 def dialog(*args):
-    result = subprocess.run(['zenity', *args], capture_output=True, text=True)
+    result = subprocess.run(['zenity', *args], capture_output=True, text=True,
+                            env={**os.environ, 'LANGUAGE': UI['language']()})
     if result.returncode == 1:
-        if '--extra-button=使い方' in args and result.stdout.rstrip('\n') == '使い方':
-            return '使い方'
+        if '--extra-button=' + T('help') in args and result.stdout.rstrip('\n') == T('help'):
+            return T('help')
         raise Cancelled()
     if result.returncode:
         raise RuntimeError(result.stderr.strip() or 'Dialog failed')
@@ -33,8 +36,8 @@ def dialog(*args):
 
 def choose(title, values, help_button=False):
     if not values:
-        raise ValueError('選択できる対象がありません。GPUや設定USBの検出状況は環境確認で調べてください。')
-    return dialog('--list', '--title=' + title, '--column=選択', '--width=850', '--height=400', *(['--extra-button=使い方'] if help_button else []), *values)
+        raise ValueError(T('required'))
+    return dialog('--list', '--title=' + title, '--column=' + T('operation'), '--width=850', '--height=400', *(['--extra-button=' + T('help')] if help_button else []), '--', *values)
 
 
 def choose_combo(title, values):
@@ -74,7 +77,7 @@ def gpu_choices(sysfs=Path('/sys/bus/pci/devices')):
 @contextlib.contextmanager
 def busy():
     progress = subprocess.Popen(['zenity', '--progress', '--pulsate', '--auto-close', '--no-cancel',
-                                 '--title=GPU Linux: 処理中', '--text=確認・処理を行っています。完了までお待ちください。'],
+                                 '--title=' + T('working'), '--text=' + T('working')],
                                 stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, text=True)
     try:
         yield
@@ -98,7 +101,7 @@ def privilege_command():
             return ['sudo', '-n', *base]
     if shutil.which('pkexec'):
         return ['pkexec', *base]
-    raise ValueError('管理者認証の手段がありません。Fedora Liveのsudo/pkexecを確認してください。')
+    raise ValueError(T('failure') + ': sudo / pkexec')
 
 
 def invoke(request, password=None):
@@ -112,11 +115,11 @@ def invoke(request, password=None):
     try:
         response = json.loads(result.stdout)
     except json.JSONDecodeError as error:
-        raise ValueError('実行部から結果を取得できません。管理者認証の取消や媒体パスを確認してください。\n' + result.stderr.strip()) from error
+        raise ValueError(T('failure') + '\n' + result.stderr.strip()) from error
     if not response.get('ok'):
-        raise ValueError(response.get('error', '操作を完了できませんでした。'))
+        raise ValueError(T('failure') + '\n' + T('details') + ': ' + response.get('error', ''))
     if result.returncode:
-        raise ValueError('実行部が異常終了しました。状態を確認し、自動で再実行しないでください。')
+        raise ValueError(T('failure'))
     return response['result']
 
 
@@ -137,41 +140,43 @@ def opened_config():
     return value['mount']
 
 
-def pick_json(mount, title, multiple=False):
-    args = ['--file-selection', '--title=' + title, '--filename=' + mount + '/', '--file-filter=JSON | *.json']
+def pick_json(mount, title, multiple=False, registry=False):
+    folder = Path(mount) / ('gpu-config' if registry else 'data')
+    initial = folder if folder.is_dir() and not folder.is_symlink() else Path(mount)
+    args = ['--file-selection', '--title=' + title, '--filename=' + str(initial) + '/', '--file-filter=JSON | *.json']
     if multiple:
         args += ['--multiple', '--separator=\n']
     value = dialog(*args)
     return value.splitlines() if multiple else value
 
 
-def output_name(prefix):
+def output_name(prefix, registry=False):
     stamp = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
-    return dialog('--entry', '--title=新規JSONのファイル名', '--text=設定USBの直下へ保存します。既存ファイルは上書きしません。',
+    return dialog('--entry', '--title=' + T('output'), '--text=' + T('new_registry_file' if registry else 'new_file'),
                   '--entry-text=' + prefix + '-' + stamp + '.json')
 
 
 def mok_summary(state):
     own = state['sha1']
     if state['enrolled']:
-        summary = 'このPCには、このMOK証明書が登録済みです。追加の登録申請は不要です。'
+        summary = T('mok_enrolled')
     elif own in state['pending_import']:
-        summary = 'このPCには登録申請済みですが、登録は未完了です。再起動後、MokManagerで承認してください。'
+        summary = T('mok_pending')
     else:
-        summary = 'このPCには、このMOK証明書は未登録です。登録申請もありません。'
+        summary = T('mok_absent')
     if own in state['pending_delete']:
-        summary += '\nこの証明書の削除申請が残っています。再起動前に削除申請の扱いを確認してください。'
+        summary += '\n' + T('mok_delete_pending')
     if (set(state['pending_import']) | set(state['pending_delete'])) - {own}:
-        summary += '\n別の証明書の申請もあります。そちらの状態も確認してください。'
+        summary += '\n' + T('mok_other_pending')
     return summary
 
 
 def mok_password():
-    first = dialog('--password', '--title=MOK確認用パスワード（8〜16文字の半角英数字）')
-    second = dialog('--password', '--title=同じMOK確認用パスワードをもう一度入力')
+    first = dialog('--password', '--title=' + T('password'))
+    second = dialog('--password', '--title=' + T('password_again'))
     import re
     if first != second or not re.fullmatch(r'[A-Za-z0-9]{8,16}', first):
-        raise ValueError('パスワードが一致しないか、8〜16文字の半角英数字ではありません。申請していません。')
+        raise ValueError(T('bad_password'))
     return first
 
 
@@ -180,105 +185,175 @@ def show_usage():
     global HELP_PROCESS
     if HELP_PROCESS is not None and HELP_PROCESS.poll() is None:
         return
-    path = HERE / 'usage.txt'
+    path = HERE / ('usage.' + UI['language']() + '.txt')
+    if not path.is_file():
+        path = HERE / 'usage.txt'
     if not path.is_file():
         raise ValueError('使い方ファイルがありません。GUI一式をコピーしてください。')
     HELP_PROCESS = subprocess.Popen(
-        ['zenity', '--text-info', '--title=GPU Linux — 使い方（操作を続けられます）',
+        ['zenity', '--text-info', '--title=' + T('help'),
          '--filename=' + str(path), '--width=760', '--height=650'],
         stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
         start_new_session=True)
 
 
+def select_id(title, entries, help_button=False):
+    labels = [T(item['label']) for item in entries]
+    choice = choose(title, labels, help_button)
+    if choice == T('help') and help_button:
+        return None
+    return entries[labels.index(choice)]['id']
+
+
+def registry_table(value):
+    rows = UI['pc_rows'](value)
+    if not rows:
+        show(T('fedora.Status'), {'schema': value['schema'], 'generation': value['generation'], 'records': []})
+        return
+    flat = [cell for row in rows for cell in row]
+    summary = (T('fedora.Status') + ' — ' + T('schema') + ': ' + str(value['schema'])
+               + ' / ' + T('current_generation') + ': ' + str(value['generation'])
+               + ' / ' + T('host_count') + ': ' + str(len(rows)))
+    selected = dialog('--list', '--title=' + summary, '--width=1000', '--height=500',
+                      '--column=' + T('name'), '--column=' + T('mode'), '--column=' + T('folder'),
+                      '--column=' + T('uuid'), '--print-column=4', '--', *flat)
+    if selected:
+        record = next(item for item in value['records'] if item['hardware_uuid'] == selected)
+        show(T('details'), record)
+
+
+def name_update(mount, request):
+    registry = invoke({'operation': 'registry-read', 'registry': request['inputs'][0]})
+    drafts = {item['hardware_uuid']: item.get('windows_computer_name') or '' for item in registry['records']}
+    while True:
+        action = select_id(T('name'), [
+            {'id': 'edit', 'label': 'edit_pc_name'}, {'id': 'save', 'label': 'save_name_changes'}])
+        if action == 'save':
+            updates = [{'hardware_uuid': item['hardware_uuid'], 'windows_computer_name': drafts[item['hardware_uuid']]}
+                       for item in registry['records']
+                       if drafts[item['hardware_uuid']] != (item.get('windows_computer_name') or '')]
+            if not updates:
+                show(T('name'), T('no_name_changes'))
+                continue
+            request['name_updates'] = updates
+            return registry['generation'] + 1
+        try:
+            display = {**registry, 'records': [{**item, 'windows_computer_name': drafts[item['hardware_uuid']]}
+                                               for item in registry['records']]}
+            rows = UI['pc_rows'](display)
+            selected = dialog('--list', '--title=' + T('pick_pc'), '--width=1000', '--height=450',
+                              '--column=' + T('name'), '--column=' + T('mode'), '--column=' + T('folder'),
+                              '--column=' + T('uuid'), '--print-column=4', '--', *[cell for row in rows for cell in row])
+            if selected not in drafts:
+                raise ValueError(T('required'))
+            source = select_id(T('name'), [
+                {'id': 'manual', 'label': 'name'}, {'id': 'candidate', 'label': 'name_candidate'}])
+            if source == 'candidate':
+                candidate = invoke({'operation': 'candidate-name', 'inventory': pick_json(mount, T('inventory')), 'host_uuid': selected})
+                name = candidate['windows_computer_name']
+            else:
+                name = dialog('--entry', '--title=' + T('name'), '--text=' + T('safe_name_update'),
+                              '--entry-text=' + drafts[selected])
+            if not name:
+                raise ValueError(T('required'))
+            drafts[selected] = name
+        except Cancelled:
+            continue
+        except ValueError as error:
+            show(T('failure'), str(error))
+
+
 def main():
     if not shutil.which('zenity'):
-        sys.exit('Zenityがありません。CLI手順を利用してください。')
-    operations = {
-        '環境確認（Secure Boot・GPU・領域一覧）': 'environment',
-        'Windows候補から保存先・GPUを登録': 'register',
-        'GPUなし確認用PC・USB保存先を登録（TEST）': 'register-test',
-        'PC登録一覧（台帳）を表示': 'status', '台帳をJSONへ回収': 'collect',
-        '複数の台帳JSONをマージ': 'merge', '統合台帳をこのUSBへ配布': 'deploy',
-        'MOK公開証明書・登録状態を確認': 'mok-check', 'MOK登録を申請': 'mok-import',
-        'MOK削除を申請': 'mok-delete', 'MOK登録申請を取り消す': 'mok-revoke-import',
-        'MOK削除申請を取り消す': 'mok-revoke-delete', '設定USBをアンマウント': 'config-close',
-    }
+        sys.exit('Zenity is required; use the CLI instructions.')
+    categories = [{'id': item, 'label': item} for item in ('registration', 'registry', 'mok', 'maintenance')]
     while True:
         try:
             try:
-                selection = choose('GPU Linux 管理GUI', list(operations), help_button=True)
+                category = select_id(T('title') + ' — ' + T('pick_category'), categories, True)
             except Cancelled:
                 return
-            if selection == '使い方':
+            if category is None:
                 show_usage()
                 continue
-            operation = operations[selection]
+            try:
+                entries = UI['operations']('fedora', category)
+                selected = select_id(T(category), entries)
+                definition = next(item for item in entries if item['id'] == selected)
+            except Cancelled:
+                continue
+            operation = {'Status': 'status', 'Collect': 'collect', 'Merge': 'merge', 'Deploy': 'deploy',
+                         'Convert': 'convert', 'Name': 'name'}.get(selected, selected)
             if operation == 'environment':
-                show('環境確認（検査で停止する理由もここで確認できます）', invoke({'operation': operation}))
+                show(T(definition['label']), invoke({'operation': operation}))
                 continue
             if operation == 'config-close':
-                confirm('アンマウントの確認', 'この起動USBの設定領域をアンマウントします。開いている設定ファイルは閉じてください。')
-                show('設定USB', invoke({'operation': operation}))
+                confirm(T('confirm'), T('unmount_notice'))
+                show(T('result'), invoke({'operation': operation}))
                 continue
             mount = opened_config()
             if operation.startswith('mok-'):
-                cert = dialog('--file-selection', '--title=この設定USBの公開証明書を選択',
-                              '--filename=' + mount + '/signing-cert.der', '--file-filter=公開DER | *.der')
+                cert = dialog('--file-selection', '--title=' + T('certificate'),
+                              '--filename=' + mount + '/signing-cert.der', '--file-filter=DER | *.der')
                 state = invoke({'operation': 'mok-check', 'certificate': cert})
-                show('MOK証明書・状態（SHA-256を確認してください）', mok_summary(state) + '\n\n詳細:\n' + json.dumps(state, ensure_ascii=False, indent=2))
+                show(T('mok_details'), mok_summary(state) + '\n\n' + T('details') + ':\n' + json.dumps(state, ensure_ascii=False, indent=2))
                 if operation == 'mok-check':
                     continue
                 if operation == 'mok-import' and (state['enrolled'] or state['sha1'] in state['pending_import']):
-                    show('MOK', mok_summary(state))
                     continue
                 if operation == 'mok-delete' and (not state['enrolled'] or state['sha1'] in state['pending_delete']):
-                    show('MOK', '未登録、または削除申請済みです。重複申請はしません。')
                     continue
-                warning = ('この証明書を削除すると、次回起動から署名済みgpu-unlock/NVIDIAモジュールを読み込めなくなる可能性があります。\n' if operation == 'mok-delete' else '')
-                confirm('MOK操作の最終確認', warning + '操作: ' + selection + '\nSHA-256: ' + state['sha256'] + '\n申請しますか？ 最終承認は再起動後のMokManagerで行います。')
+                warning = T('mok_delete_warning') + '\n' if operation == 'mok-delete' else ''
+                confirm(T('confirm'), warning + T(definition['label']) + '\nSHA-256: ' + state['sha256'] + '\n' + T('mok_confirm'))
                 password = mok_password() if operation in ('mok-import', 'mok-delete') else None
                 request = {'operation': operation, 'certificate': cert, 'expected_sha256': state['sha256'], 'confirm': operation.upper()}
                 try:
                     result = invoke(request, password)
                 finally:
                     password = None
-                show('MOK操作の結果', result)
+                show(T('result'), result)
                 continue
             if operation in ('register', 'register-test'):
                 test = operation == 'register-test'
-                inventory = pick_json(mount, 'この設定USBのWindows候補JSONを選択')
-                gpu = None if test else choose('登録するRTX 30シリーズのPCIアドレス', gpu_choices())
-                evidence = None
-                choice = choose('BitLockerの確認情報', ['候補JSONに含まれる観測情報を使う', '別の観測JSONを選択する'])
-                if choice.startswith('別'):
-                    evidence = pick_json(mount, 'BitLocker観測JSONを選択')
+                inventory = pick_json(mount, T('inventory'))
+                gpu = None if test else choose(T('gpu'), gpu_choices())
+                evidence_mode = select_id(T('evidence'), [{'id': 'embedded', 'label': 'embedded'}, {'id': 'separate', 'label': 'separate'}])
                 request = {'operation': 'registration-preview', 'inventory': inventory, 'gpu_bdf': gpu, 'no_gpu_test': test}
-                if evidence:
-                    request['evidence'] = evidence
+                if evidence_mode == 'separate':
+                    request['evidence'] = pick_json(mount, T('evidence'))
                 review = invoke(request)
-                show('登録前の確認（まだ保存していません）', review)
-                confirm('登録を確定', '表示したPC・保存先UUID・フォルダ・GPUを、この起動USBの台帳へ登録します。NTFSやroot.imgは変更しません。')
+                show(T('registration_review'), review)
+                confirm(T('confirm'), T('registration_confirm'))
                 request.update(operation='register', confirm='REGISTER', review_digest=review['review_digest'])
-                show('登録結果', invoke(request))
+                show(T('result'), invoke(request))
+                continue
+            if operation == 'status':
+                registry_table(invoke({'operation': 'status'}))
                 continue
             request = {'operation': operation}
-            if operation in ('collect', 'merge'):
-                request['output_name'] = output_name('fleet-' + operation)
-            if operation == 'merge':
-                request['inputs'] = pick_json(mount, '設定USB内の台帳JSONを複数選択', multiple=True)
-                request['generation'] = int(dialog('--entry', '--title=新しい台帳世代', '--text=全入力より大きい世代番号', '--entry-text=1'))
+            suggested = 1
+            if operation in ('merge', 'convert', 'name'):
+                source = pick_json(mount, T('files'), multiple=operation == 'merge', registry=True)
+                request['inputs'] = source if isinstance(source, list) else [source]
+                if operation == 'name':
+                    suggested = name_update(mount, request)
+                else:
+                    values = [invoke({'operation': 'registry-read', 'registry': path}) for path in request['inputs']]
+                    suggested = max(value['generation'] for value in values) + 1
+                request['generation'] = int(dialog('--entry', '--title=' + T('generation'), '--text=' + T('conversion' if operation == 'convert' else 'generation'), '--entry-text=' + str(suggested)))
+            if operation in ('collect', 'merge', 'convert', 'name'):
+                request['output_name'] = output_name('fleet-' + operation, registry=operation != 'collect')
             if operation == 'deploy':
-                request['registry'] = pick_json(mount, '配布する統合台帳JSONを選択')
-            if operation != 'status':
-                confirm('実行内容の確認', selection + '\n' + json.dumps(request, ensure_ascii=False, indent=2) + '\nこの設定USBへ書き込みます。よろしいですか？')
-                request['confirm'] = operation.upper()
-            show('操作結果', invoke(request))
+                request['registry'] = pick_json(mount, T('files'), registry=True)
+            confirm(T('confirm'), T(definition['label']) + '\n' + T(definition['description']) + '\n' + T('this_usb') + '\n' + json.dumps(request, ensure_ascii=False, indent=2))
+            request['confirm'] = operation.upper()
+            show(T('result'), invoke(request))
         except Cancelled:
-            # Cancelling an input/confirmation returns to the menu, with no write.
+            # Cancelling any selection/confirmation performs no pending write.
             continue
         except (ValueError, OSError, RuntimeError, KeyError, subprocess.SubprocessError) as error:
             try:
-                dialog('--error', '--title=操作を完了できませんでした', '--width=700', '--text=' + html.escape(str(error)))
+                dialog('--error', '--title=' + T('failure'), '--width=700', '--text=' + html.escape(str(error)))
             except Cancelled:
                 pass
 

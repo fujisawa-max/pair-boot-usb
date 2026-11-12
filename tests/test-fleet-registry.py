@@ -54,7 +54,7 @@ class FleetTests(unittest.TestCase):
             fleet.merge([value], 1, 'fixture')
         merged = fleet.merge([value], 2, 'different')
         self.assertEqual(merged['records'], value['records'])
-        unsupported = {**value, 'schema': 2}
+        unsupported = {**value, 'schema': 3}
         with self.assertRaisesRegex(ValueError, 'schema'):
             fleet.merge([unsupported], 2, 'different')
         value['records'] *= 2
@@ -73,7 +73,7 @@ class FleetTests(unittest.TestCase):
     def test_deploy_and_interrupted_environment_cannot_change_registry(self):
         with tempfile.TemporaryDirectory() as directory:
             target = Path(directory)
-            (target / 'usb-config.json').write_text(json.dumps({'schema': 1, 'kind': 'gpu-linux-config', 'root_version': 'fixture'}))
+            (target / 'usb-config.json').write_text(json.dumps({'schema': 1, 'kind': 'gpu-linux-config', 'registry_schema': 2, 'root_version': 'fixture'}))
             first = fleet.merge([host()], 1, 'fixture')
             fleet.deploy(first, target)
             registry = target / 'gpu-config/registry.json'

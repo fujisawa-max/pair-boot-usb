@@ -1,0 +1,53 @@
+PAIR BOOT Manager — Help
+
+Candidates, BitLocker evidence and collected registries default to GPU-LOGS/data/.
+Merged/converted registries and PC name updates default to gpu-config/.
+Legacy JSON files at the USB root remain selectable.
+The active boot registry remains at gpu-config/registry.json.
+
+Windows
+- PC information: save a registration candidate or a BitLocker observation.
+  The NTFS location for root/state and the output JSON location are different.
+  A standard candidate already contains a BitLocker observation.
+- PC registry: list, collect, merge, deploy, convert legacy registries, and update PC names.
+  Registry file selection starts in gpu-config/. Other folders remain selectable.
+  Name drafts survive switching PCs. Use Review and run to save all changed names
+  to one new registry generation.
+  These operations do not require a root storage drive or folder.
+- Diagnostics and details: inspect the environment or collect administrator evidence.
+  If standard BitLocker observations are Unknown, save administrator BitLocker evidence
+  and select it as separate evidence when registering on Fedora. Encryption is not changed.
+
+Fedora
+- Register this PC: verify the Windows candidate against this PC and storage.
+  GPU registration and no-GPU TEST have different input requirements.
+- PC registry: manage GPU-LOGS on the USB that booted this Fedora session.
+  View PCs by name, inspect details, collect, merge, deploy, convert, and update names.
+  Use Select a PC and edit its name repeatedly, then Save all changed PC names.
+  Returning to a PC restores its draft. All changes use one new registry generation.
+- Secure Boot (MOK): inspect the public certificate, request enrollment/deletion,
+  or cancel pending requests. Passwords are requested only when required.
+  Final enrollment/deletion approval takes place in UEFI MokManager after restarting.
+- Diagnostics and close: inspect the environment or unmount GPU-LOGS.
+  Closing GPU-LOGS does not make the entire Fedora Live USB removable.
+
+PC names and legacy registries
+- PC names are display metadata. UUIDs remain the PC identity.
+- Entries without names in schema-1 registries are shown as unnamed.
+- Convert legacy registry to schema 2: choose a new generation and a new output file.
+- Add or update a PC name: select the source registry and the registered PC.
+  Enter its name, or fill it from an updated Windows candidate with the same UUID.
+  Save a new generation to a new file. The source, GPU and storage mappings are preserved.
+- Deploy the saved registry through the manager; do not just overwrite registry.json.
+- Schema 2 requires compatible boot USB files from 0.9.3 or later.
+  Update a 0.9.2 or earlier boot USB before deploying schema 2.
+- A merged generation must exceed all inputs and current destination generations.
+  Do not alter observation dates or safety values to bypass validation.
+
+Shutdown and backups
+- Back up registries and user data to another drive before rewriting a complete USB image.
+- In PAIR BOOT, quit PAIR with q and select reboot or power-off from the menu.
+- Only remove a boot USB when USB CAN BE REMOVED NOW is displayed.
+  USB storage containing root/state/Models must remain connected until power-off.
+
+See tools/QUICK-START.md, DETAILS.md and WINDOWS-FLEET.md on the USB for full instructions.

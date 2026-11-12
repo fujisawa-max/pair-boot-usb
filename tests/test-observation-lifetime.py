@@ -22,7 +22,7 @@ class ObservationLifetimeTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             target = Path(folder)
             (target / 'usb-config.json').write_text(json.dumps({
-                'schema': 1, 'kind': 'gpu-linux-config', 'root_version': '0.9.1-shared'}))
+                'schema': 1, 'kind': 'gpu-linux-config', 'registry_schema': 2, 'root_version': '0.9.1-shared'}))
             fleet.deploy(old, target)
             current = target / 'gpu-config/registry.json'
             self.assertEqual(fleet.load(current)['records'][0]['checked_at_unix'], 1000)

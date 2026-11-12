@@ -57,6 +57,9 @@ def main():
     documents = docs['document_plan'](ROOT)
     output.mkdir(parents=True)
     (output / 'MEDIA-INFO.txt').write_text(info['text'](), encoding='utf-8')
+    data = output / 'data'
+    data.mkdir()
+    (data / 'README.txt').write_text('候補情報・BitLocker確認情報・回収した台帳などの保存先です。\n台帳のマージ・形式変換・PC名更新を行う場合、既定の保存先は ../gpu-config/ です。\n起動に使用する台帳本体は ../gpu-config/registry.json です。\n\nFolder for collected candidates, BitLocker evidence and exported registries.\nMerged/converted registries and PC name updates default to ../gpu-config/.\nThe active boot registry is ../gpu-config/registry.json.\n', encoding='utf-8')
     tools = output / 'tools'
     shutil.copytree(ROOT / 'toolkit', tools, ignore=shutil.ignore_patterns('__pycache__', '*.pyc'))
     shutil.copy2(ROOT / 'runtime/fleet-registry.py', tools / 'fleet-registry.py')
@@ -64,8 +67,8 @@ def main():
     shutil.copy2(ROOT / 'config/rtx30-gpu-policy.json', tools / 'rtx30-gpu-policy.json')
     docs['write_documents'](tools, documents)
 
-    (output / 'usb-config.json').write_text(json.dumps({'schema': 1, 'kind': 'gpu-linux-config', 'root_version': args.root_version}, indent=2) + '\n')
     fleet = runpy.run_path(str(ROOT / 'runtime/fleet-registry.py'))
+    (output / 'usb-config.json').write_text(json.dumps({'schema': 1, 'kind': 'gpu-linux-config', 'root_version': args.root_version, 'registry_schema': fleet['REGISTRY_SCHEMA']}, indent=2) + '\n')
     # New shared media starts unregistered: never synthesize Windows safety flags.
     registry = fleet['merge']([], 1, args.root_version)
     fleet['deploy'](registry, output)

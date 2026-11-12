@@ -57,6 +57,23 @@ def check_shutdown_restore(tree):
         raise ValueError('Actual shutdown restore failed: ' + result.stdout + result.stderr)
 
 
+def check_root_hostname(tree):
+    """Exercise naming using only the shipped root's Python and libraries."""
+    sysroot = tree.parent / 'root-tree'
+    code = ('import runpy; m=runpy.run_path("/usr/lib/gpu-root/initialize-identity.py"); '
+            'f=m["runtime_hostname"]; h="01234567-89ab-cdef-0123-456789abcdef"; '
+            'assert f(h,"LLM-PC-01","gpu-112233445566")=="llm-pc-01-0123456789abcdef0123456789abcdef"; '
+            'assert f(h,None,"gpu-112233445566")=="gpu-112233445566"; '
+            'assert len(f(h,"a"*255,"gpu-112233445566"))==63; '
+            'print("Root hostname policy passed")')
+    result = subprocess.run(['bwrap', '--unshare-all', '--ro-bind', str(sysroot), '/',
+                             '--dev', '/dev', '--proc', '/proc', '--tmpfs', '/tmp',
+                             '--clearenv', '--setenv', 'PATH', '/usr/sbin:/usr/bin:/sbin:/bin',
+                             '--', 'python3', '-c', code], capture_output=True, text=True)
+    if result.returncode:
+        raise ValueError('Root hostname policy failed: ' + result.stderr.strip())
+
+
 def cpio_entries(path):
     data = path.read_bytes()
     offset = 0
@@ -104,6 +121,9 @@ def check_initramfs_runtime(tree):
                 'step=p.step("Copying fixture",1); step.__enter__(); '
                 'm.copy_image(io.BytesIO(b"x"),io.BytesIO(),p); step.__exit__(None,None,None); '
                 'assert "[step 1/1]" in out.getvalue() and "100%" in out.getvalue(); '
+                's=importlib.util.spec_from_file_location("fleet_registry", "/usr/lib/fleet-registry.py"); '
+                'm=importlib.util.module_from_spec(s); s.loader.exec_module(m); '
+                'assert m.computer_name("LLM-PC-01")=="LLM-PC-01"; '
                 's=importlib.util.spec_from_file_location("ntfs_hibernation", "/usr/lib/ntfs-hibernation.py"); '
                 'm=importlib.util.module_from_spec(s); s.loader.exec_module(m); ctypes.CDLL(m.LIBRARY); '
                 's=importlib.util.spec_from_file_location("detach_loop", "/usr/lib/detach-loop.py"); '
@@ -133,6 +153,7 @@ def main():
     check_host_gpu_addresses(tree)
     check_initramfs_runtime(tree)
     check_shutdown_restore(tree)
+    check_root_hostname(tree)
     master = tree / "gpu-linux/root.img"
     manifest = json.loads((tree / "gpu-linux/master.json").read_text())
     with master.open("rb") as source:
@@ -143,6 +164,9 @@ def main():
     def debug(command):
         return subprocess.check_output(["debugfs", "-R", command, str(master)], text=True, stderr=subprocess.DEVNULL)
     inside = json.loads(debug("cat /usr/lib/gpu-root/image.json"))
+    network = debug('cat /etc/systemd/network/20-gpu-ethernet.network')
+    if network.count('UseHostname=no') != 2 or '[DHCPv4]' not in network or '[DHCPv6]' not in network:
+        raise ValueError('DHCP hostname override guard missing')
     archive = '/boot/initramfs-' + manifest['kernel_release'] + '.img'
     proc = subprocess.Popen(['debugfs', '-R', 'cat ' + archive, str(master)],
                             stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
@@ -174,7 +198,7 @@ def main():
         for key in ('version', 'project_version', 'root_revision', 'boot_abi', 'state_schema', 'registry_schema', 'components'):
             if info.get(key) != manifest.get(key):
                 raise ValueError('Root release metadata differs from master manifest: ' + key)
-        for name in ('boot-banner.py', 'release-info.py'):
+        for name in ('boot-banner.py', 'release-info.py', 'initialize-identity.py'):
             if debug('cat /usr/lib/gpu-root/' + name).strip() != (Path(__file__).resolve().parents[1] / 'runtime' / name).read_text().strip():
                 raise ValueError('Obsolete root release presentation: ' + name)
     data, entries = cpio_entries(tree / "boot/initramfs.img")

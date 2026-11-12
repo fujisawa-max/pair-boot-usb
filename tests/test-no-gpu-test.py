@@ -86,7 +86,7 @@ class NoGpuTests(unittest.TestCase):
             mount = base / 'config'
             mount.mkdir()
             (mount / 'usb-config.json').write_text(json.dumps({
-                'schema': 1, 'kind': 'gpu-linux-config', 'root_version': '0.9.0-shared'}))
+                'schema': 1, 'kind': 'gpu-linux-config', 'registry_schema': 2, 'root_version': '0.9.0-shared'}))
             hardware = base / 'hardware'
             hardware.write_text(record()['hardware_uuid'])
             pci = base / 'pci'
@@ -178,7 +178,7 @@ class NoGpuTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             target = Path(folder)
             (target / 'usb-config.json').write_text(json.dumps({
-                'schema': 1, 'kind': 'gpu-linux-config', 'root_version': '0.9.0-shared'}))
+                'schema': 1, 'kind': 'gpu-linux-config', 'registry_schema': 2, 'root_version': '0.9.0-shared'}))
             value = fleet.merge([record()], 1, '0.9.0-shared')
             fleet.deploy(value, target)
             env = (target / ('gpu-config/hosts/' + record()['hardware_uuid'] + '.env')).read_bytes()

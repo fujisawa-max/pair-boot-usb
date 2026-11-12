@@ -20,7 +20,7 @@ class RegistrySchemaTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             target = Path(folder)
             (target / 'usb-config.json').write_text(json.dumps({
-                'schema': 1, 'kind': 'gpu-linux-config', 'root_version': '0.9.2-shared'}))
+                'schema': 1, 'kind': 'gpu-linux-config', 'registry_schema': 2, 'root_version': '0.9.2-shared'}))
             fleet.deploy(value, target)
             original = fleet.load(target / 'gpu-config/registry.json')
             self.assertEqual(original, value)
@@ -44,12 +44,12 @@ class RegistrySchemaTests(unittest.TestCase):
 
     def test_unknown_schema_and_unsafe_marker_are_rejected(self):
         value = fleet.merge([fixture['host']()], 1, 'origin')
-        for schema in (2, True, '1', None):
+        for schema in (3, True, '1', None):
             with self.subTest(schema=schema), self.assertRaises(ValueError):
                 fleet.decode(fleet.encode({**value, 'schema': schema}))
-        for marker in ({'schema': 2, 'kind': 'gpu-linux-config', 'root_version': 'origin'},
+        for marker in ({'schema': 2, 'kind': 'gpu-linux-config', 'registry_schema': 2, 'root_version': 'origin'},
                        {'schema': 1, 'kind': 'other', 'root_version': 'origin'},
-                       {'schema': 1, 'kind': 'gpu-linux-config', 'root_version': None}):
+                       {'schema': 1, 'kind': 'gpu-linux-config', 'registry_schema': 2, 'root_version': None}):
             with self.subTest(marker=marker), self.assertRaises(ValueError):
                 fleet.configuration_marker(marker)
 
@@ -60,7 +60,7 @@ class RegistrySchemaTests(unittest.TestCase):
             config = state / 'config'
             config.mkdir()
             (config / 'usb-config.json').write_text(json.dumps({
-                'schema': 1, 'kind': 'gpu-linux-config', 'root_version': '0.9.1-shared'}))
+                'schema': 1, 'kind': 'gpu-linux-config', 'registry_schema': 2, 'root_version': '0.9.1-shared'}))
             (config / 'gpu-config').mkdir()
             (config / 'gpu-config/registry.json').write_bytes(fleet.encode(value))
             actual_spec = importlib.util.spec_from_file_location

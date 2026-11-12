@@ -4,7 +4,7 @@
 
 初期セットアップの流れ（Windowsでの情報取得、FedoraでのMOK登録・PC登録、PAIR BOOT起動）については [quick-start.ja.md](quick-start.ja.md) を参照してください。
 
-まず、候補PCのWindows上でそのPCの情報が記載された候補JSONファイルを生成して保存します。このファイルを同じPCで起動したFedoraで照合・確認してUSBに登録します。PC登録一覧の本体はGPU-LOGSのgpu-config/registry.jsonです。複数USBでは台帳を回収・マージし、管理GUIの配布操作で各USBへ反映してhostsフォルダ内のファイルも再生成します。登録情報を手入力で流用してはいけません。
+まず、候補PCのWindows上でそのPCの情報が記載された候補JSONファイルを生成して保存します。このファイルを同じPCで起動したFedoraで照合・確認してUSBに登録します。PC登録一覧の本体はGPU-LOGSのgpu-config/registry.jsonです。候補情報・BitLocker確認情報や回収した台帳などの既定の保存先はGPU-LOGSのdata/フォルダです。複数USBでは台帳を回収・マージし、管理GUIの配布操作で各USBへ反映してhostsフォルダ内のファイルも再生成します。登録情報を手入力で流用してはいけません。
 
 USBを書き直す場合のバックアップと台帳の復元は、[USBを書き直す前のバックアップ](#usbを書き直す前のバックアップ)を参照してください。
 
@@ -15,8 +15,8 @@ USBを書き直す場合のバックアップと台帳の復元は、[USBを書�
 | 操作環境 | 対応と制限 |
 | --- | --- |
 | Windowsのファイル操作 | 各USBの `GPU-LOGS/gpu-config/registry.json` を別名でコピーして回収・バックアップできます。統合や起動用hostsの再生成には管理ツールを使います。 |
-| Windows管理GUI／PowerShell版 | 通常GPUとGPUなしTESTの台帳を回収・マージ・配布できます。形式版1の台帳を全体版の異なるUSBへ配布できます。管理作業のためにFedoraを起動する必要はありません。[Windowsでの操作手順](windows-fleet.md)を参照してください。 |
-| Fedora管理GUI | GPUなしTESTを含む形式版1の台帳を処理できます。操作対象は、そのFedoraを起動したUSBのGPU-LOGSに限定しています。別USBへの配布では、同じ管理PCで配布先USBのFedoraを起動します。 |
+| Windows管理GUI／PowerShell版 | 通常GPUとGPUなしTESTの台帳を回収・マージ・配布できます。形式1・2の台帳を読み込めます。形式2は対応する起動USBへ配布します。管理作業のためにFedoraを起動する必要はありません。[Windowsでの操作手順](windows-fleet.md)を参照してください。 |
+| Fedora管理GUI | GPUなしTESTを含む形式1・2の台帳を処理できます。操作対象は、そのFedoraを起動したUSBのGPU-LOGSに限定しています。別USBへの配布では、同じ管理PCで配布先USBのFedoraを起動します。 |
 
 Fedora管理GUIでは次の順に行います。
 
@@ -28,9 +28,11 @@ Fedora管理GUIでは次の順に行います。
 
 配布操作は台帳と起動用hostsを更新します。`registry.json` だけを直接上書きする方法で代用しません。未対応の台帳形式、世代の巻戻し、保存先や安全性の不一致は停止条件です。確認日は実際に情報を取得した日時を保持します。登録情報とWindowsの観測情報に日数による有効期限はありません。
 
-台帳の形式版は `schema=1` です。PC追加などで台帳の内容を更新するときは、`generation`（世代番号）を増やします。同じ形式の台帳は、USBやrootの版が変わっても使用できます。従来の `root_version` 欄は互換性のために出力元の情報として保持し、台帳の受入条件には使用しません。台帳を別の版のUSBへ配布するだけの場合、形式版と世代番号は維持します。
+0.9.3の台帳形式は `schema=2` で、WindowsのPC名を表示用に保存します。内容更新の順序は `generation`（世代番号）で管理します。形式1も読み込め、元を保持して形式2の新しい世代へ変換できます。PC名の追加だけでGPU・保存先の再登録は不要です。[管理ツールの使い方](management-ui.md)を参照してください。形式2の配布には対応する起動USBが必要です。従来の `root_version` 欄は出力元の参考情報として保持し、版名だけを台帳の受入条件には使用しません。
 
 台帳を他のUSBへ配っても、root・state・Modelsはコピーされず、登録済みのNTFS保存先も変わりません。MOKは各PCのfirmware側の登録であり、台帳の配布では移りません。
+
+PC名を登録すると、次回起動時のhostnameとPAIRの表示に「PC名＋ハードウェアUUID」を使います。名前がない旧台帳では従来の `gpu-…` を維持します。名前の整形と更新方法は[管理ツール](management-ui.md#pairに表示するpc名)を参照してください。
 
 ## root・state・Models
 

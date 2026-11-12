@@ -693,7 +693,7 @@ def boot(config):
         new_json(state / "state.json", {"loop": loop, "created": created,
                                         "version": release["version"],
                                         **({'root_revision': release['root_revision']} if 'root_revision' in release else {}),
-                                        "usb_version": manifest["version"], "state_schema": 1, "state_loop": state_loop,
+                                        "usb_version": manifest["version"], "windows_computer_name": profile.get("windows_computer_name"), "state_schema": 1, "state_loop": state_loop,
                                         "mode": "TEST" if test else ("Unlock" if selected else "Normal"),
                                         "usb_device": usb, "usb_unmounted": True, **storage_state})
         # /run survives switch_root; shutdown hook tears down root -> loop -> NTFS.

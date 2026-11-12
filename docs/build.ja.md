@@ -183,7 +183,7 @@ NVIDIA GPUのないPCで起動画面・root/stateの分離を調べる場合は�
 
 `config/release.json` が全体版、boot ABI、state schemaを定義します。rootには同じ全体版を記録します。新しいrootを配布するときは全体版を進め、同じ版の異なるrootを混在させないでください。同じ版で配布元のSHA-256が異なる場合は、起動を停止します。完成rootを再生成するとUUID等でもSHAが変わるため、配布したrootは保持し、追加のUSBは同じrootから組み立てます。旧0.9.1のroot revisionは、旧rootを認識するために読み取ります。
 
-PC登録台帳は形式版 `schema=1` と内容の更新順を示す `generation` で管理します。台帳の互換性は形式と各PCの登録内容で検査します。全体版・root版の変更や、別の版のUSBへの配布では、台帳の形式版や世代番号を自動で増やしません。
+0.9.3ではPC名を保存する台帳形式2を使用し、形式1の読取り・変換にも対応します。内容の更新順は `generation` で管理します。形式2には対応する起動処理が必要です。今回の更新はroot内のinitramfsも対象とするため、全体版とroot版を0.9.3にそろえます。state schemaは1を維持します。[管理ツールの使い方](management-ui.md)も参照してください。
 
 `GPU-LOGS/MEDIA-INFO.txt` とFedoraパーティション直下に、使用した外部資料の版などをまとめた構成一覧を配置します。Debian、kernel、gpu-unlock commit、NVIDIA、PAIR、llama.cpp、Fedoraの版を確認できます。これは媒体の情報であり、起動中rootの情報とは区別します。バナーはroot内の同じ形式のメタデータから版を、起動状態からNormal/Unlock/TESTを表示します。
 

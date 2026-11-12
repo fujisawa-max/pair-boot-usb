@@ -1,0 +1,554 @@
+{
+  "title": {
+    "ja": "PAIR BOOT 管理ツール",
+    "en": "PAIR BOOT Manager"
+  },
+  "pc-info": {
+    "ja": "PC情報の取得",
+    "en": "PC information"
+  },
+  "registry": {
+    "ja": "台帳管理",
+    "en": "PC registry"
+  },
+  "diagnostics": {
+    "ja": "診断・詳細確認",
+    "en": "Diagnostics and details"
+  },
+  "registration": {
+    "ja": "PC登録",
+    "en": "Register this PC"
+  },
+  "mok": {
+    "ja": "Secure Boot（MOK）",
+    "en": "Secure Boot (MOK)"
+  },
+  "maintenance": {
+    "ja": "診断・終了",
+    "en": "Diagnostics and close"
+  },
+  "operation": {
+    "ja": "操作",
+    "en": "Operation"
+  },
+  "drive": {
+    "ja": "保存先NTFSドライブ",
+    "en": "Storage NTFS drive"
+  },
+  "folder": {
+    "ja": "保存先フォルダ名",
+    "en": "Storage folder name"
+  },
+  "usb": {
+    "ja": "対象USB（GPU-LOGS）",
+    "en": "USB configuration volume (GPU-LOGS)"
+  },
+  "files": {
+    "ja": "台帳JSON",
+    "en": "Registry JSON files"
+  },
+  "output": {
+    "ja": "出力JSON",
+    "en": "Output JSON file"
+  },
+  "generation": {
+    "ja": "新しい世代番号",
+    "en": "New generation"
+  },
+  "usb_storage": {
+    "ja": "USB上の保存先",
+    "en": "Storage on USB"
+  },
+  "host": {
+    "ja": "PC",
+    "en": "PC"
+  },
+  "name": {
+    "ja": "WindowsのPC名",
+    "en": "Windows PC name"
+  },
+  "browse": {
+    "ja": "選択…",
+    "en": "Browse…"
+  },
+  "run": {
+    "ja": "確認して実行",
+    "en": "Review and run"
+  },
+  "help": {
+    "ja": "使い方",
+    "en": "Help"
+  },
+  "result": {
+    "ja": "結果",
+    "en": "Result"
+  },
+  "close": {
+    "ja": "閉じる",
+    "en": "Close"
+  },
+  "back": {
+    "ja": "戻る",
+    "en": "Back"
+  },
+  "unnamed": {
+    "ja": "PC名未登録",
+    "en": "PC name not recorded"
+  },
+  "mode": {
+    "ja": "モード",
+    "en": "Mode"
+  },
+  "uuid": {
+    "ja": "PC識別子（UUID）",
+    "en": "PC identity (UUID)"
+  },
+  "normal": {
+    "ja": "通常GPU",
+    "en": "GPU"
+  },
+  "test": {
+    "ja": "GPUなしTEST",
+    "en": "No-GPU TEST"
+  },
+  "confirm": {
+    "ja": "実行内容の確認",
+    "en": "Review operation"
+  },
+  "confirm_question": {
+    "ja": "表示した内容で実行しますか？",
+    "en": "Proceed with the operation shown?"
+  },
+  "working": {
+    "ja": "処理中です。完了までお待ちください。",
+    "en": "Working. Please wait."
+  },
+  "success": {
+    "ja": "処理が完了しました",
+    "en": "Operation completed"
+  },
+  "failure": {
+    "ja": "処理を完了できませんでした",
+    "en": "Operation failed"
+  },
+  "required": {
+    "ja": "必要な項目を指定してください。",
+    "en": "Complete the required fields."
+  },
+  "no_drive": {
+    "ja": "NTFSドライブが見つかりません。",
+    "en": "No NTFS drive is available."
+  },
+  "load_hosts": {
+    "ja": "台帳からPC一覧を読み込む",
+    "en": "Load PCs from registry"
+  },
+  "name_candidate": {
+    "ja": "候補JSONから補完",
+    "en": "Fill from candidate"
+  },
+  "name_mismatch": {
+    "ja": "候補JSONと選択したPCのUUIDが一致しません。",
+    "en": "The candidate UUID does not match the selected PC."
+  },
+  "name_missing": {
+    "ja": "候補JSONにPC名がありません。新しいWindowsツールで取得してください。",
+    "en": "The candidate has no PC name. Collect it with the updated Windows tool."
+  },
+  "safe_name_update": {
+    "ja": "PCを切り替えても入力した名前を保持します。変更したPC名をまとめて保存します。GPU・保存先・起動許可は変更せず、元の台帳を保持します。",
+    "en": "Names entered remain available when switching PCs. Save all changed names together. GPU/storage mappings and boot authorization stay unchanged; the source registry is preserved."
+  },
+  "conversion": {
+    "ja": "形式1を形式2へ変換し、新しい世代として別ファイルへ保存します。形式2には対応する新しい起動USBが必要です。",
+    "en": "Convert schema 1 to schema 2 and save a new generation to a new file. Schema 2 requires updated boot USB files."
+  },
+  "new_file": {
+    "ja": "既定はGPU-LOGS/data/です。既存ファイルとは別の出力JSONを指定してください。",
+    "en": "Default: GPU-LOGS/data/. Choose a new output JSON file; existing files are preserved."
+  },
+  "admin_notice": {
+    "ja": "この情報取得だけにWindowsの管理者承認（UAC）が必要です。Windows設定は変更しません。",
+    "en": "Windows administrator approval (UAC) is required only for this collection. Windows settings are not changed."
+  },
+  "os_consent": {
+    "ja": "Windows OS領域への保存",
+    "en": "Store on the Windows OS volume"
+  },
+  "os_warning": {
+    "ja": "この領域はWindows OSの領域です。WindowsデータをLinuxから読み書きします。個人所有PCでバックアップ済みの場合だけ続行してください。安全検査は省略しません。",
+    "en": "This is the Windows OS volume. Linux will read and write its data. Continue only for a personally owned PC with a backup. Safety checks remain enforced."
+  },
+  "os_question": {
+    "ja": "この対象への個人利用を許可しますか？",
+    "en": "Authorize personal use of this target?"
+  },
+  "this_usb": {
+    "ja": "対象はFedoraを起動したUSBのGPU-LOGSです。",
+    "en": "Target: GPU-LOGS on the USB that booted this Fedora session."
+  },
+  "embedded": {
+    "ja": "候補JSON内のBitLocker観測を使用",
+    "en": "Use BitLocker observation embedded in the candidate"
+  },
+  "separate": {
+    "ja": "別のBitLocker確認JSONを選択",
+    "en": "Select a separate BitLocker evidence JSON"
+  },
+  "inventory": {
+    "ja": "Windows候補JSON",
+    "en": "Windows candidate JSON"
+  },
+  "evidence": {
+    "ja": "BitLocker確認情報",
+    "en": "BitLocker evidence"
+  },
+  "gpu": {
+    "ja": "使用するNVIDIA GPU",
+    "en": "NVIDIA GPU to use"
+  },
+  "certificate": {
+    "ja": "公開証明書（DER）",
+    "en": "Public certificate (DER)"
+  },
+  "password": {
+    "ja": "MOK申請用パスワード（8～16文字の半角英数字）",
+    "en": "MOK request password (8–16 ASCII letters/digits)"
+  },
+  "password_again": {
+    "ja": "同じパスワードをもう一度入力",
+    "en": "Enter the same password again"
+  },
+  "bad_password": {
+    "ja": "パスワードが一致しないか、形式が不正です。申請していません。",
+    "en": "Passwords do not match or are invalid. No request was submitted."
+  },
+  "mok_details": {
+    "ja": "証明書と申請状態",
+    "en": "Certificate and enrollment status"
+  },
+  "mok_enrolled": {
+    "ja": "登録済みです。追加の登録申請は不要です。",
+    "en": "Enrolled. No additional enrollment request is needed."
+  },
+  "mok_pending": {
+    "ja": "登録申請中です。再起動後にMokManagerで承認してください。",
+    "en": "Enrollment is pending. Approve it in MokManager after restarting."
+  },
+  "mok_absent": {
+    "ja": "未登録です。",
+    "en": "Not enrolled."
+  },
+  "mok_delete_pending": {
+    "ja": "削除申請が残っています。",
+    "en": "A deletion request is pending."
+  },
+  "mok_other_pending": {
+    "ja": "別の証明書の申請もあります。",
+    "en": "Requests for other certificates are also pending."
+  },
+  "mok_confirm": {
+    "ja": "最終承認は再起動後のUEFI MokManagerで行います。",
+    "en": "Final approval takes place in UEFI MokManager after restarting."
+  },
+  "mok_delete_warning": {
+    "ja": "削除すると、この証明書で署名したモジュールを読み込めなくなる可能性があります。",
+    "en": "Deleting this certificate may prevent its signed modules from loading."
+  },
+  "registration_review": {
+    "ja": "PC名・保存先・GPUと検査結果を確認してください。まだ登録していません。",
+    "en": "Review the PC name, storage, GPU and checks. Nothing has been registered yet."
+  },
+  "registration_confirm": {
+    "ja": "表示したPCの登録を、この起動USBの台帳へ保存します。NTFSやroot.imgは変更しません。",
+    "en": "Save this PC registration to the boot USB registry. NTFS storage and root.img are not modified."
+  },
+  "details": {
+    "ja": "詳細",
+    "en": "Details"
+  },
+  "unmount_notice": {
+    "ja": "GPU-LOGSだけを閉じます。開いているファイルを閉じてください。Fedora稼働中のUSB全体は取り外さないでください。",
+    "en": "Close GPU-LOGS only. Close its open files first. The USB is still used by Fedora Live and must remain connected."
+  },
+  "cancelled": {
+    "ja": "操作を取り消しました。",
+    "en": "Operation cancelled."
+  },
+  "pick_category": {
+    "ja": "カテゴリを選択",
+    "en": "Choose a category"
+  },
+  "pick_pc": {
+    "ja": "PCを選択",
+    "en": "Select a PC"
+  },
+  "schema": {
+    "ja": "形式版",
+    "en": "Schema"
+  },
+  "reboot_approval": {
+    "ja": "MOKの登録・削除は再起動後の承認が必要です。",
+    "en": "MOK enrollment/deletion requires approval after restarting."
+  },
+  "load_failed": {
+    "ja": "台帳を読み込めませんでした。",
+    "en": "Could not read the registry."
+  },
+  "selected_pc": {
+    "ja": "選択したPC",
+    "en": "Selected PC"
+  },
+  "copy_details": {
+    "ja": "必要な場合は「診断情報をコピー」で詳細を取得できます。",
+    "en": "Use Copy diagnostics when detailed troubleshooting information is needed."
+  },
+  "windows.Inventory": {
+    "ja": "候補情報を保存",
+    "en": "Save registration candidate"
+  },
+  "windows.Inventory.description": {
+    "ja": "このPCの適性をチェックします。BitLockerの状態観測を含みます。rootイメージなどを保存するドライブを選択し、保存フォルダ名を指定してください。",
+    "en": "Check whether this PC is suitable, including BitLocker observations. Select the drive for root images and other data, and specify the storage folder name."
+  },
+  "windows.ShellObservation": {
+    "ja": "BitLocker観測を保存",
+    "en": "Save BitLocker observation"
+  },
+  "windows.ShellObservation.description": {
+    "ja": "通常権限で観測を取り直します。保存フォルダは不要です。",
+    "en": "Collect a separate standard-user observation. No storage folder is needed."
+  },
+  "windows.Status": {
+    "ja": "PC登録一覧を表示",
+    "en": "Show registered PCs"
+  },
+  "windows.Status.description": {
+    "ja": "PC名を中心に台帳を表示します。",
+    "en": "Show registry entries by PC name."
+  },
+  "windows.Collect": {
+    "ja": "USBから台帳回収",
+    "en": "Collect registry from USB"
+  },
+  "windows.Collect.description": {
+    "ja": "台帳を新しいJSONへコピーします。",
+    "en": "Copy the registry to a new JSON file."
+  },
+  "windows.Merge": {
+    "ja": "台帳をマージ",
+    "en": "Merge registries"
+  },
+  "windows.Merge.description": {
+    "ja": "複数台帳を、新しい世代として保存します。",
+    "en": "Combine registries into a new generation."
+  },
+  "windows.Deploy": {
+    "ja": "USBへ台帳配布",
+    "en": "Deploy registry to USB"
+  },
+  "windows.Deploy.description": {
+    "ja": "台帳と起動用情報を検証して配布します。",
+    "en": "Validate and deploy the registry and boot configuration."
+  },
+  "windows.Convert": {
+    "ja": "旧台帳を形式2へ変換",
+    "en": "Convert legacy registry to schema 2"
+  },
+  "windows.Convert.description": {
+    "ja": "形式1を形式2へ変換し、新しい世代として別ファイルへ保存します。形式2には対応する新しい起動USBが必要です。",
+    "en": "Convert schema 1 to schema 2 and save a new generation to a new file. Schema 2 requires updated boot USB files."
+  },
+  "windows.Name": {
+    "ja": "PC名を追加・更新",
+    "en": "Add or update a PC name"
+  },
+  "windows.Name.description": {
+    "ja": "PCを切り替えても入力した名前を保持します。変更したPC名をまとめて保存します。GPU・保存先・起動許可は変更せず、元の台帳を保持します。",
+    "en": "Names entered remain available when switching PCs. Save all changed names together. GPU/storage mappings and boot authorization stay unchanged; the source registry is preserved."
+  },
+  "fedora.Status": {
+    "ja": "PC登録一覧を表示",
+    "en": "Show registered PCs"
+  },
+  "fedora.Status.description": {
+    "ja": "PC名を中心に台帳を表示します。",
+    "en": "Show registry entries by PC name."
+  },
+  "fedora.Collect": {
+    "ja": "USBから台帳回収",
+    "en": "Collect registry from USB"
+  },
+  "fedora.Collect.description": {
+    "ja": "台帳を新しいJSONへコピーします。",
+    "en": "Copy the registry to a new JSON file."
+  },
+  "fedora.Merge": {
+    "ja": "台帳をマージ",
+    "en": "Merge registries"
+  },
+  "fedora.Merge.description": {
+    "ja": "複数台帳を、新しい世代として保存します。",
+    "en": "Combine registries into a new generation."
+  },
+  "fedora.Deploy": {
+    "ja": "USBへ台帳配布",
+    "en": "Deploy registry to USB"
+  },
+  "fedora.Deploy.description": {
+    "ja": "台帳と起動用情報を検証して配布します。",
+    "en": "Validate and deploy the registry and boot configuration."
+  },
+  "fedora.Convert": {
+    "ja": "旧台帳を形式2へ変換",
+    "en": "Convert legacy registry to schema 2"
+  },
+  "fedora.Convert.description": {
+    "ja": "形式1を形式2へ変換し、新しい世代として別ファイルへ保存します。形式2には対応する新しい起動USBが必要です。",
+    "en": "Convert schema 1 to schema 2 and save a new generation to a new file. Schema 2 requires updated boot USB files."
+  },
+  "fedora.Name": {
+    "ja": "PC名を追加・更新",
+    "en": "Add or update a PC name"
+  },
+  "fedora.Name.description": {
+    "ja": "PCを切り替えても入力した名前を保持します。変更したPC名をまとめて保存します。GPU・保存先・起動許可は変更せず、元の台帳を保持します。",
+    "en": "Names entered remain available when switching PCs. Save all changed names together. GPU/storage mappings and boot authorization stay unchanged; the source registry is preserved."
+  },
+  "windows.Environment": {
+    "ja": "環境確認（読み取り専用）",
+    "en": "Inspect environment (read-only)"
+  },
+  "windows.Environment.description": {
+    "ja": "PCと領域一覧を表示します。ドライブの選択は任意です。",
+    "en": "Show this PC and volumes. Selecting a drive is optional."
+  },
+  "windows.ReviewedInventory": {
+    "ja": "詳細なPC・保存先情報を保存（管理者）",
+    "en": "Save detailed PC/storage inventory (administrator)"
+  },
+  "windows.ReviewedInventory.description": {
+    "ja": "内蔵NVMe/SATA領域の詳細情報を取得します。通常は候補情報を使用します。",
+    "en": "Collect detailed inventory for internal NVMe/SATA storage. Normally use a standard candidate."
+  },
+  "windows.AdminBitLocker": {
+    "ja": "BitLocker確認JSONを保存（管理者）",
+    "en": "Save BitLocker evidence (administrator)"
+  },
+  "windows.AdminBitLocker.description": {
+    "ja": "通常観測がUnknownの場合などに使います。USB保存先にも対応します。",
+    "en": "Use when standard observations are Unknown. USB storage is supported."
+  },
+  "fedora.register": {
+    "ja": "Windows候補からPCを登録",
+    "en": "Register PC from Windows candidate"
+  },
+  "fedora.register.description": {
+    "ja": "Windowsの候補とこのPC・保存先・GPUを照合して登録します。",
+    "en": "Verify the Windows candidate against this PC, storage and GPU."
+  },
+  "fedora.register-test": {
+    "ja": "GPUなしTESTとして登録",
+    "en": "Register no-GPU TEST PC"
+  },
+  "fedora.register-test.description": {
+    "ja": "NVIDIA機器がないPCとUSB保存先の確認用です。推論はできません。",
+    "en": "For a PC without NVIDIA hardware and explicit USB storage. Inference is unavailable."
+  },
+  "fedora.mok-check": {
+    "ja": "証明書・登録状態を確認",
+    "en": "Inspect certificate and enrollment"
+  },
+  "fedora.mok-check.description": {
+    "ja": "MOKの登録・削除は再起動後の承認が必要です。",
+    "en": "MOK enrollment/deletion requires approval after restarting."
+  },
+  "fedora.mok-import": {
+    "ja": "MOK登録を申請",
+    "en": "Request MOK enrollment"
+  },
+  "fedora.mok-import.description": {
+    "ja": "MOKの登録・削除は再起動後の承認が必要です。",
+    "en": "MOK enrollment/deletion requires approval after restarting."
+  },
+  "fedora.mok-delete": {
+    "ja": "MOK削除を申請",
+    "en": "Request MOK deletion"
+  },
+  "fedora.mok-delete.description": {
+    "ja": "MOKの登録・削除は再起動後の承認が必要です。",
+    "en": "MOK enrollment/deletion requires approval after restarting."
+  },
+  "fedora.mok-revoke-import": {
+    "ja": "登録申請を取り消す",
+    "en": "Cancel pending enrollment"
+  },
+  "fedora.mok-revoke-import.description": {
+    "ja": "MOKの登録・削除は再起動後の承認が必要です。",
+    "en": "MOK enrollment/deletion requires approval after restarting."
+  },
+  "fedora.mok-revoke-delete": {
+    "ja": "削除申請を取り消す",
+    "en": "Cancel pending deletion"
+  },
+  "fedora.mok-revoke-delete.description": {
+    "ja": "MOKの登録・削除は再起動後の承認が必要です。",
+    "en": "MOK enrollment/deletion requires approval after restarting."
+  },
+  "fedora.environment": {
+    "ja": "環境確認（読み取り専用）",
+    "en": "Inspect environment (read-only)"
+  },
+  "fedora.environment.description": {
+    "ja": "Secure Boot・GPU・領域・必要ツールを表示します。",
+    "en": "Show Secure Boot, GPU, volumes and required tools."
+  },
+  "fedora.config-close": {
+    "ja": "設定領域をアンマウント",
+    "en": "Unmount configuration volume"
+  },
+  "fedora.config-close.description": {
+    "ja": "GPU-LOGSだけを閉じます。開いているファイルを閉じてください。Fedora稼働中のUSB全体は取り外さないでください。",
+    "en": "Close GPU-LOGS only. Close its open files first. The USB is still used by Fedora Live and must remain connected."
+  },
+  "all_volumes": {
+    "ja": "全体のみ（対象ドライブなし）",
+    "en": "Overview only (no drive selected)"
+  },
+  "current_generation": {
+    "ja": "現在の世代",
+    "en": "Current generation"
+  },
+  "host_count": {
+    "ja": "登録PC数",
+    "en": "Registered PCs"
+  },
+  "copy_diagnostics": {
+    "ja": "診断情報をコピー",
+    "en": "Copy diagnostics"
+  },
+  "diagnostics_copied": {
+    "ja": "診断情報をクリップボードにコピーしました。必要な箇所へ貼り付けてください。",
+    "en": "Diagnostics copied to the clipboard. Paste them where needed."
+  },
+  "usb_storage_checkbox": {
+    "ja": "USB上の場合はチェック",
+    "en": "Check if storage is on USB"
+  },
+  "edit_pc_name": {
+    "ja": "PCを選んで名前を編集",
+    "en": "Select a PC and edit its name"
+  },
+  "save_name_changes": {
+    "ja": "変更したPC名をまとめて保存",
+    "en": "Save all changed PC names"
+  },
+  "no_name_changes": {
+    "ja": "変更されたPC名がありません。",
+    "en": "No PC names have changed."
+  },
+  "new_registry_file": {
+    "ja": "GPU-LOGS/gpu-config/内の新しい出力JSON名を指定してください。既存の台帳は上書きしません。",
+    "en": "Choose a new output JSON filename in GPU-LOGS/gpu-config/. Existing registries are preserved."
+  }
+}

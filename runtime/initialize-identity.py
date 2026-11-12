@@ -7,6 +7,35 @@ import re
 import subprocess
 import sys
 import uuid
+import unicodedata
+
+
+def runtime_hostname(hardware, windows_name, fallback):
+    """Use the registered label without changing persistent OS/PAIR identity."""
+    if not isinstance(fallback, str) or not re.fullmatch(r'gpu-[a-f0-9]{12}', fallback):
+        raise ValueError('Unknown persistent hostname format')
+    if windows_name is None:
+        return fallback
+    if (not isinstance(windows_name, str) or not 1 <= len(windows_name) <= 255
+            or windows_name != windows_name.strip()
+            or any(ord(c) > 0xffff or unicodedata.category(c).startswith('C')
+                   or c in '\u2028\u2029' for c in windows_name)):
+        raise ValueError('Invalid registered Windows PC name')
+    suffix = uuid.UUID(hardware.strip()).hex
+    name = unicodedata.normalize('NFKD', windows_name).encode('ascii', 'ignore').decode().lower()
+    name = re.sub(r'[^a-z0-9-]+', '-', name).strip('-') or 'gpu'
+    # One DNS label: reserve a separator and the complete 32-hex hardware UUID.
+    name = name[:30].rstrip('-')
+    return name + '-' + suffix
+
+
+def apply_hostname(root, hardware, managed, generate_keys, set_hostname):
+    info = initialize(root, hardware, generate_keys)
+    name = runtime_hostname(hardware, managed.get('windows_computer_name'), info['hostname'])
+    # A runtime hostname is set before network/PAIR startup. Keep the state-v1
+    # hostname and identity record intact, so old state stays verifiable.
+    set_hostname(name)
+    return name
 
 
 def initialize(root, hardware, generate_keys):
@@ -39,11 +68,12 @@ if __name__ == "__main__":
     try:
         if not Path("/run/gpu-root/state.json").is_file():
             sys.exit("Identity initialization requires the managed writable root boot")
+        managed = json.loads(Path('/run/gpu-root/state.json').read_text())
         def generate():
-            managed = json.loads(Path('/run/gpu-root/state.json').read_text())
             if managed.get('state_schema') != 1:
                 subprocess.run(["ssh-keygen", "-A"], check=True)
-        info = initialize(Path("/"), Path("/sys/class/dmi/id/product_uuid").read_text(), generate)
-        subprocess.run(["hostname", info["hostname"]], check=True)
+        name = apply_hostname(Path("/"), Path("/sys/class/dmi/id/product_uuid").read_text(), managed,
+                              generate, lambda value: subprocess.run(["hostname", value], check=True))
+        print("PAIR BOOT: Runtime hostname: " + name, flush=True)
     except (OSError, ValueError, subprocess.CalledProcessError) as error:
         sys.exit(f"Identity initialization stopped: {error}")

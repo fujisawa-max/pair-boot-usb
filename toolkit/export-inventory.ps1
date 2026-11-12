@@ -25,6 +25,8 @@ if ($LASTEXITCODE -ne 0) { throw 'Cannot obtain NTFS volume serial number.' }
 # First 64-bit hex value in ntfsinfo is the NTFS volume serial (locale-independent format).
 $match = [regex]::Match(($info -join "`n"), '0x([0-9a-fA-F]{16})\b')
 if (-not $match.Success) { throw 'NTFS serial could not be parsed; do not guess the Linux UUID.' }
+$computerInfo = Get-CimInstance Win32_ComputerSystem
+$computerName = if ($computerInfo.PSObject.Properties['Name']) { [string]$computerInfo.Name } else { $null }
 $hardware = (Get-CimInstance Win32_ComputerSystemProduct).UUID.ToLowerInvariant()
 $secureBoot = Confirm-SecureBootUEFI
 $partition = Get-Partition -DriveLetter $Volume.Substring(0,1)
@@ -39,6 +41,7 @@ if ($disk.BusType -ne 'NVMe' -and $disk.BusType -ne 'SATA') { throw 'Expected ex
 if ($volumeStatus -ne 'FullyDecrypted' -or $protectionStatus -ne 'Off') { throw 'Windows safety checks failed.' }
 if ($secureBoot -ne $true) { throw 'This signed USB release requires confirmed Secure Boot.' }
 $record = [ordered]@{
+    windows_computer_name = $computerName
     schema = 1
     partition_is_boot = [bool]$partition.IsBoot
     partition_is_system = [bool]$partition.IsSystem

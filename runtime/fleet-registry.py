@@ -9,9 +9,11 @@ from pathlib import Path
 import re
 import time
 import uuid
+import unicodedata
 
 MAX_BYTES = 1024 * 1024
-REGISTRY_SCHEMA = 1
+REGISTRY_SCHEMA = 2
+SUPPORTED_REGISTRY_SCHEMAS = (1, 2)
 # Generated from config/rtx30-gpu-policy.json; fixture checks prevent drift.
 GPU_NORMAL_IDS = frozenset('10de:2203 10de:2204 10de:2206 10de:2207 10de:2208 10de:220a 10de:2216 10de:2414 10de:2420 10de:2460 10de:2482 10de:2484 10de:2486 10de:2487 10de:2488 10de:2489 10de:249c 10de:249d 10de:24a0 10de:24c7 10de:24c9 10de:24dc 10de:24dd 10de:24e0 10de:2503 10de:2504 10de:2507 10de:2508 10de:2520 10de:2521 10de:2523 10de:2544 10de:2560 10de:2563 10de:2582 10de:2584 10de:25a0 10de:25a2 10de:25a5 10de:25ab 10de:25ac 10de:25e0 10de:25e2 10de:25e5 10de:25ec 10de:2822 10de:28a3 10de:28e3'.split())
 GPU_UNLOCK_IDS = frozenset('10de:2203 10de:2204 10de:2206 10de:2207 10de:2208 10de:220a 10de:2216 10de:2414 10de:2482 10de:2484 10de:2486 10de:2487 10de:2488 10de:2489 10de:249c 10de:249d 10de:24a0 10de:24c7 10de:24c9 10de:24dc 10de:24dd 10de:24e0 10de:2503 10de:2504 10de:2507 10de:2508 10de:2544'.split())
@@ -76,8 +78,22 @@ def validate_usb_storage_target(value):
     return dict(value)
 
 
+def computer_name(value):
+    """A display label, never an authorization or filesystem identifier."""
+    if value is None:
+        return None
+    if (not isinstance(value, str) or not 1 <= len(value) <= 255 or value != value.strip()
+            or any(ord(c) > 0xffff or unicodedata.category(c).startswith('C') or c in '\u2028\u2029' for c in value)):
+        raise ValueError('Invalid Windows PC name')
+    return value
+
+
+def mapping(value):
+    return {k: v for k, v in value.items() if k not in ('checked_at_unix', 'windows_computer_name')}
+
+
 def record(value, now=None):
-    if not isinstance(value, dict) or value.get('schema') != 1:
+    if not isinstance(value, dict) or type(value.get('schema')) is not int or value['schema'] != 1:
         raise ValueError('Invalid host schema')
     host = hardware_uuid(value.get('hardware_uuid'))
     if not re.fullmatch(r'[A-Fa-f0-9]{16}', str(value.get('ntfs_uuid', ''))):
@@ -119,6 +135,8 @@ def record(value, now=None):
         result['storage_target'] = usb_target
     if test:
         result['boot_mode'] = 'no-gpu-test'
+    if 'windows_computer_name' in value:
+        result['windows_computer_name'] = computer_name(value['windows_computer_name'])
     result['hardware_uuid'] = host
     result['ntfs_uuid'] = result['ntfs_uuid'].upper()
     return result
@@ -126,7 +144,7 @@ def record(value, now=None):
 
 def encode(payload):
     raw = json.dumps(payload, sort_keys=True, separators=(',', ':'), allow_nan=False).encode()
-    return (json.dumps({'schema': 1, 'payload_base64': base64.b64encode(raw).decode(),
+    return (json.dumps({'schema': payload['schema'], 'payload_base64': base64.b64encode(raw).decode(),
                         'sha256': hashlib.sha256(raw).hexdigest()}, indent=2) + '\n').encode()
 
 
@@ -134,13 +152,13 @@ def decode(data, now=None):
     if len(data) > MAX_BYTES:
         raise ValueError('Registry too large')
     envelope = json.loads(data)
-    if type(envelope.get('schema')) is not int or envelope['schema'] != REGISTRY_SCHEMA:
-        raise ValueError('Unknown registry envelope')
+    if type(envelope.get('schema')) is not int or envelope['schema'] not in SUPPORTED_REGISTRY_SCHEMAS:
+        raise ValueError('Unknown registry envelope schema')
     raw = base64.b64decode(envelope['payload_base64'], validate=True)
     if hashlib.sha256(raw).hexdigest() != envelope.get('sha256'):
         raise ValueError('Registry checksum mismatch')
     value = json.loads(raw)
-    if type(value.get('schema')) is not int or value['schema'] != REGISTRY_SCHEMA:
+    if type(value.get('schema')) is not int or value['schema'] != envelope['schema']:
         raise ValueError('Unsupported registry schema')
     if type(value.get('generation')) is not int or value['generation'] < 1:
         raise ValueError('Invalid registry generation')
@@ -149,6 +167,8 @@ def decode(data, now=None):
     hosts = value.get('records')
     if not isinstance(hosts, list) or len(hosts) > 1000:
         raise ValueError('Invalid records list')
+    if value['schema'] == 2 and any(not isinstance(item, dict) or 'windows_computer_name' not in item for item in hosts):
+        raise ValueError('Schema 2 requires a Windows PC name field (null if unknown)')
     cleaned = [record(item, now) for item in hosts]
     if len({item['hardware_uuid'] for item in cleaned}) != len(cleaned):
         raise ValueError('Duplicate host records')
@@ -184,17 +204,41 @@ def merge(inputs, generation, root_version=None, now=None):
             host = item['hardware_uuid']
             if host in hosts:
                 # Only refresh time may differ. Mapping/safety conflicts need owner resolution.
-                left = {k: v for k, v in hosts[host].items() if k != 'checked_at_unix'}
-                right = {k: v for k, v in item.items() if k != 'checked_at_unix'}
+                left = mapping(hosts[host])
+                right = mapping(item)
                 if left != right:
                     raise ValueError('Conflicting configuration for host ' + host)
+                old_name = hosts[host].get('windows_computer_name')
+                new_name = item.get('windows_computer_name')
+                if old_name and new_name and old_name != new_name:
+                    raise ValueError('Conflicting PC names; update the display name explicitly for host ' + host)
+                item['windows_computer_name'] = new_name or old_name
                 item['checked_at_unix'] = max(item['checked_at_unix'], hosts[host]['checked_at_unix'])
+            item.setdefault('windows_computer_name', None)
             hosts[host] = item
     if type(generation) is not int or generation <= prior:
         raise ValueError('New generation must exceed all input generations')
     # Keep the schema-1 field for existing readers as origin information.
     value = {'schema': REGISTRY_SCHEMA, 'generation': generation, 'root_version': root_version or 'registry-v1',
              'records': [hosts[key] for key in sorted(hosts)]}
+    return decode(encode(value), now)
+
+
+def convert(registry, generation, now=None):
+    """Preserve all mappings; create a new schema-2 generation, never overwrite input."""
+    return merge([registry], generation, now=now)
+
+
+def set_computer_name(registry, host, name, generation, now=None):
+    host = hardware_uuid(host)
+    name = computer_name(name)
+    if name is None:
+        raise ValueError('A PC name is required')
+    value = convert(registry, generation, now)
+    selected = [item for item in value['records'] if item['hardware_uuid'] == host]
+    if len(selected) != 1:
+        raise ValueError('Selected PC is not registered')
+    selected[0]['windows_computer_name'] = name
     return decode(encode(value), now)
 
 
@@ -235,6 +279,9 @@ def configuration_marker(value):
             or not isinstance(value.get('root_version'), str)
             or not re.fullmatch(r'[a-zA-Z0-9._-]{1,80}', value['root_version'])):
         raise ValueError('Invalid USB configuration marker')
+    schema = value.get('registry_schema', 1)
+    if type(schema) is not int or schema not in SUPPORTED_REGISTRY_SCHEMAS:
+        raise ValueError('Unknown USB registry schema capability')
     return value
 
 
@@ -245,8 +292,10 @@ def deploy(registry, mount, now=None):
     marker_path = mount / 'usb-config.json'
     if marker_path.is_symlink():
         raise ValueError('Unsafe USB marker')
-    configuration_marker(json.loads(marker_path.read_text()))
+    marker = configuration_marker(json.loads(marker_path.read_text()))
     value = decode(encode(registry), now)
+    if value['schema'] > marker.get('registry_schema', 1):
+        raise ValueError('USB boot files do not support registry schema 2; update the USB first')
     config = mount / 'gpu-config'
     config.mkdir(exist_ok=True)
     if config.is_symlink():
@@ -264,7 +313,7 @@ def deploy(registry, mount, now=None):
         prior = {v['hardware_uuid']: v for v in old['records']}
         new = {v['hardware_uuid']: v for v in value['records']}
         for key, item in prior.items():
-            if key not in new or any(item[k] != new[key][k] for k in item if k != 'checked_at_unix'):
+            if key not in new or mapping(item) != mapping(new[key]):
                 raise ValueError('Deployment would remove/change a registered host')
     hosts = config / 'hosts'
     hosts.mkdir(exist_ok=True)
