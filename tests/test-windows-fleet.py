@@ -363,7 +363,7 @@ if ($controls -lt 10) {throw 'GUI initialization was not inspected'}
             self.call('Merge', Inputs=[str(old), str(new)], OutputFile=str(output), Generation=2, **extra)
             self.assertEqual(fleet.load(output)['root_version'], '0.9.1-shared' if extra else '0.9.0-shared')
 
-    def test_gui_worker_passes_multiple_literal_inputs_and_target_usb_to_merge(self):
+    def test_gui_worker_merges_multiple_literal_inputs_with_or_without_target_usb(self):
         tools = self.base / 'tools'; tools.mkdir()
         script = str(ROOT / 'toolkit/fleet.ps1').replace("'", "''")
         (tools / 'fleet.ps1').write_text(
@@ -372,17 +372,25 @@ if ($controls -lt 10) {throw 'GUI initialization was not inspected'}
         first = self.write('input one.json', [host(test=True)], version='0.9.0-shared')
         second = self.write("input'two.json", [host(test=True)], version='0.9.0-shared')
         usb = self.usb()
-        output = self.base / "merged' output.json"
-        request = {'operation': 'Merge', 'inputs': [str(first), str(second)],
-                   'output_file': str(output), 'generation': 2, 'usb_root': str(usb)}
-        result = subprocess.run([PWSH, '-NoProfile', '-NonInteractive', '-File',
-                                 str(ROOT / 'gui/windows-worker.ps1'), '-ToolsPath', str(tools)],
-                                input=json.dumps(request)+'\n', text=True, capture_output=True,
-                                env={**os.environ, 'POWERSHELL_TELEMETRY_OPTOUT': '1', 'DOTNET_SYSTEM_GLOBALIZATION_INVARIANT': '1',
-                                     'XDG_CACHE_HOME': str(ROOT / '.cache/powershell-xdg'),
-                                     'XDG_CONFIG_HOME': str(ROOT / '.cache/powershell-config')})
-        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        self.assertEqual(fleet.load(output)['root_version'], '0.9.1-shared')
+        originals = {path: path.read_bytes() for path in (first, second)}
+        for index, extra in enumerate(({}, {'usb_root': ''}, {'usb_root': str(usb)})):
+            with self.subTest(request_fields=extra):
+                output = self.base / f"merged' output {index}.json"
+                request = {'operation': 'Merge', 'inputs': [str(first), str(second)],
+                           'output_file': str(output), 'generation': 2, **extra}
+                result = subprocess.run([PWSH, '-NoProfile', '-NonInteractive', '-File',
+                                         str(ROOT / 'gui/windows-worker.ps1'), '-ToolsPath', str(tools)],
+                                        input=json.dumps(request)+'\n', text=True, capture_output=True,
+                                        env={**os.environ, 'POWERSHELL_TELEMETRY_OPTOUT': '1', 'DOTNET_SYSTEM_GLOBALIZATION_INVARIANT': '1',
+                                             'XDG_CACHE_HOME': str(ROOT / '.cache/powershell-xdg'),
+                                             'XDG_CONFIG_HOME': str(ROOT / '.cache/powershell-config')})
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                merged = fleet.load(output)
+                self.assertEqual(merged['root_version'], '0.9.1-shared' if extra.get('usb_root') else '0.9.0-shared')
+                self.assertEqual(merged['generation'], 2)
+                self.assertEqual(len(merged['records']), 1)
+                for path, original in originals.items():
+                    self.assertEqual(path.read_bytes(), original)
 
     def test_windows_scripts_parse_and_gui_plan_keeps_merge_usb_and_file_arguments(self):
         # Parse only: never load Windows Forms, run the worker, or request UAC.

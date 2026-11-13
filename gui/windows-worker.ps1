@@ -36,7 +36,9 @@ try {
             $scriptName = 'fleet.ps1'
             $parameters = @{Action=[string]$request.operation}
             if ($request.operation -in @('Status','Merge','Deploy','Convert','Name')) { $parameters.Inputs = [string[]]@($request.inputs) }
-            if ($request.operation -in @('Collect','Merge','Deploy') -and $request.usb_root) { $parameters.UsbRoot = [string]$request.usb_root }
+            if ($request.operation -in @('Collect','Deploy')) { $parameters.UsbRoot = [string]$request.usb_root }
+            # Merge can run on local registry files without a target USB.
+            elseif ($request.operation -eq 'Merge' -and $null -ne $request.PSObject.Properties['usb_root'] -and $request.usb_root) { $parameters.UsbRoot = [string]$request.usb_root }
             if ($request.operation -in @('Collect','Merge','Convert','Name')) { $parameters.OutputFile = [string]$request.output_file }
             if ($request.operation -in @('Merge','Convert','Name')) { $parameters.Generation = [int]$request.generation }
             if ($request.operation -eq 'Name') {
