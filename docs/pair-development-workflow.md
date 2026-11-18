@@ -39,6 +39,14 @@ design/sketch.pngをもとに、このプロジェクトの言語・UIフレー�
 
 画像はImage、画面構造はUI Layout、外観はUI Styleへ委任します。UI仕様の確認、worktreeの準備・統合、画面の撮影は[ポンチ絵からの共通手順](pair-sketch-workflow.md)を使います。一般の処理やテストコードも変更する場合は、Implementerへ担当ファイルを渡します。
 
+VS Code／OpenCodeとも、既存画面の一部を調整する短い依頼も画像担当へ渡す指示にしています。
+
+```text
+LifeやHiScoreの位置について、newimage.pngを参照して調整してください。
+```
+
+画像を開発対象プロジェクトに置き、親はパスと着目点を画像担当へ渡して結果を待ちます。OpenCodeのサンプルは画像担当のread権限を `design/*.png` に絞っているため、上の画像パスを `design/newimage.png` にしてください。設定の反映方法と、実際に委任されたかの確認は[VS Codeの短い画像依頼](vscode-pair-parallel-quick-start.md#短い依頼でも画像担当へ委任する)／[OpenCodeの短い画像依頼](opencode-pair-parallel-quick-start.md#短い依頼でも画像担当へ委任する)を参照してください。
+
 ## 専門の子と作業範囲
 
 | 子 | 担当 |
