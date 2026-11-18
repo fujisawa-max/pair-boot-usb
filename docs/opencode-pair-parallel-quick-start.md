@@ -1,5 +1,7 @@
 # OpenCodeからサブエージェントでPAIRノードを使う
 
+この文書のエージェント定義は、[コピー用サンプルと配置方法](pair-agent-samples.md)にも用意しています。OpenCode用の7ファイルから、調査用またはUI実装用の定義を選んで使えます。
+
 **OpenCode v2形式**の設定例です。最初に[PAIR側の準備とAPI確認](pair-client-setup.md)を済ませてください。v1用の `provider`・`permission`・`task` の設定例と混ぜないでください。[公式のv2設定](https://opencode.ai/docs/config/)、[権限形式](https://opencode.ai/docs/permissions/)
 
 ## 1. モデル接続を設定する
@@ -194,13 +196,13 @@ subagent呼出しをbackground: trueで行い、片方の完了を待たずに�
 
 ## 4. ポンチ絵から画面を実装する
 
-ここからは編集も行う別の親を用意します。調査用のpair-coordinatorはそのまま残します。先に[共通手順](pair-sketch-workflow.md)を読み、開発対象プロジェクトへ次の4ファイルを追加してください。既存の同名設定がある場合は統合します。
+ここからは編集も行う別の親を用意します。調査用のpair-coordinatorはそのまま残します。先に[共通手順](pair-sketch-workflow.md)を読み、開発対象プロジェクトへ次の4ファイルを追加してください。既存の同名設定がある場合は統合します。言語・UIフレームワーク・対象OSは依頼文または既存プロジェクトから決め、仕様へ保存します。共通手順にはPython／PySide6の例と、C#／WPF等への読み替えがあります。
 
 | 役割 | モデル | 担当 |
 | --- | --- | --- |
 | pair-image | pair/vision | ポンチ絵や完成画面から仕様や相違点を返す |
-| pair-ui-layout | pair/code | HTMLだけを担当worktreeで編集する |
-| pair-ui-style | pair/code | CSSだけを担当worktreeで編集する |
+| pair-ui-layout | pair/code | 指定したUI環境の画面構造・部品配置を担当worktreeで編集する |
+| pair-ui-style | pair/code | 指定したUI環境の外観・テーマを担当worktreeで編集する |
 | pair-ui-coordinator | pair/code | 画像解析、仕様の保存、実装の分担、結果確認を行う |
 
 ### 画像担当
@@ -223,6 +225,7 @@ permissions:
 親が指定したdesign/sketch.pngやdesign/result.pngをreadで画像として開いてください。
 画面の領域、文言、配置、色、余白、操作部品を整理して返してください。
 読み取れた事実、実装上の提案、判読できない点を分けてください。
+言語・UIフレームワークが渡された場合は、その環境の部品に対応付ける案も返してください。
 ボタンの動作や外部APIなど、画像から分からない仕様は断定しないでください。
 画像を実際に開けなければ、その旨を返し、内容を推測しないでください。
 比較を依頼された場合は、元の絵・完成画面・渡された仕様の相違点を列挙してください。
@@ -231,13 +234,13 @@ permissions:
 
 `read`はPNG等の画像もモデルへ渡します。子の記録で、画像の読み取りとPAIR Visionの使用を確認してください。親への添付が子へ自動転送されるとは仮定しません。PAIR側にも画像対応モデル・必要なmmproj・画像を処理できるエンジン設定が必要です。[画像を扱うread](https://opencode.ai/docs/tools/#read)
 
-### HTML担当とCSS担当
+### 画面構造担当と外観担当
 
 `.opencode/agents/pair-ui-layout.md`：
 
 ```markdown
 ---
-description: 確定した画面仕様からHTMLを実装する
+description: 指定された言語とUI環境で画面構造・部品配置を実装する
 mode: subagent
 model: pair/code
 permissions:
@@ -245,20 +248,24 @@ permissions:
     resource: "*"
     effect: deny
   - action: read
-    resource: "design/ui-spec.md"
+    resource: "*"
     effect: allow
-  - action: read
-    resource: ".pair-worktrees/layout/src/ui/*"
+  - action: glob
+    resource: "*"
+    effect: allow
+  - action: grep
+    resource: "*"
     effect: allow
   - action: edit
-    resource: ".pair-worktrees/layout/src/ui/index.html"
+    resource: ".pair-worktrees/layout/*"
     effect: allow
 ---
 design/ui-spec.mdと親が渡した仕様を読んで実装してください。
-編集してよいのは.pair-worktrees/layout/src/ui/index.htmlだけです。
+仕様に記録した言語・UIフレームワーク・対象OSと既存プロジェクトの構成に従ってください。
+編集してよいのは.pair-worktrees/layout/内で、親が担当として指定したファイルだけです。
 存在しない場合は新規作成し、既存ファイルがある場合は内容を確認して変更してください。
-仕様で決めたクラス名とstyles.cssの参照を使い、HTMLの構造と文言を実装してください。
-スタイルをHTMLへ埋め込まず、CSS担当のファイルを変更しないでください。
+仕様で決めた部品名、テーマの公開名・参照方法を使い、構造・文言・配置を実装してください。
+外観担当のファイルは変更しないでください。
 担当外の変更が必要なら、変更せず理由を親へ返してください。
 変更したファイル、実装内容、残った確認事項を報告してください。
 コマンド実行、Git操作、別の子への委任はしないでください。
@@ -268,7 +275,7 @@ design/ui-spec.mdと親が渡した仕様を読んで実装してください。
 
 ```markdown
 ---
-description: 確定した画面仕様からCSSを実装する
+description: 指定されたUI環境で配色・余白・テーマなどの外観を実装する
 mode: subagent
 model: pair/code
 permissions:
@@ -276,26 +283,30 @@ permissions:
     resource: "*"
     effect: deny
   - action: read
-    resource: "design/ui-spec.md"
+    resource: "*"
     effect: allow
-  - action: read
-    resource: ".pair-worktrees/style/src/ui/*"
+  - action: glob
+    resource: "*"
+    effect: allow
+  - action: grep
+    resource: "*"
     effect: allow
   - action: edit
-    resource: ".pair-worktrees/style/src/ui/styles.css"
+    resource: ".pair-worktrees/style/*"
     effect: allow
 ---
 design/ui-spec.mdと親が渡した仕様を読んで実装してください。
-編集してよいのは.pair-worktrees/style/src/ui/styles.cssだけです。
+仕様に記録した言語・UIフレームワーク・対象OSと既存プロジェクトの構成に従ってください。
+編集してよいのは.pair-worktrees/style/内で、親が担当として指定したファイルだけです。
 存在しない場合は新規作成し、既存ファイルがある場合は内容を確認して変更してください。
-仕様で決めたクラス名を使い、配置、配色、余白、狭い画面での表示を実装してください。
-HTML担当のファイルや、もう一方のworktreeを変更しないでください。
+仕様で決めた部品名やテーマの公開名を使い、配色、文字、余白、サイズ変更時の外観を実装してください。
+画面構造担当のファイルや、もう一方のworktreeを変更しないでください。
 担当外の変更が必要なら、変更せず理由を親へ返してください。
 変更したファイル、実装内容、残った確認事項を報告してください。
 コマンド実行、Git操作、別の子への委任はしないでください。
 ```
 
-V2の`edit`権限はedit／write／patchに適用されます。許可パスは元の開発フォルダからの相対パスです。例と違う配置にするときは、本文だけでなくpermissionsも変更してください。子は親とは別の権限を使うため、各子にも必要な許可を定義します。[パスと権限の照合](https://opencode.ai/docs/permissions/#matching)
+V2の`edit`権限はedit／write／patchに適用されます。許可パスは元の開発フォルダからの相対パスです。例では言語ごとの配置に対応できるよう、各子のworktree内を許可し、本文と仕様で編集するファイルを指定しています。`*` は `/` も含めて照合するため、配下のファイルも対象です。Pythonの例でファイル単位に絞るなら、構造担当のedit resourceを `.pair-worktrees/layout/src/ui/window.py`、外観担当を `.pair-worktrees/style/src/ui/theme.py` に変更します。worktreeの位置や担当ファイルを変えたらpermissionsも合わせてください。子は親とは別の権限を使うため、各子にも必要な許可を定義します。[パスと権限の照合](https://opencode.ai/docs/permissions/#matching)
 
 ### 画像から実装まで進める親
 
@@ -303,7 +314,7 @@ V2の`edit`権限はedit／write／patchに適用されます。許可パスは�
 
 ```markdown
 ---
-description: ポンチ絵を画面仕様にし、HTMLとCSSの実装を分担する
+description: ポンチ絵を画面仕様にし、指定した言語とUI環境で実装を分担する
 mode: primary
 model: pair/code
 permissions:
@@ -311,13 +322,13 @@ permissions:
     resource: "*"
     effect: deny
   - action: read
-    resource: "design/*"
+    resource: "*"
     effect: allow
-  - action: read
-    resource: ".pair-worktrees/*"
+  - action: glob
+    resource: "*"
     effect: allow
-  - action: read
-    resource: "src/ui/*"
+  - action: grep
+    resource: "*"
     effect: allow
   - action: edit
     resource: "design/ui-spec.md"
@@ -332,30 +343,37 @@ permissions:
     resource: pair-ui-style
     effect: allow
 ---
-利用者は画像と目的を指定します。必要な調査と分担は自分で決めてください。
-1. pair-imageへ画像のパスと目的を渡し、解析結果を待ってください。
+利用者は画像、目的、必要なら言語・UIフレームワーク・対象OSを指定します。
+最初に既存のプロジェクト設定と画面コードを調べ、指定された環境を保ってください。
+未指定なら既存構成を使い、新規で決められない項目だけ確認してください。
+必要な調査と分担は自分で決めてください。
+1. pair-imageへ画像のパス、目的、使用するUI環境を渡し、解析結果を待ってください。
    画像解析の返答に含まれる仕様文を使い、親自身が画像を見たとは報告しないでください。
 2. 画面仕様をdesign/ui-spec.mdへ保存し、利用者の確認を受けてください。
-   HTMLとCSSが共有するクラス名、ファイル名、狭い画面での表示も先に決めてください。
-3. 利用者が仕様を確認し、2つのworktreeを用意したら実装を始めてください。
-   pair-ui-layoutとpair-ui-styleへ仕様、担当パス、変更範囲、必要な報告を渡してください。
+   言語・UI環境の版、対象OS、担当ファイル、共有する部品名・参照方法、サイズ変更時の表示、
+   プロジェクトのビルド・起動・確認方法を記録してください。
+   構造と外観を別ファイルで編集できるか確認し、同じファイルを触る場合は順番に進めてください。
+3. 利用者が仕様を確認し、必要なworktreeを用意したら実装を始めてください。
+   pair-ui-layoutとpair-ui-styleへ確定した仕様、言語・UI環境、担当パス、変更範囲、必要な報告を渡してください。
    独立して編集できる2件はsubagentのbackground: trueで、片方の完了を待たずに開始してください。
    両方が完了してから結果を集めてください。
 4. 各worktreeの変更を読み、仕様と担当範囲を確認して利用者へ統合手順を案内してください。
-5. 統合後のsrc/ui/index.htmlとsrc/ui/styles.cssを読み直して整合性を確認してください。
+5. 統合後の担当ファイルを読み直して整合性を確認し、対象環境でのビルド・起動・画面確認を案内してください。
    完成画面のPNGが渡されたらpair-imageへ比較を委任してください。
 親が編集してよいのはdesign/ui-spec.mdだけです。実装ファイルは担当の子へ依頼してください。
 不明な要件だけを利用者へ確認し、子の選び方や分担を毎回指定させないでください。
 画像解析と実装など依存する仕事は順番に進めてください。同時に動かす子は最大2件です。
 コマンド実行、Git操作、worktreeの作成は行わず、必要な操作を利用者へ案内してください。
-実際に行った確認と、利用者によるブラウザー確認が必要な点を分けて報告してください。
+コードを読んだ確認、画像の比較、対象環境でのビルド・実行確認を分けて報告してください。
 ```
 
-新しいセッションで **pair-ui-coordinator** を選び、`/models`で親もPAIR Codeにします。子は定義した`pair/vision`／`pair/code`を使うか記録で確認します。画像を `design/sketch.png` に保存したら、普段の依頼は次のように書けます。解析結果の確認、worktreeの準備と統合、ブラウザーでの確認方法は[共通手順](pair-sketch-workflow.md)を参照してください。
+新しいセッションで **pair-ui-coordinator** を選び、`/models`で親もPAIR Codeにします。子は定義した`pair/vision`／`pair/code`を使うか記録で確認します。画像を `design/sketch.png` に保存したら、普段の依頼は次のように書けます。解析結果の確認、worktreeの準備と統合、対象アプリでの確認方法は[共通手順](pair-sketch-workflow.md)を参照してください。担当の分割は親が行います。
 
 ```text
-design/sketch.pngをもとに画面を実装してください。
+design/sketch.pngをもとに、Python 3／PySide6でWindows向けの画面を実装してください。
 ```
+
+既存アプリなら「design/sketch.pngをもとに、このプロジェクトの言語・UIフレームワークで画面を実装してください」でも構いません。C#／WPF、Flutter等を使う場合も、その環境を指定します。設定済みの役割名はそのまま使えます。
 
 ## 困った場合と確認範囲
 
