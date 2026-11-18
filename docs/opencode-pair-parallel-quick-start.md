@@ -1,6 +1,6 @@
 # OpenCodeからサブエージェントでPAIRノードを使う
 
-この文書のエージェント定義は、[コピー用サンプルと配置方法](pair-agent-samples.md)にも用意しています。OpenCode用の7ファイルから、調査用またはUI実装用の定義を選んで使えます。
+この文書のエージェント定義は、[コピー用サンプルと配置方法](pair-agent-samples.md)にも用意しています。OpenCode用の10ファイルから、調査用・UI用・開発全体の統括用を選んで使えます。普段の開発を1つの親へ任せる場合は、[pair-developer](#5-開発全体をpair-developerに任せる)を使います。
 
 **OpenCode v2形式**の設定例です。最初に[PAIR側の準備とAPI確認](pair-client-setup.md)を済ませてください。v1用の `provider`・`permission`・`task` の設定例と混ぜないでください。[公式のv2設定](https://opencode.ai/docs/config/)、[権限形式](https://opencode.ai/docs/permissions/)
 
@@ -374,6 +374,24 @@ design/sketch.pngをもとに、Python 3／PySide6でWindows向けの画面を�
 ```
 
 既存アプリなら「design/sketch.pngをもとに、このプロジェクトの言語・UIフレームワークで画面を実装してください」でも構いません。C#／WPF、Flutter等を使う場合も、その環境を指定します。設定済みの役割名はそのまま使えます。
+
+## 5. 開発全体をpair-developerに任せる
+
+親を切り替えずに調査・画像解析・実装・テストまで進めたい場合は、**pair-developer** を選びます。元の2種類の親は、用途を絞ったサンプルとしてそのまま使えます。
+
+| 親 | 向いている依頼 |
+| --- | --- |
+| pair-developer | 不具合修正、機能追加、UIと一般コードの変更、テストとレビューまで進める |
+| pair-coordinator | コードを変更せず、処理の流れや問題点を調べる |
+| pair-ui-coordinator | ポンチ絵からの画面仕様・UI実装だけに絞る |
+
+[Developer用サンプル](examples/pair-agents/opencode/agents/pair-developer.md)と、pair-map・pair-review・pair-image・pair-ui-layout・pair-ui-style・[pair-implementer](examples/pair-agents/opencode/agents/pair-implementer.md)・[pair-tester](examples/pair-agents/opencode/agents/pair-tester.md)を `.opencode/agents/` へコピーします。新しいセッションでpair-developerを選び、`/models` で親のモデルもPAIR Codeにしてください。
+
+```text
+設定ファイルが空の場合にアプリが落ちる原因を調べ、修正してテストしてください。
+```
+
+Developerは専門の子を直接呼び、調査だけの依頼なら変更せずに報告します。実装は編集担当、検証コマンドはpair-testerへ委任します。Testerの `shell` 権限は `ask` なので実行時に承認します。UIでは既存と同じworktree準備・統合手順を使います。詳細は[開発全体の進め方](pair-development-workflow.md)を参照してください。
 
 ## 困った場合と確認範囲
 

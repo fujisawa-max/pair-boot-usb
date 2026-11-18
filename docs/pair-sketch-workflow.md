@@ -1,6 +1,6 @@
 # ポンチ絵から画面を実装する共通手順
 
-エディター別の定義ファイルは、[コピー用サンプルと配置方法](pair-agent-samples.md)から取得できます。画像担当・画面構造担当・外観担当・UI Coordinatorの4つを使います。
+エディター別の定義ファイルは、[コピー用サンプルと配置方法](pair-agent-samples.md)から取得できます。画像担当・画面構造担当・外観担当を、PAIR DeveloperまたはUI Coordinatorから呼びます。Developerは一般コード・テスト・レビューも含む統括用、UI CoordinatorはUI実装専用です。[親の使い分け](pair-development-workflow.md#親の選び方)も参照してください。
 
 [VS Code](vscode-pair-parallel-quick-start.md#5-ポンチ絵から画面を実装する)／[OpenCode](opencode-pair-parallel-quick-start.md#4-ポンチ絵から画面を実装する)の画像・編集エージェントを使う手順です。設定や画像は、USBではなく**開発対象のプロジェクト**に置きます。依頼した言語・UIフレームワーク・対象OSに合わせて画面を設計・実装します。デスクトップ、モバイル、Webのいずれにも同じ役割分担を使えます。
 
@@ -8,7 +8,7 @@
 
 開発対象のプロジェクトで `design/` を作り、自分のポンチ絵を `design/sketch.png` として保存します。画像モデルを使うため、この例ではPNGを使います。親への画像添付だけに頼らず、子からも読めるファイルを用意してください。
 
-単独のPAIR Visionセッションで画像を添付し、文字や配置を読めることを先に確認します。次にエディター別手順で画像担当・画面構造担当・外観担当・UI Coordinatorの4つの定義を作ります。UI Coordinatorを選び、例えば次を依頼します。
+単独のPAIR Visionセッションで画像を添付し、文字や配置を読めることを先に確認します。次にエディター別手順で必要な定義をコピーします。UI Coordinatorなら親子4つ、Developerなら専門の子も含む8つを用意します。選んだ親へ、例えば次を依頼します。
 
 ```text
 design/sketch.pngをもとに画面を実装してください。
@@ -78,13 +78,25 @@ git add .gitignore design/sketch.png design/ui-spec.md
 VS Codeの場合は次の定義を追加します。
 
 ```sh
-git add .github/agents/pair-image.agent.md .github/agents/pair-ui-layout.agent.md .github/agents/pair-ui-style.agent.md .github/agents/pair-ui-coordinator.agent.md
+git add .github/agents/pair-image.agent.md .github/agents/pair-ui-layout.agent.md .github/agents/pair-ui-style.agent.md
+```
+
+UI Coordinatorを使う場合は `git add .github/agents/pair-ui-coordinator.agent.md`、Developerを使う場合は次の5つも追加します。
+
+```sh
+git add .github/agents/pair-developer.agent.md .github/agents/pair-map.agent.md .github/agents/pair-review.agent.md .github/agents/pair-implementer.agent.md .github/agents/pair-tester.agent.md
 ```
 
 OpenCodeの場合はこちらを追加します。モデルの接続設定は各作業環境で用意し、実キーをコミットしません。
 
 ```sh
-git add .opencode/agents/pair-image.md .opencode/agents/pair-ui-layout.md .opencode/agents/pair-ui-style.md .opencode/agents/pair-ui-coordinator.md
+git add .opencode/agents/pair-image.md .opencode/agents/pair-ui-layout.md .opencode/agents/pair-ui-style.md
+```
+
+UI Coordinatorを使う場合は `git add .opencode/agents/pair-ui-coordinator.md`、Developerを使う場合は次の5つも追加します。
+
+```sh
+git add .opencode/agents/pair-developer.md .opencode/agents/pair-map.md .opencode/agents/pair-review.md .opencode/agents/pair-implementer.md .opencode/agents/pair-tester.md
 ```
 
 利用する方の定義を追加したら、次を実行します。
@@ -102,7 +114,7 @@ git worktree add -b pair-ui-style .pair-worktrees/style HEAD
 
 ## 4. 親へ実装を依頼する
 
-仕様を確認し、worktreeを用意したら、選択済みのUI Coordinatorへ次を送ります。
+仕様を確認し、worktreeを用意したら、選択済みのPAIR DeveloperまたはUI Coordinatorへ次を送ります。
 
 ```text
 画面仕様を確認しました。用意した作業フォルダで実装を進めてください。
@@ -114,7 +126,7 @@ git worktree add -b pair-ui-style .pair-worktrees/style HEAD
 
 ## 5. 変更を統合して画面を確認する
 
-この例のエージェントにはコマンド実行を許可していません。利用者が元の開発フォルダで差分を確認し、担当ファイルだけをコミットして統合します。新しいファイルは `git diff` に出ないため、`git status` とエディターでも内容を確認してください。
+UI Coordinatorと編集担当にはコマンド実行を許可していません。利用者が元の開発フォルダで差分を確認し、担当ファイルだけをコミットして統合します。新しいファイルは `git diff` に出ないため、`git status` とエディターでも内容を確認してください。
 
 ```sh
 git -C .pair-worktrees/layout status --short
@@ -133,6 +145,8 @@ git cherry-pick pair-ui-layout pair-ui-style
 上のコマンドのファイル名は、仕様で決めた担当ファイルへ読み替えてください。統合後は、親へ実装ファイルを読み直して仕様と照合するよう依頼し、使用する言語・UI環境のビルドや既存テストを実行します。そのうえで、対象OSやシミュレーター等でアプリを起動し、文言、配置、余白、色、サイズ変更時の表示、キーボード操作とフォーカスを確認します。
 
 起動コマンドは `design/ui-spec.md` に保存したプロジェクトのものを使います。Pythonの例でも `window.py` が起動用ファイルとは限らないため、既存のエントリーポイントから起動します。必要なSDK・ライブラリや対象OSが手元にない場合は、コードを読んだ確認と、まだ実行できていないビルド・画面確認を分けて報告します。
+
+PAIR Developerを使う場合は、統合したことを親へ伝えてビルド・テストを依頼できます。親がTesterへ委任し、実行完了と結果を確認します。実際のアプリの画面確認やスクリーンショットは利用者が行い、必要なら画像担当へ比較を依頼します。
 
 HTMLとCSSだけの画面を選んだ場合は、元の開発フォルダで次の方法も使えます。
 

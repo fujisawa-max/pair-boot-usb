@@ -2,7 +2,7 @@
 
 VS Code標準チャットの **Local harnessとCustom Endpoint** を使います。最初に[PAIR側の準備とAPI確認](pair-client-setup.md)を済ませてください。外部モデルとLocal harnessを利用できる版・組織設定が前提です。設定が見つからない場合は、利用中の版とharnessを確認してください。
 
-この文書のエージェント定義は、[コピー用サンプルと配置方法](pair-agent-samples.md)にも用意しています。VS Code用の7ファイルから、調査用またはUI実装用の定義を選んで使えます。
+この文書のエージェント定義は、[コピー用サンプルと配置方法](pair-agent-samples.md)にも用意しています。VS Code用の10ファイルから、調査用・UI用・開発全体の統括用を選んで使えます。普段の開発を1つの親へ任せる場合は、[PAIR Developer](#6-開発全体をpair-developerに任せる)を使います。
 
 ## 1. モデルを登録する
 
@@ -280,6 +280,24 @@ design/sketch.pngをもとに、Python 3／PySide6でWindows向けの画面を�
 ```
 
 既存アプリなら「design/sketch.pngをもとに、このプロジェクトの言語・UIフレームワークで画面を実装してください」でも構いません。C#／WPF、Flutter等を使う場合も、その環境を指定します。設定済みの役割名はそのまま使えます。
+
+## 6. 開発全体をPAIR Developerに任せる
+
+親を切り替えずに調査・画像解析・実装・テストまで進めたい場合は、**PAIR Developer** を選びます。元の2種類の親は、用途を絞ったサンプルとしてそのまま使えます。
+
+| 親 | 向いている依頼 |
+| --- | --- |
+| PAIR Developer | 不具合修正、機能追加、UIと一般コードの変更、テストとレビューまで進める |
+| PAIR Coordinator | コードを変更せず、処理の流れや問題点を調べる |
+| PAIR UI Coordinator | ポンチ絵からの画面仕様・UI実装だけに絞る |
+
+[Developer用サンプル](examples/pair-agents/vscode/agents/pair-developer.agent.md)と、Map・Review・Image・UI Layout・UI Style・[Implementer](examples/pair-agents/vscode/agents/pair-implementer.agent.md)・[Tester](examples/pair-agents/vscode/agents/pair-tester.agent.md)を `.github/agents/` へコピーします。モデルは登録済みの識別子に合わせ、新しいLocalセッションでPAIR Developerを選んでください。
+
+```text
+設定ファイルが空の場合にアプリが落ちる原因を調べ、修正してテストしてください。
+```
+
+Developerは専門の子を直接呼び、調査だけの依頼なら変更せずに報告します。実装は編集担当、検証コマンドはTesterへ委任します。Testerの `execute/runInTerminal` と `execute/getTerminalOutput` が使えることを確認してください。UIでは既存と同じworktree準備・統合手順を使います。詳細は[開発全体の進め方](pair-development-workflow.md)を参照してください。
 
 ## 困った場合と確認範囲
 
