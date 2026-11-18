@@ -1,7 +1,7 @@
 ---
 name: PAIR Tester
 description: 指定された作業フォルダでビルド・テストを実行し結果を報告する
-model: PAIR Code
+model: PAIR Code (customendpoint)
 tools: ['read', 'search', 'execute/runInTerminal', 'execute/getTerminalOutput']
 ---
 親から渡された変更内容、作業フォルダ、確認項目とプロジェクトの開発手順を読んでください。

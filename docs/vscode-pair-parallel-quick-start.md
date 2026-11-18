@@ -86,7 +86,7 @@ check_tokenとitem_countの値を報告してください。
 ---
 name: PAIR Map
 description: 指定されたコードの流れと関連ファイルを調べる
-model: PAIR Code
+model: PAIR Code (customendpoint)
 tools: ['read', 'search']
 ---
 依頼された範囲のコードを読み、処理の流れと関連ファイルを報告してください。
@@ -99,7 +99,7 @@ tools: ['read', 'search']
 ---
 name: PAIR Review
 description: 指定されたコードの不具合と不足する確認を調べる
-model: PAIR Code
+model: PAIR Code (customendpoint)
 tools: ['read', 'search']
 ---
 指定されたコードを調べ、問題、影響、確認方法をファイル位置とともに返してください。
@@ -112,7 +112,7 @@ tools: ['read', 'search']
 ---
 name: PAIR Coordinator
 description: 独立したコード調査を分担し、結果をまとめる
-model: PAIR Code
+model: PAIR Code (customendpoint)
 tools: ['agent', 'read', 'search']
 agents: ['PAIR Map', 'PAIR Review']
 ---
@@ -126,7 +126,7 @@ agents: ['PAIR Map', 'PAIR Review']
 親もファイルを変更せず、コマンドを実行しないでください。
 ```
 
-`model` が認識されない場合は、カスタムエージェントの編集画面で登録したモデルを選び直し、VS Codeが保存した識別子を使います。APIのIDと表示名を混同しないでください。親が別モデルを子へ明示指定すると選択が変わる場合もあるため、実行時のモデルを確認します。[Localの委任とモデル選択](https://code.visualstudio.com/docs/agents/run/subagents#subagents-in-local-harness-sessions)
+上の登録例では、`model` に `PAIR Code (customendpoint)`／`PAIR Vision (customendpoint)` を指定します。Localでは表示名に提供元を付けた形式を使い、`PAIR Vision` だけの指定では親のモデルが使われる場合があります。別の表示名で登録した場合は、`.agent.md` の `model:` で `Ctrl+Space` を押し、登録したモデルを補完から選んでください。APIへ送るモデルIDとは区別します。親が別モデルを子へ明示指定すると選択が変わる場合もあるため、実行時のモデルを確認します。[Localの委任とモデル選択](https://code.visualstudio.com/docs/agents/run/subagents#subagents-in-local-harness-sessions)
 
 ## 4. 親から並行委任する
 
@@ -177,7 +177,7 @@ PAIR Reviewにsrc/config.tsの入力検証の問題を調べさせてくださ�
 ---
 name: PAIR Image
 description: ポンチ絵から画面仕様を読み取り、完成画面との違いも調べる
-model: PAIR Vision
+model: PAIR Vision (customendpoint)
 tools: ['read']
 ---
 親が指定したdesign/sketch.pngやdesign/result.pngを画像として開いてください。
@@ -200,7 +200,7 @@ Configure Toolsで画像を開くツールが使えることを確認し、子�
 ---
 name: PAIR UI Layout
 description: 指定された言語とUI環境で画面構造・部品配置を実装する
-model: PAIR Code
+model: PAIR Code (customendpoint)
 tools: ['read', 'edit']
 ---
 design/ui-spec.mdと親が渡した仕様を読んで実装してください。
@@ -220,7 +220,7 @@ design/ui-spec.mdと親が渡した仕様を読んで実装してください。
 ---
 name: PAIR UI Style
 description: 指定されたUI環境で配色・余白・テーマなどの外観を実装する
-model: PAIR Code
+model: PAIR Code (customendpoint)
 tools: ['read', 'edit']
 ---
 design/ui-spec.mdと親が渡した仕様を読んで実装してください。
@@ -244,7 +244,7 @@ design/ui-spec.mdと親が渡した仕様を読んで実装してください。
 ---
 name: PAIR UI Coordinator
 description: ポンチ絵を画面仕様にし、指定した言語とUI環境で実装を分担する
-model: PAIR Code
+model: PAIR Code (customendpoint)
 tools: ['agent', 'read', 'search', 'edit']
 agents: ['PAIR Image', 'PAIR UI Layout', 'PAIR UI Style']
 ---

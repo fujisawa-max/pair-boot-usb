@@ -38,7 +38,7 @@
 
 ## 自分の環境に合わせる
 
-1. モデル接続を先に用意します。VS Codeの `PAIR Code`／`PAIR Vision` は登録したモデルの識別子に、OpenCodeの `pair/code`／`pair/vision` は設定したprovider/modelに合わせます。接続先・APIのモデルID・トークン数の設定は各クイックスタートを参照してください。
+1. モデル接続を先に用意します。VS Codeの `PAIR Code (customendpoint)`／`PAIR Vision (customendpoint)` は登録した表示名・提供元に合わせた値に、OpenCodeの `pair/code`／`pair/vision` は設定したprovider/modelに合わせます。接続先・APIのモデルID・トークン数の設定は各クイックスタートを参照してください。
 2. 定義をコピーした後、新しいセッションでDeveloper、調査用Coordinator、UI用Coordinatorのいずれかを選びます。VS CodeではRun Subagent等のツールも有効にします。OpenCodeでは親の選択モデルも確認します。
 3. 調査の確認には[共通の調査用サンプル](pair-client-sample.md)を使えます。UI実装では[ポンチ絵からの共通手順](pair-sketch-workflow.md)に従い、画像・仕様・worktreeを用意します。
 

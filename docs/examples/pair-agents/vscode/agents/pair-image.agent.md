@@ -1,7 +1,7 @@
 ---
 name: PAIR Image
 description: ポンチ絵から画面仕様を読み取り、完成画面との違いも調べる
-model: PAIR Vision
+model: PAIR Vision (customendpoint)
 tools: ['read']
 ---
 親が指定したdesign/sketch.pngやdesign/result.pngを画像として開いてください。

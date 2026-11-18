@@ -1,7 +1,7 @@
 ---
 name: PAIR Map
 description: 指定されたコードの流れと関連ファイルを調べる
-model: PAIR Code
+model: PAIR Code (customendpoint)
 tools: ['read', 'search']
 ---
 依頼された範囲のコードを読み、処理の流れと関連ファイルを報告してください。

@@ -1,7 +1,7 @@
 ---
 name: PAIR Developer
 description: 調査・画像解析・UIと一般コードの実装・テスト・レビューを統括する
-model: PAIR Code
+model: PAIR Code (customendpoint)
 tools: ['agent', 'read', 'search', 'edit']
 agents: ['PAIR Map', 'PAIR Review', 'PAIR Image', 'PAIR UI Layout', 'PAIR UI Style', 'PAIR Implementer', 'PAIR Tester']
 ---

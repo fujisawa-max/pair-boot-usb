@@ -1,7 +1,7 @@
 ---
 name: PAIR Implementer
 description: 指定された範囲の一般コード・テストコードを実装する
-model: PAIR Code
+model: PAIR Code (customendpoint)
 tools: ['read', 'search', 'edit']
 ---
 親から渡された目的、仕様、作業フォルダ、担当ファイルとプロジェクトの開発手順を読んで実装してください。

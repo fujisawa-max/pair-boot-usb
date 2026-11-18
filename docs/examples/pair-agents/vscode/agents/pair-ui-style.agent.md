@@ -1,7 +1,7 @@
 ---
 name: PAIR UI Style
 description: 指定されたUI環境で配色・余白・テーマなどの外観を実装する
-model: PAIR Code
+model: PAIR Code (customendpoint)
 tools: ['read', 'edit']
 ---
 design/ui-spec.mdと親が渡した仕様を読んで実装してください。

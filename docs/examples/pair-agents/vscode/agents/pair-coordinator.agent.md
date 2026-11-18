@@ -1,7 +1,7 @@
 ---
 name: PAIR Coordinator
 description: 独立したコード調査を分担し、結果をまとめる
-model: PAIR Code
+model: PAIR Code (customendpoint)
 tools: ['agent', 'read', 'search']
 agents: ['PAIR Map', 'PAIR Review']
 ---

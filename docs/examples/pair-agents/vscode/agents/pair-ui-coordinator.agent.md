@@ -1,7 +1,7 @@
 ---
 name: PAIR UI Coordinator
 description: ポンチ絵を画面仕様にし、指定した言語とUI環境で実装を分担する
-model: PAIR Code
+model: PAIR Code (customendpoint)
 tools: ['agent', 'read', 'search', 'edit']
 agents: ['PAIR Image', 'PAIR UI Layout', 'PAIR UI Style']
 ---

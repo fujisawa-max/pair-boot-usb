@@ -1,7 +1,7 @@
 ---
 name: PAIR UI Layout
 description: 指定された言語とUI環境で画面構造・部品配置を実装する
-model: PAIR Code
+model: PAIR Code (customendpoint)
 tools: ['read', 'edit']
 ---
 design/ui-spec.mdと親が渡した仕様を読んで実装してください。
