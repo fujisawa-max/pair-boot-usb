@@ -38,7 +38,7 @@
             "input": ["text", "image"],
             "output": ["text"]
           },
-          "limit": { "context": 255488, "output": 2048 }
+          "limit": { "context": 131072, "output": 2048 }
         }
       }
     }
