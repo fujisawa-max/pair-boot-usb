@@ -12,6 +12,7 @@ import urllib.request
 
 ROOT = Path(__file__).resolve().parents[1]
 GROUPS = {
+    'updater-tools': ('updater-inspection-tools.json', '.cache/debian/apt/archives'),
     'debian-build': ('debian-build-inputs.json', '.cache/debian/apt/archives'),
     'debian-runtime': ('debian-runtime-inputs.json', '.cache/debian/apt/archives'),
     'build-tools': ('debian-build-tools-inputs.json', '.cache/debian/apt/archives'),
@@ -33,7 +34,7 @@ PREFIXES = (
     'https://github.com/NVIDIA/Personal-AI-Router/releases/download/',
     'https://github.com/ggml-org/llama.cpp/releases/download/',
     'https://download.nvidia.com/XFree86/NVIDIA-kernel-module-source/',
-    'https://archive.cachyos.org/archive/cachyos-v3/',
+    'https://download.nvidia.com/XFree86/Linux-x86_64/610.43.03/',
     'https://dl.fedoraproject.org/pub/fedora/linux/releases/44/Workstation/x86_64/iso/',
     'https://files.pythonhosted.org/packages/',
     'https://ftp-master.debian.org/keys/',

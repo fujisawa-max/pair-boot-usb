@@ -51,3 +51,6 @@ Shutdown and backups
   USB storage containing root/state/Models must remain connected until power-off.
 
 See tools/QUICK-START.md, DETAILS.md and WINDOWS-FLEET.md on the USB for full instructions.
+
+Language: use the Windows upper-right selector or Language / 言語 in Fedora's first category list. Choose Automatic, Japanese, or English for this session.
+RTX 20/40 Unlock is experimental. Start with Normal mode.

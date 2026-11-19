@@ -52,3 +52,6 @@ PC名と旧台帳
   root/state/Modelsを保存したUSBは電源断まで接続します。
 
 詳しい手順はUSB内のtools/QUICK-START.md、DETAILS.md、WINDOWS-FLEET.mdを参照してください。
+
+表示言語：Windows画面右上、Fedora最初のカテゴリ一覧の「Language / 言語」で、自動・日本語・Englishを選べます。選択はGUIの起動中のみ有効です。
+RTX 20/40のUnlockは実験対応です。最初はNormalで確認してください。

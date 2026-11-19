@@ -88,7 +88,10 @@ def main():
     parser.add_argument("--disk-bytes", type=int, default=0, help="exact target USB capacity in bytes")
     parser.add_argument("--log-mib", type=int, default=0, help="optional Windows basic-data FAT32 log partition (>=64 MiB)")
     parser.add_argument("--fedora-tree", type=Path, help="verified extracted Live tree below build/")
+    parser.add_argument("--profile", choices=('standard', 'loan'), default='standard')
     args = parser.parse_args()
+    if args.profile == 'loan' and args.fedora_tree:
+        parser.error('Loan media cannot include Fedora')
     if args.log_mib != 0 and args.log_mib < 64:
         parser.error("log partition must be disabled or at least 64 MiB")
     fedora = None
@@ -154,7 +157,7 @@ def main():
     if args.log_mib:
         run("mkfs.fat", "-F", "32", "-n", "GPU-LOGS", "/out/usb-logs.img")
         certificate = tree / 'EFI/BOOT/signing-cert.der'
-        if certificate.is_file():
+        if args.profile == 'standard' and certificate.is_file():
             fingerprint = hashlib.sha256(certificate.read_bytes()).hexdigest()
             (destination / 'signing-cert-info.txt').write_text(
                 'Public module-signing certificate only. Never copy a private key here.\n'

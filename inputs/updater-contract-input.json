@@ -1,0 +1,9 @@
+{
+  "schema": 1,
+  "directory": "inputs/updater-contract/v1",
+  "contract_version": 1,
+  "contract_revision": 1,
+  "contents_sha256": "321ed856b210319183a90a858f735aadcd830ff4c10e64324b7dd56d1d83f1c9",
+  "contract_lock_sha256": "49979cafed425960a0c3c53e90cc2799de6453076c82eda1574c781f890db179",
+  "source": "Unmodified pair-boot-usb-updater production contract 1.1, received from its maintainer"
+}

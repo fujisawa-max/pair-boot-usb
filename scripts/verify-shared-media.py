@@ -17,6 +17,7 @@ def sha(path):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--profile', choices=('standard', 'loan'), default='standard')
     parser.add_argument('--image-directory', type=Path, default=ROOT / 'build/usb-image')
     parser.add_argument('--config-tree', type=Path, default=ROOT / 'build/shared-usb-tools')
     parser.add_argument('--fedora-tree', type=Path, default=ROOT / 'build/fedora-live-tools')
@@ -29,8 +30,9 @@ def main():
     tree = args.tree.resolve()
     if not tree.is_relative_to(ROOT / 'build'):
         raise ValueError('build/ appliance tree required')
-    config, fedora = args.config_tree.resolve(), args.fedora_tree.resolve()
-    if any(not p.is_relative_to(ROOT / 'build') for p in (config, fedora)):
+    config = args.config_tree.resolve()
+    fedora = args.fedora_tree.resolve() if args.profile == 'standard' else None
+    if any(not p.is_relative_to(ROOT / 'build') for p in ([config, fedora] if fedora else [config])):
         raise ValueError('config and Fedora trees must be below build/')
     image = output / 'gpu-linux-usb.img'
     if image.is_symlink() or not image.is_file():
@@ -41,7 +43,7 @@ def main():
     table = json.loads((output / 'partition-table.json').read_text())['partitiontable']
     matches = []
     with image.open('rb') as stream:
-        for name, partition in zip(('efi.img', 'usb-data.img', 'usb-logs.img', 'fedora-live.img'), table['partitions'], strict=True):
+        for name, partition in zip(('efi.img', 'usb-data.img', 'usb-logs.img') + (('fedora-live.img',) if fedora else ()), table['partitions'], strict=True):
             path = output / name
             if path.is_symlink() or path.stat().st_size != partition['size'] * 512:
                 raise ValueError('Partition artifact size mismatch')
@@ -59,11 +61,11 @@ def main():
            '--bind', str(output), '/out', '--dev', '/dev', '--proc', '/proc', '--tmpfs', '/tmp',
            '--clearenv', '--setenv', 'PATH', '/usr/sbin:/usr/bin:/sbin:/bin', '--']
     subprocess.run(cmd + ['sfdisk', '--verify', '/out/gpu-linux-usb.img'], check=True)
-    for name in ('efi.img', 'usb-logs.img', 'fedora-live.img'):
+    for name in ('efi.img', 'usb-logs.img') + (('fedora-live.img',) if fedora else ()):
         subprocess.run(cmd + ['fsck.fat', '-n', '/out/' + name], check=True)
     checks = []
-    expected_info = runpy.run_path(str(ROOT / 'scripts/release-metadata.py'))['text']()
-    if (config / 'MEDIA-INFO.txt').read_text() != expected_info or (fedora / 'MEDIA-INFO.txt').read_text() != expected_info:
+    expected_info = runpy.run_path(str(ROOT / 'scripts/release-metadata.py'))['text'](args.profile)
+    if (config / 'MEDIA-INFO.txt').read_text() != expected_info or (fedora is not None and (fedora / 'MEDIA-INFO.txt').read_text() != expected_info):
         raise ValueError('Media release information differs from configured inputs')
 
     def verify(name, relative, source):
@@ -74,54 +76,70 @@ def main():
         if proc.wait() or h.hexdigest() != sha(source):
             raise ValueError('FAT readback mismatch: ' + relative)
         checks.append({'image': name, 'path': relative, 'sha256': h.hexdigest()})
-    verify('fedora-live.img', 'MEDIA-INFO.txt', fedora / 'MEDIA-INFO.txt')
+    if fedora:
+        verify('fedora-live.img', 'MEDIA-INFO.txt', fedora / 'MEDIA-INFO.txt')
     for name in ('BOOTX64.EFI', 'mmx64.efi', 'grubx64.efi', 'grub.cfg', 'signing-cert.der'):
         verify('efi.img', 'EFI/BOOT/' + name, tree / 'EFI/BOOT' / name)
-    verify('usb-logs.img', 'signing-cert.der', tree / 'EFI/BOOT/signing-cert.der')
+    if args.profile == 'standard':
+        verify('usb-logs.img', 'signing-cert.der', tree / 'EFI/BOOT/signing-cert.der')
     for path in config.rglob('*'):
         if path.is_file():
             verify('usb-logs.img', str(path.relative_to(config)), path)
-    for folder in ('tools', 'mok-cert', 'gui'):
-        for path in (fedora / folder).rglob('*'):
-            if path.is_file():
-                verify('fedora-live.img', str(path.relative_to(fedora)), path)
-    if (fedora / 'gui').is_dir():
-        for name in ('start-windows-gui.cmd', 'start-windows-gui-debug.cmd', 'start-fedora-gui.sh', 'gpu-linux.desktop', 'gui-launcher-overlay.json'):
-            verify('fedora-live.img', name, fedora / name)
-        overlay = json.loads((fedora / 'gui-launcher-overlay.json').read_text())
-        sources = {
-            'var/lib/dracut/hooks/pre-pivot/99-gpu-gui-launchers.sh': 'fedora-launchers-hook.sh',
-            'usr/lib/gpu-linux-launchers-runtime.sh': 'fedora-launchers-runtime.sh',
-            'usr/lib/gpu-linux-autostart.desktop': 'gpu-linux-autostart.desktop',
-            'usr/lib/gpu-linux.desktop': 'gpu-linux.desktop',
-        }
-        if not overlay.get('autostart') or overlay['files'] != list(sources):
-            raise ValueError('Unexpected Fedora launcher overlay files')
-        files = [(name, (ROOT / 'gui' / source).read_bytes(), 0o100755 if name.endswith('.sh') else 0o100644)
-                 for name, source in sources.items()]
-        archive = runpy.run_path(str(ROOT / 'scripts/stage-gui-tools.py'))['cpio'](files)
-        with (fedora / 'boot/x86_64/loader/initrd').open('rb') as stream:
-            original = hashlib.sha256()
-            left = overlay['original_initrd_bytes']
-            while left:
-                block = stream.read(min(left, 8 * 1024**2))
-                if not block:
-                    raise ValueError('Truncated original Fedora initrd')
-                original.update(block)
-                left -= len(block)
-            padding = (-stream.tell()) % 4
-            if stream.read(padding) != b'\0' * padding or stream.read() != archive:
-                raise ValueError('Fedora launcher cpio suffix differs from source')
-            if original.hexdigest() != overlay['original_initrd_sha256']:
-                raise ValueError('Original Fedora initrd bytes changed')
-    listing = subprocess.check_output(cmd + ['mdir', '-b', '-i', '/out/fedora-live.img', '::/mok-cert/*'], text=True)
-    if any(token in listing.lower() for token in ('.der', '.pem', '.key')):
-        raise ValueError('MOK command folder unexpectedly contains a key/certificate')
-    # Official Fedora boot/live files must remain byte-identical to extracted inputs.
-    for name in ('EFI/BOOT/BOOTX64.EFI', 'EFI/BOOT/grubx64.efi', 'EFI/BOOT/mmx64.efi',
-                 'boot/x86_64/loader/linux', 'boot/x86_64/loader/initrd', 'LiveOS/squashfs.img'):
-        if (fedora / name).is_file():
-            verify('fedora-live.img', name, fedora / name)
+    if fedora:
+        for folder in ('tools', 'mok-cert', 'gui'):
+            for path in (fedora / folder).rglob('*'):
+                if path.is_file():
+                    verify('fedora-live.img', str(path.relative_to(fedora)), path)
+        if (fedora / 'gui').is_dir():
+            for name in ('start-windows-gui.cmd', 'start-windows-gui-debug.cmd', 'start-fedora-gui.sh', 'gpu-linux.desktop', 'gui-launcher-overlay.json'):
+                verify('fedora-live.img', name, fedora / name)
+            overlay = json.loads((fedora / 'gui-launcher-overlay.json').read_text())
+            sources = {
+                'var/lib/dracut/hooks/pre-pivot/99-gpu-gui-launchers.sh': 'fedora-launchers-hook.sh',
+                'usr/lib/gpu-linux-launchers-runtime.sh': 'fedora-launchers-runtime.sh',
+                'usr/lib/gpu-linux-autostart.desktop': 'gpu-linux-autostart.desktop',
+                'usr/lib/gpu-linux.desktop': 'gpu-linux.desktop',
+            }
+            if not overlay.get('autostart') or overlay['files'] != list(sources):
+                raise ValueError('Unexpected Fedora launcher overlay files')
+            files = [(name, (ROOT / 'gui' / source).read_bytes(), 0o100755 if name.endswith('.sh') else 0o100644)
+                     for name, source in sources.items()]
+            archive = runpy.run_path(str(ROOT / 'scripts/stage-gui-tools.py'))['cpio'](files)
+            with (fedora / 'boot/x86_64/loader/initrd').open('rb') as stream:
+                original = hashlib.sha256()
+                left = overlay['original_initrd_bytes']
+                while left:
+                    block = stream.read(min(left, 8 * 1024**2))
+                    if not block:
+                        raise ValueError('Truncated original Fedora initrd')
+                    original.update(block)
+                    left -= len(block)
+                padding = (-stream.tell()) % 4
+                if stream.read(padding) != b'\0' * padding or stream.read() != archive:
+                    raise ValueError('Fedora launcher cpio suffix differs from source')
+                if original.hexdigest() != overlay['original_initrd_sha256']:
+                    raise ValueError('Original Fedora initrd bytes changed')
+        listing = subprocess.check_output(cmd + ['mdir', '-b', '-i', '/out/fedora-live.img', '::/mok-cert/*'], text=True)
+        if any(token in listing.lower() for token in ('.der', '.pem', '.key')):
+            raise ValueError('MOK command folder unexpectedly contains a key/certificate')
+        # Official Fedora boot/live files must remain byte-identical to extracted inputs.
+        for name in ('EFI/BOOT/BOOTX64.EFI', 'EFI/BOOT/grubx64.efi', 'EFI/BOOT/mmx64.efi',
+                     'boot/x86_64/loader/linux', 'boot/x86_64/loader/initrd', 'LiveOS/squashfs.img'):
+            if (fedora / name).is_file():
+                verify('fedora-live.img', name, fedora / name)
+    else:
+        fat_api = runpy.run_path(str(ROOT / 'scripts/updater-artifacts.py'))
+        volume = fat_api['Fat'](output / 'usb-logs.img', 'GPU-LOGS')
+        try:
+            expected = {str(p.relative_to(config)) for p in config.rglob('*') if p.is_file()}
+            if set(volume.files) != expected or {'signing-cert.der', 'signing-cert-info.txt'} & volume.files.keys():
+                raise ValueError('Loan LOGS contains unexpected files')
+            if any(p.startswith(('tools/', 'gui/')) or p.endswith(('.ps1', '.py', '.cmd', '.sh', '.exe')) for p in volume.files):
+                raise ValueError('Loan LOGS must not contain executable management tools')
+        finally:
+            volume.close()
+        if 'Fedora Live' in (tree / 'boot/grub/grub.cfg').read_text():
+            raise ValueError('Loan menu includes Fedora')
     master_files = ['/gpu-linux/root.img', '/boot/initramfs.img', '/boot/grub/grub.cfg']
     if (tree / 'gpu-linux/state.img').is_file():
         master_files.append('/gpu-linux/state.img')
@@ -138,7 +156,8 @@ def main():
         'sha256': actual, 'bytes': image.stat().st_size, 'raw_partitions_match': matches,
         'gpt_valid': True, 'fat_filesystems_valid': True, 'checks': checks,
         'mok_folder_certificate_free': True, 'hardware_tested': False,
-        'gui_connected': (fedora / 'gui').is_dir(), 'native_gui_tested': False,
+        'media_profile': args.profile,
+        'gui_connected': fedora is not None and (fedora / 'gui').is_dir(), 'native_gui_tested': False,
     }, indent=2) + '\n')
     print('Shared media readback verified:', actual, flush=True)
 

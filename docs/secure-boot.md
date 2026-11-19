@@ -44,7 +44,7 @@ python3 scripts/verify-signed-module-bundle.py build/signed-modules
 
 ## 対象PCへ登録する
 
-公開証明書だけがUSBの `GPU-LOGS/signing-cert.der` に配置される設計です。秘密鍵はUSBへコピーしません。
+通常版USBでは、MOK登録用の公開証明書を `GPU-LOGS/signing-cert.der` に置きます。貸出版を使うPCのMOK登録も通常版で行います。秘密鍵はUSBへコピーしません。
 
 Fedoraの管理GUIで証明書と登録状態を確認し、未登録なら登録申請します。利用者が決める一時パスワードは次のMokManagerでの承認用で、Linuxのログインパスワードではありません。再起動後にMokManagerで承認し、その後Fedoraで登録済みか確認します。
 

@@ -20,9 +20,10 @@ ROOT = Path(__file__).resolve().parents[1]
 BUILD = ROOT / "build"
 KERNEL = "6.12.113+deb13-amd64"
 DRIVER = "615.71.10"
+UNLOCK_VERSION = "2.0.0"
 SIGN_FILE = BUILD / "debian-root/usr/lib/linux-kbuild-6.12.113+deb13/scripts/sign-file"
 SOURCES = {
-    "gpu_unlock": BUILD / f"modules/{KERNEL}/gpu_unlock.ko",
+    "gpu_unlock": BUILD / f"modules/gpu-unlock-2.0.0/{KERNEL}/gpu_unlock.ko",
     **{name: BUILD / f"nvidia-modules/{DRIVER}/{KERNEL}/{name}.ko"
        for name in ("nvidia", "nvidia-modeset", "nvidia-drm", "nvidia-uvm", "nvidia-peermem")},
 }
@@ -97,8 +98,8 @@ def source_metadata():
         info = metadata(source)
         if info["name"] != name.replace("-", "_") or not info["vermagic"].startswith(KERNEL + " "):
             raise ValueError(f"module name/kernel mismatch: {name}")
-        if name != "gpu_unlock" and info["version"] != DRIVER:
-            raise ValueError(f"NVIDIA driver version mismatch: {name}")
+        if info["version"] != (UNLOCK_VERSION if name == "gpu_unlock" else DRIVER):
+            raise ValueError(f"GPU module version mismatch: {name}")
         if info["signer"] or info["sig_id"]:
             raise ValueError(f"input module is already signed: {name}")
         results[name] = {"path": source, "info": info, "sha256": digest(source)}

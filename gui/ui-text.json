@@ -550,5 +550,25 @@
   "new_registry_file": {
     "ja": "GPU-LOGS/gpu-config/内の新しい出力JSON名を指定してください。既存の台帳は上書きしません。",
     "en": "Choose a new output JSON filename in GPU-LOGS/gpu-config/. Existing registries are preserved."
+  },
+  "language": {
+    "ja": "Language / 言語",
+    "en": "Language / 言語"
+  },
+  "language_auto": {
+    "ja": "自動 / Automatic",
+    "en": "自動 / Automatic"
+  },
+  "language_ja": {
+    "ja": "日本語",
+    "en": "日本語"
+  },
+  "language_en": {
+    "ja": "English",
+    "en": "English"
+  },
+  "gpu_experimental": {
+    "ja": "RTX 20/40のUnlockは実験対応です。最初はNormalで起動してください。対応PCI IDに限りUnlockを選べます。",
+    "en": "RTX 20/40 Unlock is experimental. Boot Normal first; Unlock is available only for listed PCI IDs."
   }
 }

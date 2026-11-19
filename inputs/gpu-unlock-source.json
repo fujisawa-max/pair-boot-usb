@@ -1,6 +1,7 @@
 {
   "schema": 1,
   "url": "https://github.com/Zagitta/gpu-unlock.git",
-  "commit": "af28cbbfd3d922a659227ecfb7369adfd924cf03",
-  "directory": "vendor/gpu-unlock"
+  "commit": "7eb51bccae0a0b7e599e084d971170e9a1e82d0c",
+  "directory": "vendor/gpu-unlock-2.0",
+  "version": "2.0.0"
 }

@@ -63,6 +63,7 @@ def menu(notice, source, output, launch=start_pair, power=request_power, wait=wa
             print('\033[0m\033[?25h', end='', file=output)
         banner = runpy.run_path(str(Path(__file__).with_name('boot-banner.py')))
         banner['display'](output)
+        print('Ctrl+Alt+F1: logs | F2: maintenance | F3: PAIR', file=output)
         print(('USB check at startup:\n' + notice), file=output)
         print('Reinsert the boot USB before booting this PC again.', file=output)
         print('\n1. ' + ('Start PAIR' if first else 'Restart PAIR'), file=output)

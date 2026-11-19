@@ -8,7 +8,11 @@ MESSAGES = json.loads((HERE / 'ui-text.json').read_text())
 OPERATIONS = json.loads((HERE / 'operations.json').read_text())
 
 
-def language(environ=None):
+def language(environ=None, selection='auto'):
+    if selection not in ('auto', 'ja', 'en'):
+        raise ValueError('Unknown UI language selection')
+    if selection != 'auto':
+        return selection
     env = os.environ if environ is None else environ
     locale = env.get('LC_ALL') or env.get('LC_MESSAGES') or env.get('LANG') or 'C'
     if locale.split('.')[0] in ('C', 'POSIX'):

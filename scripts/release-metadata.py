@@ -16,6 +16,7 @@ def metadata():
             'registry_schema': runpy.run_path(str(ROOT / 'runtime/fleet-registry.py'))['REGISTRY_SCHEMA'],
             'components': {
                 'Kernel': lock('debian-build-inputs.json')['kernel_release'],
+                'gpu-unlock version': lock('gpu-unlock-source.json')['version'],
                 'gpu-unlock commit': lock('gpu-unlock-source.json')['commit'],
                 'Base distribution': lock('debian-build-inputs.json')['distribution'],
                 'Fedora Workstation Live': lock('fedora-live-input.json')['version'],
@@ -25,5 +26,15 @@ def metadata():
             }}
 
 
-def text():
-    return runpy.run_path(str(ROOT / 'runtime/release-info.py'))['media_text'](metadata())
+def text(profile=None):
+    value = metadata()
+    if profile not in (None, 'standard', 'loan'):
+        raise ValueError('Unknown media profile')
+    if profile == 'loan':
+        value['components'].pop('Fedora Workstation Live')
+    result = runpy.run_path(str(ROOT / 'runtime/release-info.py'))['media_text'](value)
+    if profile:
+        result += ('\nMedia profile: ' + profile + '\n'
+                   'Fedora included: ' + ('yes' if profile == 'standard' else 'no') + '\n'
+                   'Management tools included: ' + ('yes' if profile == 'standard' else 'no') + '\n')
+    return result

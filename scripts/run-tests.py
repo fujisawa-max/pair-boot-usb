@@ -13,6 +13,7 @@ import importlib.util
 from pathlib import Path
 import subprocess
 import unittest
+import runpy
 
 root = Path(__file__).resolve().parents[1]
 suite = unittest.TestSuite()
@@ -21,6 +22,13 @@ for number, path in enumerate(sorted((root / 'tests').glob('test-*.py'))):
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     suite.addTests(unittest.defaultTestLoader.loadTestsFromModule(module))
+# Execute the received contract fixtures only after verifying their transfer pin.
+contract = runpy.run_path(str(root / 'scripts/prepare-update-bundle.py'))['contract']()
+path = contract[1] / 'tests/test_production_contract.py'
+spec = importlib.util.spec_from_file_location('updater_contract_fixtures', path)
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+suite.addTests(unittest.defaultTestLoader.loadTestsFromModule(module))
 for folder in ('runtime', 'scripts'):
     for path in sorted((root / folder).rglob('*.sh')):
         shell = 'bash' if path.read_text().startswith('#!/bin/bash') else 'sh'

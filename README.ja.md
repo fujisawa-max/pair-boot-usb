@@ -4,7 +4,7 @@
 
 PCに内蔵されたNVIDIA GPUを活用し、USBから起動してLLM推論環境（[PAIR: Personal AI Router](https://github.com/NVIDIA/Personal-AI-Router)）を動かすためのブータブルUSB構築ツールです。既存のWindows環境を壊さず、USBと指定した保存先フォルダのみを利用して安全に推論ノードを立ち上げられます。
 
-RTX 30シリーズのうち対応GPUでは、gpu-unlockによる高速化（Unlock起動）も選択できます。
+対応するRTX 20・30・40シリーズでは、gpu-unlock 2.0による高速化（Unlock起動）も選択できます。RTX 20・40のUnlockは上流でも実験対応です。最初はNormalで起動し、実機での動作を確認してください。
 
 ---
 
@@ -39,6 +39,8 @@ PAIR BOOTでは Secure Boot の利用が前提となっています。Secure Boo
 3. [USBの利用開始（クイックスタート）](docs/quick-start.ja.md)：Windowsでの情報取得、FedoraでのMOK・PC登録、PAIR BOOTの起動手順
 
 ### 運用・連携
+
+- [部分更新用manifest](docs/update-bundle.ja.md)：更新束の生成と、対応する更新元USBの指定
 - [Windows・Fedoraの管理ツール](docs/management-ui.md)：カテゴリ別の操作、PC名の表示、旧台帳の形式変換
 - [運用・モデル・終了・回復](docs/user-guide.md)：モデルの配置方法、正常終了・USB取り外し手順、トラブル対応
 - [Windowsでの台帳管理](docs/windows-fleet.md)：複数台のPC登録情報を1台のWindowsでまとめる手順
@@ -67,7 +69,7 @@ PAIR BOOTでは Secure Boot の利用が前提となっています。Secure Boo
 
 ## 対応範囲
 
-- **対象GPU**: 主にRTX 30シリーズ（機種ごとにNormal／Unlockの可否が異なります）。
+- **対象GPU**: RTX 20・30・40シリーズの対応PCI ID（機種ごとにNormal／Unlockの可否が異なり、RTX 20・40のUnlockは実験対応です）。対応一覧は [GPUポリシー](config/gpu-policy.json)、実機確認の範囲は [TODO](TODO.md) を参照してください。
 - **保存先**: 対象PC上の指定されたNTFS領域（既定: `GPU-Linux` フォルダ）。Windows側のデータ領域を破壊しないよう、安全性確認を行ってから利用します。
 
 ## 含まないもの

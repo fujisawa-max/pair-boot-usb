@@ -17,6 +17,22 @@ fleet = fixture['fleet']
 
 
 class ManagementUiTests(unittest.TestCase):
+    def test_manual_language_overrides_automatic_locale_without_changing_environment(self):
+        env = {'LANG': 'C', 'LC_ALL': 'C'}
+        for choice in ('ja', 'en'):
+            self.assertEqual(UI['language'](env, choice), choice)
+        self.assertEqual(env, {'LANG': 'C', 'LC_ALL': 'C'})
+        with self.assertRaises(ValueError):
+            UI['language'](env, 'invalid')
+
+    def test_fedora_language_switch_changes_text_and_zenity_locale_without_worker(self):
+        select = FEDORA['select_language']
+        with patch.dict(select.__globals__, {'select_id': lambda *_: 'ja', 'UI_SELECTION': 'auto', 'HELP_PROCESS': None}):
+            select()
+            self.assertEqual(FEDORA['T']('run'), UI['text']('run', 'ja'))
+            self.assertEqual(FEDORA['dialog_environment']()['LANGUAGE'], 'ja')
+            self.assertEqual(FEDORA['dialog_environment']()['LC_ALL'], 'C.UTF-8')
+
     def test_locale_selection_and_bilingual_messages(self):
         for env, expected in (({}, 'en'), ({'LANG': 'ja_JP.UTF-8'}, 'ja'),
                               ({'LANG': 'en_US.UTF-8'}, 'en'), ({'LANG': 'fr_FR.UTF-8'}, 'en'),

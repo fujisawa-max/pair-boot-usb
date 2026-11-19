@@ -1,0 +1,13 @@
+{
+  "contract_version": 1,
+  "contract_revision": 2,
+  "files": {
+    "inputs/layouts/production-v1/pair-loan-gpt512-v1.json": "d4d9a1544ed92232b9a887e2e76d27bebceef61c719bbcf8f657446ba33bd7d7",
+    "schemas/production-v1/README.md": "80a37d9a328b141b9fbd241da6f834452133af510c4c1794ba1351ca7a2752f2",
+    "schemas/production-v1/helper-receipt.schema.json": "bd23eed46d80f7ba78a2f171135eff1168652874b92294b938d287b107c5cd8c",
+    "schemas/production-v1/helper-request.schema.json": "03df4e64d8180f0f47457f4e83476500cfe192ca9bde15189ffc310baa85c942",
+    "schemas/production-v1/layout.schema.json": "94c72ceb127da76328321cc381b1fc403c3352b258d9c8962f2a02d31e0d2bb7",
+    "schemas/production-v1/manifest.schema.json": "b19be97b58a73507b03a0332f1bc39b215ae5df32bffbb5619ed01f32330193b",
+    "schemas/production-v1/validate.py": "f81d3e6e6827f17b4b18fe284bbd43585c5fe9593ea2fc5c22e24b6244fc78d9"
+  }
+}

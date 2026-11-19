@@ -30,22 +30,27 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output', type=Path, default=ROOT / 'build/shared-usb-tools')
     parser.add_argument('--fedora-output', type=Path, default=ROOT / 'build/fedora-live-tools')
-    parser.add_argument('--fedora-source', type=Path, required=True, help='freshly extracted Fedora tree below build/')
+    parser.add_argument('--profile', choices=('standard', 'loan'), default='standard')
+    parser.add_argument('--manager-output', type=Path)
+    parser.add_argument('--fedora-source', type=Path, help='freshly extracted Fedora tree below build/')
     parser.add_argument('--certificate', type=Path, required=True, help='public DER from the verified signing bundle')
     parser.add_argument('--media-version', default=RELEASE['version'])
     parser.add_argument('--root-version', default=VERSION)
     args = parser.parse_args()
-    output, fedora = fresh_output(args.output), fresh_output(args.fedora_output)
-    source = args.fedora_source.resolve()
+    output = fresh_output(args.output)
+    manager = fresh_output(args.manager_output or args.output.with_name(args.output.name + '-manager'))
+    fedora = fresh_output(args.fedora_output) if args.profile == 'standard' else None
+    source = args.fedora_source.resolve() if args.fedora_source else None
     cert = args.certificate
-    if (not source.is_relative_to(ROOT / 'build') or args.fedora_source.is_symlink() or
-            not (source / 'fedora-manifest.json').is_file() or
-            not (source / 'boot/x86_64/loader/initrd').is_file()):
+    if args.profile == 'standard' and (source is None or not source.is_relative_to(ROOT / 'build')
+            or args.fedora_source.is_symlink() or not (source / 'fedora-manifest.json').is_file()
+            or not (source / 'boot/x86_64/loader/initrd').is_file()):
         parser.error('A generated Fedora source tree below build/ is required')
-    if (source == fedora or source.is_relative_to(fedora) or fedora.is_relative_to(source) or
-            source == output or source.is_relative_to(output) or output.is_relative_to(source) or
-            output.is_relative_to(fedora) or fedora.is_relative_to(output)):
-        parser.error('Input and output trees must not overlap')
+    paths = [output, manager] + ([fedora, source] if fedora else [])
+    for i, left in enumerate(paths):
+        for right in paths[i+1:]:
+            if left == right or left.is_relative_to(right) or right.is_relative_to(left):
+                parser.error('Input and output trees must not overlap')
     if cert.is_symlink() or not cert.is_file():
         parser.error('An ordinary public DER certificate is required')
     subprocess.run(['openssl', 'x509', '-inform', 'DER', '-in', str(cert), '-noout'],
@@ -56,22 +61,44 @@ def main():
     docs = runpy.run_path(str(ROOT / 'scripts/usb-documents.py'))
     documents = docs['document_plan'](ROOT)
     output.mkdir(parents=True)
-    (output / 'MEDIA-INFO.txt').write_text(info['text'](), encoding='utf-8')
+    (output / 'MEDIA-INFO.txt').write_text(info['text'](args.profile), encoding='utf-8')
     data = output / 'data'
     data.mkdir()
     (data / 'README.txt').write_text('候補情報・BitLocker確認情報・回収した台帳などの保存先です。\n台帳のマージ・形式変換・PC名更新を行う場合、既定の保存先は ../gpu-config/ です。\n起動に使用する台帳本体は ../gpu-config/registry.json です。\n\nFolder for collected candidates, BitLocker evidence and exported registries.\nMerged/converted registries and PC name updates default to ../gpu-config/.\nThe active boot registry is ../gpu-config/registry.json.\n', encoding='utf-8')
-    tools = output / 'tools'
+    manager.mkdir(parents=True)
+    shutil.copy2(ROOT / 'LICENSE', manager / 'LICENSE')
+    tools = manager / 'tools'
     shutil.copytree(ROOT / 'toolkit', tools, ignore=shutil.ignore_patterns('__pycache__', '*.pyc'))
     shutil.copy2(ROOT / 'runtime/fleet-registry.py', tools / 'fleet-registry.py')
     shutil.copy2(ROOT / 'runtime/storage-target.py', tools / 'storage-target.py')
-    shutil.copy2(ROOT / 'config/rtx30-gpu-policy.json', tools / 'rtx30-gpu-policy.json')
+    shutil.copy2(ROOT / 'config/gpu-policy.json', tools / 'gpu-policy.json')
     docs['write_documents'](tools, documents)
+    runpy.run_path(str(ROOT / 'scripts/stage-gui-tools.py'))['stage'](manager, None, cert)
+    (manager / 'manager-config.json').write_text(json.dumps({
+        'schema': 1, 'kind': 'pair-boot-manager', 'version': VERSION}, indent=2) + '\n')
+    for folder in ('data', 'backups', 'gpu-config'):
+        (manager / folder).mkdir()
+    (manager / 'MEDIA-INFO.txt').write_text(info['text'](), encoding='utf-8')
+    (manager / 'README.txt').write_text(
+        'PAIR BOOT management tools / 管理ツール\n'
+        'Copy this entire directory to a Windows PC and run start-windows-gui.cmd.\n'
+        'このフォルダ全体をPCへコピーしてstart-windows-gui.cmdを実行します。\n'
+        'Keep registry backups on the PC. Connect one target USB at a time.\n'
+        '台帳はPCへバックアップし、配布先USBは1本ずつ接続してください。\n'
+        'Deployment updates registry.json and hosts/*.env together.\n'
+        '台帳JSONの手動コピーだけでは配布を完了できません。\n', encoding='utf-8')
+    if args.profile == 'standard':
+        shutil.copytree(tools, output / 'tools')
 
     fleet = runpy.run_path(str(ROOT / 'runtime/fleet-registry.py'))
-    (output / 'usb-config.json').write_text(json.dumps({'schema': 1, 'kind': 'gpu-linux-config', 'root_version': args.root_version, 'registry_schema': fleet['REGISTRY_SCHEMA']}, indent=2) + '\n')
+    (output / 'usb-config.json').write_text(json.dumps({'schema': 1, 'kind': 'gpu-linux-config', 'root_version': args.root_version, 'registry_schema': fleet['REGISTRY_SCHEMA'], 'media_profile': args.profile}, indent=2) + '\n')
     # New shared media starts unregistered: never synthesize Windows safety flags.
     registry = fleet['merge']([], 1, args.root_version)
     fleet['deploy'](registry, output)
+    if args.profile == 'loan':
+        (output / 'data/README.txt').unlink()
+        print(output, manager)
+        return
     shutil.copytree(source, fedora,
                     ignore=lambda folder, names: ['mok-cert'] if 'mok-cert' in names else [])
     shutil.copytree(tools, fedora / 'tools')
@@ -85,7 +112,7 @@ def main():
     manifest['media_revision'] = args.media_version
     manifest['gui_connected'] = True
     (fedora / 'fedora-manifest.json').write_text(json.dumps(manifest, indent=2) + '\n')
-    print(output, fedora)
+    print(output, fedora, manager)
 
 
 if __name__ == '__main__':

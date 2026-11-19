@@ -15,8 +15,8 @@ param(
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 $utf8 = [Text.UTF8Encoding]::new($false)
-$UnlockRtx30Ids = @('10de:2203','10de:2204','10de:2206','10de:2207','10de:2208','10de:220a','10de:2216','10de:2414','10de:2482','10de:2484','10de:2486','10de:2487','10de:2488','10de:2489','10de:249c','10de:249d','10de:24a0','10de:24c7','10de:24c9','10de:24dc','10de:24dd','10de:24e0','10de:2503','10de:2504','10de:2507','10de:2508','10de:2544')
-$SupportedRtx30Ids = @('10de:2203','10de:2204','10de:2206','10de:2207','10de:2208','10de:220a','10de:2216','10de:2414','10de:2420','10de:2460','10de:2482','10de:2484','10de:2486','10de:2487','10de:2488','10de:2489','10de:249c','10de:249d','10de:24a0','10de:24c7','10de:24c9','10de:24dc','10de:24dd','10de:24e0','10de:2503','10de:2504','10de:2507','10de:2508','10de:2520','10de:2521','10de:2523','10de:2544','10de:2560','10de:2563','10de:2582','10de:2584','10de:25a0','10de:25a2','10de:25a5','10de:25ab','10de:25ac','10de:25e0','10de:25e2','10de:25e5','10de:25ec','10de:2822','10de:28a3','10de:28e3')
+$UnlockGpuIds = @('10de:1e04','10de:1e07','10de:1e81','10de:1e82','10de:1e84','10de:1e87','10de:1e89','10de:1ec2','10de:1ec7','10de:1f02','10de:1f03','10de:1f06','10de:1f07','10de:1f08','10de:1f42','10de:1f47','10de:2203','10de:2204','10de:2206','10de:2207','10de:2208','10de:220a','10de:2216','10de:2414','10de:2482','10de:2484','10de:2486','10de:2487','10de:2488','10de:2489','10de:249c','10de:249d','10de:24a0','10de:24c7','10de:24c9','10de:24dc','10de:24dd','10de:24e0','10de:2503','10de:2504','10de:2507','10de:2508','10de:2544','10de:2684','10de:2685','10de:2689','10de:2702','10de:2704','10de:2705','10de:2709','10de:2757','10de:2782','10de:2783','10de:2786','10de:2803','10de:2805','10de:2882','10de:28a0','10de:28e0','10de:28e1')
+$SupportedGpuIds = @('10de:1e04','10de:1e07','10de:1e81','10de:1e82','10de:1e84','10de:1e87','10de:1e89','10de:1e90','10de:1e91','10de:1e93','10de:1ec2','10de:1ec7','10de:1ed0','10de:1ed1','10de:1ed3','10de:1f02','10de:1f03','10de:1f06','10de:1f07','10de:1f08','10de:1f10','10de:1f11','10de:1f12','10de:1f14','10de:1f15','10de:1f42','10de:1f47','10de:1f50','10de:1f51','10de:1f54','10de:1f55','10de:2203','10de:2204','10de:2206','10de:2207','10de:2208','10de:220a','10de:2216','10de:2414','10de:2420','10de:2460','10de:2482','10de:2484','10de:2486','10de:2487','10de:2488','10de:2489','10de:249c','10de:249d','10de:24a0','10de:24c7','10de:24c9','10de:24dc','10de:24dd','10de:24e0','10de:2503','10de:2504','10de:2507','10de:2508','10de:2520','10de:2521','10de:2523','10de:2544','10de:2560','10de:2563','10de:2582','10de:2584','10de:25a0','10de:25a2','10de:25a5','10de:25a7','10de:25a9','10de:25ab','10de:25ac','10de:25ad','10de:25e0','10de:25e2','10de:25e5','10de:25ec','10de:25ed','10de:2684','10de:2685','10de:2689','10de:2702','10de:2704','10de:2705','10de:2709','10de:2717','10de:2757','10de:2782','10de:2783','10de:2786','10de:2788','10de:27a0','10de:27e0','10de:2803','10de:2805','10de:2808','10de:2820','10de:2822','10de:2860','10de:2882','10de:28a0','10de:28a1','10de:28a3','10de:28e0','10de:28e1','10de:28e3')
 function Hash-Bytes([byte[]]$Bytes) {
     $hash = [Security.Cryptography.SHA256]::Create()
     try { return ([BitConverter]::ToString($hash.ComputeHash($Bytes))).Replace('-','').ToLowerInvariant() } finally { $hash.Dispose() }
@@ -58,7 +58,7 @@ function Check-Host($Value) {
     if ($null -ne $mode -and -not $test) { throw 'Unknown boot mode.' }
     if ($test) {
         if ($null -ne $Value.gpu_bdf -or $null -ne $Value.gpu_pci_id -or $null -eq $Value.PSObject.Properties['storage_target']) { throw 'No-GPU test requires explicit USB storage and null GPU identity.' }
-    } elseif ($Value.gpu_bdf -isnot [string] -or $Value.gpu_bdf -cnotmatch '^[a-f0-9]{4}:[a-f0-9]{2}:[a-f0-9]{2}\.[0-7]$' -or $Value.gpu_pci_id -isnot [string] -or $Value.gpu_pci_id -cnotin $SupportedRtx30Ids) {
+    } elseif ($Value.gpu_bdf -isnot [string] -or $Value.gpu_bdf -cnotmatch '^[a-f0-9]{4}:[a-f0-9]{2}:[a-f0-9]{2}\.[0-7]$' -or $Value.gpu_pci_id -isnot [string] -or $Value.gpu_pci_id -cnotin $SupportedGpuIds) {
         throw 'Invalid GPU record; register from Fedora.'
     }
     if ($Value.checked_at_unix -isnot [long] -and $Value.checked_at_unix -isnot [int] -and $Value.checked_at_unix -isnot [double]) { throw 'Invalid timestamp type.' }
@@ -292,7 +292,7 @@ if ($Action -in @('Merge','Convert','Name')) {
     Assert-OrdinaryDirectory $hostsDirectory
     foreach ($item in @($registry.records)) {
         $isTest = $null -ne $item.PSObject.Properties['boot_mode'] -and $item.boot_mode -ceq 'no-gpu-test'
-        $targetBdf = if ($isTest) { 'unconfigured' } elseif ($item.gpu_pci_id -cin $UnlockRtx30Ids) { $item.gpu_bdf } else { "unsupported" }
+        $targetBdf = if ($isTest) { 'unconfigured' } elseif ($item.gpu_pci_id -cin $UnlockGpuIds) { $item.gpu_bdf } else { "unsupported" }
         $defaultEntry = if (-not $isTest -and $item.gpu_pci_id -ceq '10de:2504') { '1' } else { '0' }
         $text = "# GRUB Environment Block`ngpu_targets=$targetBdf`ngpu_default=$defaultEntry`n"
         $text = $text.PadRight(1024, '#')

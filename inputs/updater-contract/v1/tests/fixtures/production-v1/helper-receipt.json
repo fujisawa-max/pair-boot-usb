@@ -1,0 +1,85 @@
+{
+  "contract_version": 1,
+  "contract_revision": 1,
+  "contract_lock_sha256": "49979cafed425960a0c3c53e90cc2799de6453076c82eda1574c781f890db179",
+  "helper_protocol": 1,
+  "request_id": "synthetic-request-001",
+  "request_sha256": "0bd0e0b1acdff661dda92a0bbaee77f93d944a557bc761037c01c796140b9d53",
+  "manifest_sha256": "71720adcb3320e986c9c1af2f207551e55f84afe258abd0fd6cfdda9d297c6b5",
+  "target": {
+    "target_token_sha256": "6666666666666666666666666666666666666666666666666666666666666666",
+    "gpt_snapshot_sha256": "7777777777777777777777777777777777777777777777777777777777777777"
+  },
+  "accepted_source_id": "legacy-r3-example",
+  "helper": {
+    "id": "pair-logs-helper",
+    "version": "1.0.0",
+    "source_sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+  },
+  "snapshots": [
+    {
+      "role": "efi",
+      "file": {
+        "path": "backups/efi.img",
+        "bytes": 67108864,
+        "sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+      }
+    },
+    {
+      "role": "master",
+      "file": {
+        "path": "backups/master.img",
+        "bytes": 4831838208,
+        "sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+      }
+    },
+    {
+      "role": "logs",
+      "file": {
+        "path": "backups/logs.img",
+        "bytes": 268435456,
+        "sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+      }
+    },
+    {
+      "role": "fedora",
+      "file": {
+        "path": "backups/fedora.img",
+        "bytes": 3221225472,
+        "sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+      }
+    }
+  ],
+  "output": {
+    "role": "logs",
+    "file": {
+      "path": "staging/logs.img",
+      "bytes": 268435456,
+      "sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+    },
+    "filesystem_uuid": "1234-ABCD",
+    "inventory_before": {
+      "path": "evidence/before.json",
+      "bytes": 20,
+      "sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+    },
+    "inventory_after": {
+      "path": "evidence/after.json",
+      "bytes": 20,
+      "sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+    }
+  },
+  "registry": {
+    "migration": "registry-1-to-2",
+    "before_schema": 1,
+    "after_schema": 2,
+    "before_generation": 7,
+    "after_generation": 8,
+    "record_count": 1,
+    "before_sha256": "8888888888888888888888888888888888888888888888888888888888888888",
+    "after_sha256": "9999999999999999999999999999999999999999999999999999999999999999",
+    "preserved_records_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "preserved_inventory_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "logical_inventory_verified": true
+}

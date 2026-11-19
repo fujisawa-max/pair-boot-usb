@@ -14,9 +14,9 @@ import unicodedata
 MAX_BYTES = 1024 * 1024
 REGISTRY_SCHEMA = 2
 SUPPORTED_REGISTRY_SCHEMAS = (1, 2)
-# Generated from config/rtx30-gpu-policy.json; fixture checks prevent drift.
-GPU_NORMAL_IDS = frozenset('10de:2203 10de:2204 10de:2206 10de:2207 10de:2208 10de:220a 10de:2216 10de:2414 10de:2420 10de:2460 10de:2482 10de:2484 10de:2486 10de:2487 10de:2488 10de:2489 10de:249c 10de:249d 10de:24a0 10de:24c7 10de:24c9 10de:24dc 10de:24dd 10de:24e0 10de:2503 10de:2504 10de:2507 10de:2508 10de:2520 10de:2521 10de:2523 10de:2544 10de:2560 10de:2563 10de:2582 10de:2584 10de:25a0 10de:25a2 10de:25a5 10de:25ab 10de:25ac 10de:25e0 10de:25e2 10de:25e5 10de:25ec 10de:2822 10de:28a3 10de:28e3'.split())
-GPU_UNLOCK_IDS = frozenset('10de:2203 10de:2204 10de:2206 10de:2207 10de:2208 10de:220a 10de:2216 10de:2414 10de:2482 10de:2484 10de:2486 10de:2487 10de:2488 10de:2489 10de:249c 10de:249d 10de:24a0 10de:24c7 10de:24c9 10de:24dc 10de:24dd 10de:24e0 10de:2503 10de:2504 10de:2507 10de:2508 10de:2544'.split())
+# Generated from config/gpu-policy.json; fixture checks prevent drift.
+GPU_NORMAL_IDS = frozenset('10de:1e04 10de:1e07 10de:1e81 10de:1e82 10de:1e84 10de:1e87 10de:1e89 10de:1e90 10de:1e91 10de:1e93 10de:1ec2 10de:1ec7 10de:1ed0 10de:1ed1 10de:1ed3 10de:1f02 10de:1f03 10de:1f06 10de:1f07 10de:1f08 10de:1f10 10de:1f11 10de:1f12 10de:1f14 10de:1f15 10de:1f42 10de:1f47 10de:1f50 10de:1f51 10de:1f54 10de:1f55 10de:2203 10de:2204 10de:2206 10de:2207 10de:2208 10de:220a 10de:2216 10de:2414 10de:2420 10de:2460 10de:2482 10de:2484 10de:2486 10de:2487 10de:2488 10de:2489 10de:249c 10de:249d 10de:24a0 10de:24c7 10de:24c9 10de:24dc 10de:24dd 10de:24e0 10de:2503 10de:2504 10de:2507 10de:2508 10de:2520 10de:2521 10de:2523 10de:2544 10de:2560 10de:2563 10de:2582 10de:2584 10de:25a0 10de:25a2 10de:25a5 10de:25a7 10de:25a9 10de:25ab 10de:25ac 10de:25ad 10de:25e0 10de:25e2 10de:25e5 10de:25ec 10de:25ed 10de:2684 10de:2685 10de:2689 10de:2702 10de:2704 10de:2705 10de:2709 10de:2717 10de:2757 10de:2782 10de:2783 10de:2786 10de:2788 10de:27a0 10de:27e0 10de:2803 10de:2805 10de:2808 10de:2820 10de:2822 10de:2860 10de:2882 10de:28a0 10de:28a1 10de:28a3 10de:28e0 10de:28e1 10de:28e3'.split())
+GPU_UNLOCK_IDS = frozenset('10de:1e04 10de:1e07 10de:1e81 10de:1e82 10de:1e84 10de:1e87 10de:1e89 10de:1ec2 10de:1ec7 10de:1f02 10de:1f03 10de:1f06 10de:1f07 10de:1f08 10de:1f42 10de:1f47 10de:2203 10de:2204 10de:2206 10de:2207 10de:2208 10de:220a 10de:2216 10de:2414 10de:2482 10de:2484 10de:2486 10de:2487 10de:2488 10de:2489 10de:249c 10de:249d 10de:24a0 10de:24c7 10de:24c9 10de:24dc 10de:24dd 10de:24e0 10de:2503 10de:2504 10de:2507 10de:2508 10de:2544 10de:2684 10de:2685 10de:2689 10de:2702 10de:2704 10de:2705 10de:2709 10de:2757 10de:2782 10de:2783 10de:2786 10de:2803 10de:2805 10de:2882 10de:28a0 10de:28e0 10de:28e1'.split())
 
 
 def validate_storage_directory(value):
@@ -106,7 +106,7 @@ def record(value, now=None):
     if not test and not re.fullmatch(r'[a-f0-9]{4}:[a-f0-9]{2}:[a-f0-9]{2}\.[0-7]', str(value.get('gpu_bdf', ''))):
         raise ValueError('Explicit GPU PCI BDF required; register from Fedora')
     if not test and value.get('gpu_pci_id') not in GPU_NORMAL_IDS:
-        raise ValueError('GPU is not in this release RTX30 normal-mode PCI policy')
+        raise ValueError('GPU is not in this release normal-mode PCI policy')
     checked = value.get('checked_at_unix')
     if type(checked) not in (int, float) or not math.isfinite(checked) or checked < 0:
         raise ValueError('Invalid Windows inventory timestamp')

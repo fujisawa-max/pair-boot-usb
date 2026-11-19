@@ -1,0 +1,13 @@
+{
+  "contract_version": 1,
+  "contract_revision": 1,
+  "files": {
+    "inputs/layouts/production-v1/pair-r3-gpt512-v1.json": "93e86e3527b803a6955fd11749b107806f9cdc96f8caf64eb750e71b2d41719b",
+    "schemas/production-v1/README.md": "c8089d31772b1ccb167fbb33121c20c157641b31c56ade9ba2d81ee37995316e",
+    "schemas/production-v1/helper-receipt.schema.json": "55713a66027fba3bb11e6a06c9cd8b9ea2ecf9c67c85e374f0a6a7d2ea859f3c",
+    "schemas/production-v1/helper-request.schema.json": "aeceec9a6fee461e9a024c5b6e81e03a9a17c4e7d4c699103dd43d9e9100b731",
+    "schemas/production-v1/layout.schema.json": "db9b6d7e31295c1915e6a0aee05ad090b177867d3ffd44f7a6e4b754a4255617",
+    "schemas/production-v1/manifest.schema.json": "bedafb38f8fd1aae1a4c0869db1dd8179a1264c5863fd09982ad2d6057a24c1b",
+    "schemas/production-v1/validate.py": "fd5c1f4d2d8253f4a5c73eeeeb54c070715188548f1c80aed0a42e052e5416c8"
+  }
+}

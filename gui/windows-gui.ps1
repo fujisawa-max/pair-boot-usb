@@ -2,6 +2,7 @@
 param(
     [string]$ToolsPath = $(if (Test-Path -LiteralPath (Join-Path $PSScriptRoot '..\tools')) { Join-Path $PSScriptRoot '..\tools' } else { Join-Path $PSScriptRoot '..\toolkit' }),
     [switch]$PlanOnly,
+    [ValidateSet('auto','ja','en')][string]$Language = 'auto',
     [switch]$UsbStorageTarget,
     [switch]$PersonalUseOsVolume,
     [string]$PersonalUseConfirmation,
@@ -113,6 +114,11 @@ if ($PlanOnly) {
     return
 }
 function Get-GuiInputDirectory([string]$Action,[string]$UsbPath,[string]$GuiDirectory=$PSScriptRoot) {
+    $managerRoot=Split-Path -Parent $GuiDirectory
+    if (Test-Path -LiteralPath (Join-Path $managerRoot 'manager-config.json') -PathType Leaf) {
+        $folder=if ($Action -in @('Status','Merge','Deploy','Convert','Name')) {'gpu-config'} else {'data'}
+        return Join-Path $managerRoot $folder
+    }
     if (-not $UsbPath) {
         $parent=Split-Path -Parent $GuiDirectory
         if (Test-Path -LiteralPath (Join-Path $parent 'usb-config.json') -PathType Leaf) {$UsbPath=$parent}
@@ -124,6 +130,11 @@ function Get-GuiInputDirectory([string]$Action,[string]$UsbPath,[string]$GuiDire
     return $UsbPath
 }
 function Get-GuiOutputDirectory([string]$Action,[string]$UsbPath,[string]$GuiDirectory=$PSScriptRoot) {
+    $managerRoot=Split-Path -Parent $GuiDirectory
+    if (Test-Path -LiteralPath (Join-Path $managerRoot 'manager-config.json') -PathType Leaf) {
+        $folder=if ($Action -in @('Merge','Convert','Name')) {'gpu-config'} elseif ($Action -eq 'Collect') {'backups'} else {'data'}
+        return Join-Path $managerRoot $folder
+    }
     if ($Action -in @('Merge','Convert','Name')) {
         return Get-GuiInputDirectory $Action $UsbPath $GuiDirectory
     }
@@ -202,7 +213,9 @@ function Invoke-GuiOperation($Request) {
 . (Join-Path $PSScriptRoot 'storage-paths.ps1')
 # The same operation and message definitions are used by Fedora and the preview.
 $script:UiText = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'ui-text.json') -Raw -Encoding UTF8 | ConvertFrom-Json
-$script:UiLanguage = if ([Globalization.CultureInfo]::CurrentUICulture.TwoLetterISOLanguageName -eq 'ja') { 'ja' } else { 'en' }
+$script:AutomaticLanguage = if ([Globalization.CultureInfo]::CurrentUICulture.TwoLetterISOLanguageName -eq 'ja') { 'ja' } else { 'en' }
+$script:UiLanguage = if ($Language -eq 'auto') {$script:AutomaticLanguage} else {$Language}
+$script:ChangingLanguage=$false
 function T([string]$Key) {
     $entry = $script:UiText.PSObject.Properties[$Key]
     if ($null -eq $entry) { return $Key }
@@ -230,7 +243,19 @@ $main.Padding=[Windows.Forms.Padding]::new(12); $form.Controls.Add($main)
 $tabs=[Windows.Forms.TabControl]::new(); $tabs.Dock='Fill'
 foreach ($category in @('pc-info','registry','diagnostics')) { $tab=[Windows.Forms.TabPage]::new();$tab.Text=T $category;$tab.Tag=$category;[void]$tabs.TabPages.Add($tab) }
 $tabs.SelectedIndex=0
-$main.Controls.Add($tabs,0,0)
+$header=[Windows.Forms.TableLayoutPanel]::new();$header.Dock='Fill';$header.ColumnCount=2;$header.RowCount=1
+[void]$header.ColumnStyles.Add([Windows.Forms.ColumnStyle]::new('Percent',100))
+[void]$header.ColumnStyles.Add([Windows.Forms.ColumnStyle]::new('Absolute',300))
+$header.Controls.Add($tabs,0,0)
+$languageSelector=[Windows.Forms.ComboBox]::new();$languageSelector.DropDownStyle='DropDownList';$languageSelector.DisplayMember='Text';$languageSelector.Dock='Fill';$languageSelector.AccessibleName='Language / 言語'
+foreach($code in @('auto','ja','en')){[void]$languageSelector.Items.Add([pscustomobject]@{Text=(T ('language_'+$code));Code=$code})}
+$languageSelector.SelectedIndex=@('auto','ja','en').IndexOf($Language)
+$languagePanel=[Windows.Forms.TableLayoutPanel]::new();$languagePanel.Dock='Fill';$languagePanel.ColumnCount=2;$languagePanel.RowCount=1
+[void]$languagePanel.ColumnStyles.Add([Windows.Forms.ColumnStyle]::new('Absolute',120))
+[void]$languagePanel.ColumnStyles.Add([Windows.Forms.ColumnStyle]::new('Percent',100))
+$languageLabel=[Windows.Forms.Label]::new();$languageLabel.Text='Language / 言語';$languageLabel.AutoSize=$true;$languageLabel.Padding=[Windows.Forms.Padding]::new(0,6,0,0)
+$languagePanel.Controls.Add($languageLabel,0,0);$languagePanel.Controls.Add($languageSelector,1,0)
+$header.Controls.Add($languagePanel,1,0);$main.Controls.Add($header,0,0)
 $actions=[Windows.Forms.ComboBox]::new();$actions.DropDownStyle='DropDownList';$actions.Dock='Top';$actions.DisplayMember='Text';$main.Controls.Add($actions,0,1)
 $description=[Windows.Forms.Label]::new();$description.AutoSize=$true;$description.MaximumSize=[Drawing.Size]::new(880,0);$description.Padding=[Windows.Forms.Padding]::new(0,8,0,8);$main.Controls.Add($description,0,2)
 $fields=[Windows.Forms.TableLayoutPanel]::new();$fields.AutoSize=$true;$fields.Dock='Top';$fields.ColumnCount=3
@@ -268,9 +293,50 @@ $detail=[Windows.Forms.Button]::new();$detail.Text=T 'details';$detail.AutoSize=
 $script:LastDiagnostics=''
 $diagnosticsButton=[Windows.Forms.Button]::new();$diagnosticsButton.Text=T 'copy_diagnostics';$diagnosticsButton.AutoSize=$true;$diagnosticsButton.Enabled=$false;$buttons.Controls.Add($diagnosticsButton)
 $footer=[Windows.Forms.Label]::new();$footer.Text=T 'copy_details';$footer.Dock='Fill';$main.Controls.Add($footer,0,6)
+function Update-UiLanguage {
+    if (-not $languageSelector.SelectedItem) {return}
+    $choice=$languageSelector.SelectedItem.Code
+    $script:UiLanguage=if($choice -eq 'auto'){$script:AutomaticLanguage}else{$choice}
+    $script:ChangingLanguage=$true
+    try {
+        $form.Text=T 'title'
+        foreach($tab in $tabs.TabPages){$tab.Text=T $tab.Tag}
+        foreach($key in $script:Rows.Keys){$script:Rows[$key].Items[0].Text=T $key}
+        foreach($button in @($fileButton,$outputButton)){$button.Text=T 'browse'}
+        $run.Text=T 'run';$help.Text=T 'help';$detail.Text=T 'details';$footer.Text=T 'copy_details'
+        $loadButton.Text=T 'load_hosts';$candidateButton.Text=T 'name_candidate'
+        $usbStorage.Text=T 'usb_storage_checkbox';$diagnosticsButton.Text=T 'copy_diagnostics'
+        $drive.Items[0]=[pscustomobject]@{Text=(T 'all_volumes');Volume=''}
+        $selected=$actions.SelectedIndex
+        for($i=0;$i -lt $actions.Items.Count;$i++) {
+            $definition=$actions.Items[$i].Definition
+            $actions.Items[$i]=[pscustomobject]@{Text=(T $definition.label);Definition=$definition}
+        }
+        $actions.SelectedIndex=$selected
+        if($script:Current){
+            $description.Text=T $script:Current.description
+            if($script:Current.PSObject.Properties['admin'] -and $script:Current.admin){$description.Text+="`r`n"+(T 'admin_notice')}
+        }
+        foreach($column in $grid.Columns){$column.HeaderText=T $column.Name}
+        if($grid.Visible -and $script:Registry){
+            for($i=0;$i -lt $grid.Rows.Count;$i++){
+                $item=$script:Registry.records[$i]
+                $grid.Rows[$i].Cells['name'].Value=if($item.PSObject.Properties['windows_computer_name'] -and $item.windows_computer_name){$item.windows_computer_name}else{T 'unnamed'}
+                $grid.Rows[$i].Cells['mode'].Value=if($item.PSObject.Properties['boot_mode'] -and $item.boot_mode -eq 'no-gpu-test'){T 'test'}else{T 'normal'}
+            }
+        }
+        $pcSelection=$pcSelector.SelectedIndex
+        for($i=0;$i -lt $pcSelector.Items.Count;$i++){
+            $item=$pcSelector.Items[$i].Record
+            $label=if($script:NameDrafts[$item.hardware_uuid]){$script:NameDrafts[$item.hardware_uuid]}else{T 'unnamed'}
+            $pcSelector.Items[$i]=[pscustomobject]@{Text=($label+'  ['+$item.hardware_uuid+']');Record=$item}
+        }
+        $pcSelector.SelectedIndex=$pcSelection
+    } finally {$script:ChangingLanguage=$false}
+}
 function Show-Message([string]$Text,[string]$Title) { [void][Windows.Forms.MessageBox]::Show($form,$Text,$Title,'OK','Information') }
 function Update-Fields {
-    if (-not $actions.SelectedItem) {return}
+    if ($script:ChangingLanguage -or -not $actions.SelectedItem) {return}
     $script:Current=$actions.SelectedItem.Definition
     $description.Text=(T $script:Current.description)
     if ($script:Current.PSObject.Properties['admin'] -and $script:Current.admin) { $description.Text += "`r`n"+(T 'admin_notice') }
@@ -342,7 +408,7 @@ function Fill-Hosts {
     $generationControl.Value=[Math]::Min($generationControl.Maximum,([long]$script:Registry.generation+1))
 }
 function Update-NameSelection {
-    if ($script:LoadingName) {return}
+    if ($script:LoadingName -or $script:ChangingLanguage) {return}
     $script:LoadingName=$true
     try {
         $script:EditingHostId=if($pcSelector.SelectedItem){[string]$pcSelector.SelectedItem.Record.hardware_uuid}else{''}
@@ -450,7 +516,7 @@ $run.Add_Click({
             }
         }
         if ($id -notin @('Status','Environment') -and [Windows.Forms.MessageBox]::Show($form,($lines -join "`r`n")+"`r`n`r`n"+(T 'confirm_question'),(T 'confirm'),'YesNo','Question','Button2') -ne 'Yes') {return}
-        $run.Enabled=$false;$fields.Enabled=$false;$tabs.Enabled=$false;$actions.Enabled=$false;$form.UseWaitCursor=$true
+        $languageSelector.Enabled=$false;$run.Enabled=$false;$fields.Enabled=$false;$tabs.Enabled=$false;$actions.Enabled=$false;$form.UseWaitCursor=$true
         $grid.Visible=$false;$preview.Visible=$true;$detail.Visible=$false;$preview.Text=T 'working'
         $answer=Invoke-GuiOperation $plan.request
         if ($id -eq 'Name' -and $answer.exit_code -eq 0) {
@@ -472,7 +538,7 @@ $run.Add_Click({
         $script:LastDiagnostics+="`r`n--- GUI exception ---`r`n"+$_.Exception.ToString();$diagnosticsButton.Enabled=$true
         $preview.Visible=$true;$preview.Text=(T 'failure')+"`r`n"+$_.Exception.Message;Show-Message $_.Exception.Message (T 'failure')
     }
-    finally {$run.Enabled=$true;$fields.Enabled=$true;$tabs.Enabled=$true;$actions.Enabled=$true;$form.UseWaitCursor=$false}
+    finally {$languageSelector.Enabled=$true;$run.Enabled=$true;$fields.Enabled=$true;$tabs.Enabled=$true;$actions.Enabled=$true;$form.UseWaitCursor=$false}
 })
 $detail.Add_Click({if ($grid.SelectedRows.Count -and $script:Registry) {$index=$grid.SelectedRows[0].Index;Show-Message ($script:Registry.records[$index]|ConvertTo-Json -Depth 12) (T 'details')}})
 $diagnosticsButton.Add_Click({
@@ -482,13 +548,21 @@ $diagnosticsButton.Add_Click({
     }
 })
 $help.Add_Click({$path=Join-Path $PSScriptRoot ('usage.'+$script:UiLanguage+'.txt');if(-not(Test-Path -LiteralPath $path)){$path=Join-Path $PSScriptRoot 'usage.txt'};Show-Message ([IO.File]::ReadAllText($path)) (T 'help')})
+$languageSelector.Add_SelectedIndexChanged({Update-UiLanguage})
 $tabs.Add_SelectedIndexChanged({Update-Actions});$actions.Add_SelectedIndexChanged({Update-Fields})
 try {
     foreach ($item in @(Get-Volume | Where-Object {$_.DriveLetter})) {
         $letter=[string]$item.DriveLetter+':'
         $label="$letter  $($item.FileSystemLabel)  $([Math]::Round($item.Size/1GB,1)) GiB"
         if ($item.FileSystem -eq 'NTFS') {[void]$drive.Items.Add([pscustomobject]@{Text=$label;Volume=$letter})}
-        if ($item.FileSystem -eq 'FAT32' -and $item.FileSystemLabel -eq 'GPU-LOGS') {[void]$usb.Items.Add([pscustomobject]@{Text=$label;Volume=($letter+'\')})}
+        if ($item.FileSystem -eq 'FAT32' -and $item.FileSystemLabel -eq 'GPU-LOGS') {
+            $mediaProfile='unknown'
+            try {
+                $marker=Get-Content -LiteralPath ($letter+'\usb-config.json') -Raw -Encoding UTF8 | ConvertFrom-Json
+                if ($marker.PSObject.Properties['media_profile'] -and $marker.media_profile -in @('standard','loan')) {$mediaProfile=[string]$marker.media_profile}
+            } catch {}
+            [void]$usb.Items.Add([pscustomobject]@{Text=($label+'  ['+$mediaProfile+']');Volume=($letter+'\')})
+        }
     }
     if ($drive.Items.Count) {$drive.SelectedIndex=0};if($usb.Items.Count -eq 1){$usb.SelectedIndex=0}
 } catch {$preview.Text=$_.Exception.Message}

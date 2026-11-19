@@ -311,7 +311,7 @@ def registration_context(inventory, gpu_bdf, mount, bitlocker_evidence=None, no_
             raise ValueError('GPU BDF does not identify NVIDIA hardware')
         pci_id = '10de:' + (gpu / 'device').read_text().strip().removeprefix('0x').lower()
         if pci_id not in fleet.GPU_NORMAL_IDS:
-            raise ValueError('GPU BDF is not an RTX30 PCI ID supported by this release')
+            raise ValueError('GPU BDF is not a PCI ID supported by this release')
     verification = value.get('bitlocker_verification_method')
     value = fleet.record({**value, 'gpu_bdf': gpu_bdf, 'gpu_pci_id': pci_id})
     return {'record': value, 'hardware': hardware, 'verification': verification,

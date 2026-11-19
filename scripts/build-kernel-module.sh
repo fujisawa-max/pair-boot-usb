@@ -18,7 +18,7 @@ if [ ! -f "$sysroot$headers/Makefile" ]; then
   echo "Error: target headers missing: $sysroot$headers/Makefile" >&2
   exit 1
 fi
-if [ ! -f "$root/vendor/gpu-unlock/kernel/gpu_unlock/Kbuild" ]; then
+if [ ! -f "$root/vendor/gpu-unlock-2.0/kernel/gpu_unlock/Kbuild" ]; then
   echo "Error: upstream module source missing." >&2
   exit 1
 fi
@@ -26,9 +26,20 @@ if ! command -v bwrap >/dev/null 2>&1; then
   echo "Error: bubblewrap is required for the isolated Debian build." >&2
   exit 1
 fi
-mkdir -p "$root/build/modules/$release" "$sysroot/work"
+destination="$root/build/modules/gpu-unlock-2.0.0/$release"
+for directory in "$root/build" "$root/build/modules" "$root/build/modules/gpu-unlock-2.0.0" "$destination"; do
+  if [ -L "$directory" ]; then
+    echo "Error: refusing a symlink module output." >&2
+    exit 1
+  fi
+done
+if [ -e "$destination" ]; then
+  echo "Error: module output exists; preserve it and use a fresh build workspace." >&2
+  exit 1
+fi
+mkdir -p "$destination" "$sysroot/work"
 work=$(mktemp -d "$root/build/module-work.XXXXXX")
-cp -a "$root/vendor/gpu-unlock/kernel/gpu_unlock/." "$work/"
+cp -a "$root/vendor/gpu-unlock-2.0/kernel/gpu_unlock/." "$work/"
 # Only the copied module directory is writable inside this namespace.
 bwrap --unshare-all --die-with-parent --new-session \
   --ro-bind "$sysroot" / --bind "$work" /work \
@@ -41,6 +52,6 @@ if [ ! -s "$work/gpu_unlock.ko" ]; then
   echo "Error: build completed without a nonempty gpu_unlock.ko." >&2
   exit 1
 fi
-cp "$work/gpu_unlock.ko" "$root/build/modules/$release/gpu_unlock.ko"
+cp "$work/gpu_unlock.ko" "$root/build/modules/gpu-unlock-2.0.0/$release/gpu_unlock.ko"
 printf 'Module: %s\nBuild directory: %s\n' \
-  "$root/build/modules/$release/gpu_unlock.ko" "$work"
+  "$root/build/modules/gpu-unlock-2.0.0/$release/gpu_unlock.ko" "$work"

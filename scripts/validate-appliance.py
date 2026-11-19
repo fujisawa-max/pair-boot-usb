@@ -78,22 +78,42 @@ def cpio_entries(path):
     data = path.read_bytes()
     offset = 0
     entries = {}
+    links = {}
+    def resolve_links():
+        for members in links.values():
+            payloads = [(begin, size) for _, begin, size in members if size]
+            if not payloads:
+                continue
+            begin, size = payloads[0]
+            if any(data[other:other+length] != data[begin:begin+size] for other, length in payloads[1:]):
+                raise ValueError('Conflicting cpio hardlink contents')
+            for name, _, _ in members:
+                entries[name] = (begin, size)
     while offset < len(data):
         while offset < len(data) and data[offset] == 0:
             offset += 1
         if offset == len(data):
             break
-        if data[offset:offset+6] not in (b"070701", b"070702"):
+        if offset + 110 > len(data) or data[offset:offset+6] not in (b"070701", b"070702"):
             raise ValueError(f"Unsupported initramfs cpio header at {offset}")
         fields = [int(data[offset+6+8*i:offset+14+8*i], 16) for i in range(13)]
         size, namesize = fields[6], fields[11]
+        if namesize < 1 or offset + 110 + namesize > len(data) or data[offset+110+namesize-1] != 0:
+            raise ValueError('Truncated cpio name')
         name = data[offset+110:offset+110+namesize-1].decode()
         begin = (offset + 110 + namesize + 3) & ~3
         if begin + size > len(data):
             raise ValueError("Truncated cpio entry")
         if name != "TRAILER!!!":
-            entries[name.removeprefix("./")] = (begin, size)
+            name = name.removeprefix('./')
+            entries[name] = (begin, size)
+            if fields[1] & 0o170000 == 0o100000 and fields[4] > 1:
+                links.setdefault((fields[7], fields[8], fields[0]), []).append((name, begin, size))
+        else:
+            resolve_links()
+            links.clear()
         offset = (begin + size + 3) & ~3
+    resolve_links()
     return data, entries
 
 
@@ -267,9 +287,16 @@ def main():
     if data[offset:offset+size] != (Path(__file__).resolve().parents[1] /
                                   'runtime/dracut/95gpu-root/mount-root.sh').read_bytes():
         raise ValueError('Initramfs console progress hook differs from source')
-    for name in ("booter_load_ga102.bin", "gsp_ga10x.bin", "gsp_boot_ga102.bin", "gsp_boot_desc_ga102.bin", "v67-ga102-610.43.03.bin"):
+    firmware_lock = json.loads((Path(__file__).resolve().parents[1] / 'inputs/firmware-output.json').read_text())
+    for name, expected in firmware_lock['files'].items():
+        if not name.endswith('.bin'):
+            continue
         if not any(path.endswith("/gpu-unlock/610.43.03/" + name) for path in entries):
             raise ValueError(f"Missing firmware: {name}")
+        path = next(path for path in entries if path.endswith('/gpu-unlock/610.43.03/' + name))
+        offset, size = entries[path]
+        if size != expected['size'] or hashlib.sha256(data[offset:offset+size]).hexdigest() != expected['sha256']:
+            raise ValueError(f'Initramfs firmware content mismatch: {name}')
     if not any("_ctypes" in path and path.endswith(".so") for path in entries):
         raise ValueError("Python ctypes extension missing")
     menu_text = (tree / "boot/grub/grub.cfg").read_text()
@@ -299,7 +326,7 @@ def main():
         if data[offset:offset+size] != (Path(__file__).resolve().parents[1] / "runtime/gpu-diagnostic.py").read_bytes():
             raise ValueError("Diagnostic collector differs from reviewed source")
     else:
-        if "set default=1\n" not in menu_text or menu_text.index('menuentry "Normal / baseline"') > menu_text.index('menuentry "gpu-unlock enabled"'):
+        if "set default=1\n" not in menu_text or menu_text.index('menuentry "Normal / baseline"') > menu_text.index('menuentry "gpu-unlock enabled / RTX 20/40 experimental"'):
             raise ValueError("gpu-unlock menu entry is not the default")
         if len(kernel_lines) != (3 if manifest.get("shared_registry") else 2) or kernel_lines[1] != kernel_lines[0] + " gpu_unlock.targets=$gpu_targets":
             raise ValueError("Boot entries differ beyond targets")
@@ -371,6 +398,15 @@ def main():
         for helper in ('boot-banner.py', 'pair-session.py'):
             if 'Type: regular' not in debug('stat /usr/lib/gpu-root/' + helper):
                 raise ValueError('PAIR console helper missing: ' + helper)
+        if inside.get('console_layout') is not None:
+            pair_unit = debug('cat /usr/lib/systemd/system/gpu-pair.service')
+            if (inside['console_layout'] != {'logs': '/dev/tty1', 'maintenance': '/dev/tty2', 'pair': '/dev/tty3'}
+                    or 'TTYPath=/dev/tty3' not in pair_unit or 'console-layout.py logs' not in pair_unit
+                    or any('console=tty1' not in line for line in kernel_lines)):
+                raise ValueError('PAIR and log consoles are not separated')
+            for terminal in (1, 2, 3):
+                if 'Fast link dest: "/dev/null"' not in debug(f'stat /etc/systemd/system/getty@tty{terminal}.service'):
+                    raise ValueError('Unexpected getty on reserved console')
         if 'Type: regular' not in debug('stat /usr/bin/systemd-run'):
             raise ValueError('Transient session launcher missing')
         pair_runtime_checked = True

@@ -12,7 +12,8 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 BASE = ROOT / '.cache/repositories'
 LOCKS = ('debian-build-inputs.json', 'debian-runtime-inputs.json', 'debian-build-tools-inputs.json',
-         'nvidia-driver-inputs.json', 'candidate-network-inputs.json', 'debian-support-inputs.json')
+         'nvidia-driver-inputs.json', 'candidate-network-inputs.json', 'debian-support-inputs.json',
+         'updater-inspection-tools.json')
 
 
 def fields(text):

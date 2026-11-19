@@ -104,18 +104,20 @@ You do not need to give an agent your private key or passphrase.
 After signing is complete, run:
 
 ```sh
-python scripts/build-usb.py image
+python scripts/build-usb.py image --update-bundle --update-sequence 1
 ```
 
 To use a signed module bundle with a different name:
 
 ```sh
-python scripts/build-usb.py image --signed-modules build/signed-modules-update
+python scripts/build-usb.py image --signed-modules build/signed-modules-update --update-bundle --update-sequence 1
 ```
 
 The script checks consistency between the signed bundle and the original modules, verifies that the payloads are unchanged, and validates the CMS signatures using the selected certificate. It then assembles the GUI, an empty shared registry, MOK management tools, a 6 GiB `root.img`, a 1 GiB `state.img` for the initial state, initramfs, and signed EFI components. The signed bundle, GUI, and MOK tools use the same public certificate.
 
 The final outputs are `build/usb-image/gpu-linux-usb.img`, `SHA256SUMS`, and validation reports. Validation covers GPT, FAT/ext4 filesystems, initramfs, the state template's SHA hash and initial contents, image contents, and partition readback. Logs are saved as files such as `build/image-01.log`.
+
+With `--update-bundle`, the build also generates `build/usb-image-update-bundle/manifest.json`, individual management files, and inspection evidence for partial updates. Start `--update-sequence` at 1 and increase it for subsequent bundles in the same distribution series. To accept an older USB, explicitly select and inspect its previous build artifacts. See [Update bundle generation](update-bundle.md). Applying a bundle requires a compatible updater and a separately trusted LOGS helper. Omit `--update-bundle` if you only need the whole image.
 
 For now, user-facing Markdown guides bundled on the USB use Japanese versions. The copies omit `.ja` from filenames and remove language-switch links, and links between guides are rewritten to the bundled filenames. Existing GUI references such as `QUICK-START.md` and `DETAILS.md` are retained. Linked guides are also copied into `GPU-LOGS/tools/` and Fedora's `tools/` directory. Repository originals and third-party license notices are left unchanged.
 
@@ -128,7 +130,7 @@ If you want to use the remaining space for manually distributing models, create 
 To build a new root while preserving previous outputs, advance the project version for distribution and specify fresh output directories:
 
 ```sh
-python scripts/build-usb.py image \
+python scripts/build-usb.py image --update-bundle --update-sequence 2 \
   --appliance-output build/appliance-next \
   --tools-output build/shared-usb-tools-next \
   --fedora-output build/fedora-live-tools-next \
@@ -185,10 +187,16 @@ Version 0.9.2 uses the project version to identify its root image. It also recog
 
 `config/release.json` defines the project version, boot ABI, and state schema. The root image uses the same project version. Advance the project version when distributing a new root image. Boot stops if the same release has a different distribution SHA-256. Regeneration changes the SHA through UUIDs and other details, so retain a distributed root and reuse it when assembling additional USB images. Legacy root revisions are read to recognize existing 0.9.1 roots.
 
-Version 0.9.3 writes registry schema 2 with Windows PC names and can read and convert schema 1. Content updates use `generation`. Schema 2 requires updated boot files. This update also includes the initramfs inside root, so both project and root releases advance to 0.9.3; state schema remains 1. See [Management tools (Japanese)](management-ui.md).
+Version 0.99.0 uses project/root version 0.99.0. gpu-unlock 2.0, additional firmware, and console separation require a new root and owner signing of the new module. Registry schema 2, state schema 1, and boot ABI 1 remain unchanged; schema 1 can still be read and converted. Existing PCs do not need re-registration if their hardware and storage mappings are unchanged. Registry content updates use `generation`. See [Management tools (Japanese)](management-ui.md).
 
 A component inventory summarizing the versions of external inputs is placed at `GPU-LOGS/MEDIA-INFO.txt` and in the root directory of the Fedora partition. It lists the Debian, kernel, gpu-unlock commit, NVIDIA, PAIR, llama.cpp, and Fedora versions. This describes the media and is distinct from information about the currently running root. The banner reads the version from metadata in the same format inside the root, and displays Normal/Unlock/TEST based on the boot state.
 
 The boot ABI defines the contract between initramfs, root, and state. Version checks cover not only the kernel but also the GPU drivers and gpu-unlock. When development changes compatibility for startup, shutdown, or settings persistence, review the ABI and state schema and ensure that incompatible combinations are rejected.
 
 Verified areas and remaining checks are summarized in [TODO (Japanese)](../TODO.md).
+
+## Standard and loan media
+
+See [media profiles and portable management tools (Japanese)](media-profiles.md) for profile selection, shared root reuse, and the PC management package. The loan updater contract is a proposal and requires a compatible updater.
+
+Version 0.99.1 updates the root with the early kernel-console routing fix. Reuse a verified signing bundle only together with its exact original unsigned inputs and matching pinned sources, build definitions, kernel, and signing identity. NVIDIA embeds build timestamps, so a rebuild can differ even from identical sources. Never bypass that mismatch; if the original inputs are unavailable, the owner must sign the rebuilt modules. Build the 0.99.1 root once and reuse it for both media profiles.

@@ -1,0 +1,74 @@
+{
+  "schema": 1,
+  "upstream_commit": "7eb51bccae0a0b7e599e084d971170e9a1e82d0c",
+  "files": {
+    "NVIDIA-LICENSE": {
+      "size": 22653,
+      "sha256": "c692fb14ad4f499c6aee1b9e144e6905148c420e6225b17cb2937366c1e507ad"
+    },
+    "booter_load_ad102.bin": {
+      "sha256": "6ee05b20e1dc244c08c052f36ef28469b8d09f4955d1fe33e48a179e11a7fd49",
+      "size": 57672
+    },
+    "booter_load_ga100.bin": {
+      "sha256": "b6e70d37fdbd23f3dee008165d9b3510e8faeb32a60a1689fb098e18d0c721bf",
+      "size": 60616
+    },
+    "booter_load_ga102.bin": {
+      "sha256": "056cbc064a888f80717726c54d7f64fcd68044d123870c95a74f37f4975dcaa4",
+      "size": 61256
+    },
+    "booter_load_tu102.bin": {
+      "sha256": "51507de61777cf46f3703a084cdfa896c21f6bc0c8af8f245bd09b2e9c49bf54",
+      "size": 59224
+    },
+    "falcon_loader.bin": {
+      "sha256": "f21f1cfbb8fffa8067685314367fc4c50f3f84dd99eda7c19db4292d9269b9d9",
+      "size": 768
+    },
+    "gsp_boot_ad102.bin": {
+      "sha256": "45d6335a8185d6ff13e8d1484cea73f68d3d13aa1c19dc080ed1c3482dd5bac0",
+      "size": 36864
+    },
+    "gsp_boot_desc_ad102.bin": {
+      "sha256": "83f8f3f1f5f9496e0ea8fc7103c2beb64d0b6de2f5ffe725f13514de5a95fa42",
+      "size": 84
+    },
+    "gsp_boot_desc_ga100.bin": {
+      "sha256": "9e7cca2cfdc5ce601b0adba39967850046108df6c2d23fff95578ca3f0ccbe01",
+      "size": 76
+    },
+    "gsp_boot_desc_ga102.bin": {
+      "sha256": "cc5a3fc1f4c47f2fe107b1b68f0176d8a448e6dec84b575e5560ccef5262bf15",
+      "size": 84
+    },
+    "gsp_boot_desc_tu102.bin": {
+      "sha256": "9e7cca2cfdc5ce601b0adba39967850046108df6c2d23fff95578ca3f0ccbe01",
+      "size": 76
+    },
+    "gsp_boot_ga100.bin": {
+      "sha256": "b80c6623f09df2f155ab335095575c637aef5e66cba6542e047422a6bab094e4",
+      "size": 4096
+    },
+    "gsp_boot_ga102.bin": {
+      "sha256": "3df651acb174fd5f5561a1996965b192f50c5d763168446ed0d4ead19d895768",
+      "size": 24576
+    },
+    "gsp_boot_tu102.bin": {
+      "sha256": "8765694cd38beaa4e2b8b1b83a31fb7aee6cb9d8b7c6bc7a86e6d931a3a056c2",
+      "size": 4096
+    },
+    "gsp_ga10x.bin": {
+      "size": 84277400,
+      "sha256": "572373620a37418f24dc16b5031c39338778c3257e48e8408de9a57291b24f3a"
+    },
+    "gsp_tu10x.bin": {
+      "size": 29352832,
+      "sha256": "73065619db9ec921d19fc4e519dd04d91a9199b525eaca9b257b89fb8c5ec52c"
+    },
+    "sec2_bl_tu102.bin": {
+      "sha256": "f21f1cfbb8fffa8067685314367fc4c50f3f84dd99eda7c19db4292d9269b9d9",
+      "size": 768
+    }
+  }
+}

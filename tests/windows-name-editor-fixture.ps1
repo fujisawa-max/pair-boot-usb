@@ -1,5 +1,6 @@
 param([string]$GuiDirectory)
 $ErrorActionPreference='Stop'
+$script:ChangingLanguage=$false
 Set-StrictMode -Version Latest
 $tokens=$null;$errors=$null
 $ast=[Management.Automation.Language.Parser]::ParseFile((Join-Path $GuiDirectory 'windows-gui.ps1'),[ref]$tokens,[ref]$errors)

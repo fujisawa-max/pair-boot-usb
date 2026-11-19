@@ -1,0 +1,144 @@
+{
+  "contract_version": 1,
+  "contract_revision": 1,
+  "contract_lock_sha256": "49979cafed425960a0c3c53e90cc2799de6453076c82eda1574c781f890db179",
+  "helper_protocol": 1,
+  "kind": "pair-boot-usb-update",
+  "minimum_updater": "1.0.0",
+  "layout": {
+    "id": "pair-r3-gpt512-v1",
+    "sha256": "93e86e3527b803a6955fd11749b107806f9cdc96f8caf64eb750e71b2d41719b"
+  },
+  "producer": {
+    "id": "pair-boot-usb",
+    "version": "0.99.0",
+    "commit": "1111111111111111111111111111111111111111",
+    "worktree_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+    "verification_report": {
+      "path": "reports/verified.json",
+      "bytes": 20,
+      "sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+    }
+  },
+  "update_sequence": 1,
+  "release": {
+    "version": "0.99.0",
+    "root_version": "0.99.0",
+    "root_revision": 0,
+    "boot_abi": 1,
+    "state_schema": 1,
+    "registry_schema": 2,
+    "kernel": "synthetic-kernel-v2",
+    "certificate_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+    "master_uuid": "11111111-1111-4111-8111-111111111111",
+    "master_json_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+    "root_sha256": "3333333333333333333333333333333333333333333333333333333333333333"
+  },
+  "accepted_sources": [
+    {
+      "id": "legacy-r3-example",
+      "kind": "legacy-r3",
+      "release": {
+        "version": "0.9.1",
+        "root_version": "0.9.1-shared",
+        "root_revision": 3,
+        "boot_abi": 1,
+        "state_schema": 1,
+        "registry_schema": 1,
+        "kernel": "synthetic-kernel-v1",
+        "certificate_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+        "master_uuid": "11111111-1111-4111-8111-111111111111",
+        "master_json_sha256": "4444444444444444444444444444444444444444444444444444444444444444",
+        "root_sha256": "5555555555555555555555555555555555555555555555555555555555555555"
+      },
+      "update_sequence": 0,
+      "prior_manifest_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "managed_files": [
+        {
+          "path": "tools/fleet.py",
+          "bytes": 20,
+          "sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+        }
+      ]
+    },
+    {
+      "id": "initial-unified-example",
+      "kind": "built-media",
+      "release": {
+        "version": "0.99.0",
+        "root_version": "0.99.0",
+        "root_revision": 0,
+        "boot_abi": 1,
+        "state_schema": 1,
+        "registry_schema": 2,
+        "kernel": "synthetic-kernel-v2",
+        "certificate_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+        "master_uuid": "11111111-1111-4111-8111-111111111111",
+        "master_json_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+        "root_sha256": "3333333333333333333333333333333333333333333333333333333333333333"
+      },
+      "update_sequence": 0,
+      "prior_manifest_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "managed_files": [
+        {
+          "path": "tools/fleet.py",
+          "bytes": 20,
+          "sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+        }
+      ]
+    }
+  ],
+  "image": {
+    "path": "images/update.img",
+    "bytes": 8390705152,
+    "sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+  },
+  "partitions": [
+    {
+      "role": "efi",
+      "bytes": 67108864,
+      "sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+    },
+    {
+      "role": "master",
+      "bytes": 4831838208,
+      "sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+    },
+    {
+      "role": "fedora",
+      "bytes": 3221225472,
+      "sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+    }
+  ],
+  "logical_inventory": [
+    {
+      "role": "efi",
+      "path": "synthetic-evidence.txt",
+      "bytes": 20,
+      "sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+    },
+    {
+      "role": "master",
+      "path": "synthetic-evidence.txt",
+      "bytes": 20,
+      "sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+    },
+    {
+      "role": "fedora",
+      "path": "synthetic-evidence.txt",
+      "bytes": 20,
+      "sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+    }
+  ],
+  "managed_files": [
+    {
+      "path": "tools/fleet.py",
+      "payload": {
+        "path": "payload/tools/fleet.py",
+        "bytes": 20,
+        "sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+      }
+    }
+  ],
+  "remove_managed_files": []
+}

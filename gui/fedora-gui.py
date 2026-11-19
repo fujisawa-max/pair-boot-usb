@@ -15,7 +15,37 @@ import sys
 HERE = Path(__file__).resolve().parent
 HELP_PROCESS = None
 UI = runpy.run_path(str(HERE / 'ui-model.py'))
-T = UI['text']
+UI_SELECTION = 'auto'
+
+
+def ui_language():
+    return UI['language'](selection=UI_SELECTION)
+
+
+def T(key):
+    return UI['text'](key, ui_language())
+
+
+def dialog_environment():
+    # LANGUAGE is ignored by gettext in a C locale. Use the UTF-8 C locale
+    # for explicit selections so that Zenity also translates its own buttons.
+    env = {**os.environ, 'LANGUAGE': ui_language()}
+    if UI_SELECTION != 'auto':
+        env.update(LC_ALL='C.UTF-8', LANG='C.UTF-8')
+    return env
+
+
+def select_language():
+    global UI_SELECTION, HELP_PROCESS
+    selected = select_id(T('language'), [
+        {'id': item, 'label': 'language_' + item} for item in ('auto', 'ja', 'en')])
+    if selected not in ('auto', 'ja', 'en'):
+        raise ValueError('Unknown UI language selection')
+    UI_SELECTION = selected
+    if HELP_PROCESS is not None and HELP_PROCESS.poll() is None:
+        HELP_PROCESS.terminate()
+        HELP_PROCESS.wait()
+    HELP_PROCESS = None
 
 
 class Cancelled(Exception):
@@ -24,7 +54,7 @@ class Cancelled(Exception):
 
 def dialog(*args):
     result = subprocess.run(['zenity', *args], capture_output=True, text=True,
-                            env={**os.environ, 'LANGUAGE': UI['language']()})
+                            env=dialog_environment())
     if result.returncode == 1:
         if '--extra-button=' + T('help') in args and result.stdout.rstrip('\n') == T('help'):
             return T('help')
@@ -78,7 +108,8 @@ def gpu_choices(sysfs=Path('/sys/bus/pci/devices')):
 def busy():
     progress = subprocess.Popen(['zenity', '--progress', '--pulsate', '--auto-close', '--no-cancel',
                                  '--title=' + T('working'), '--text=' + T('working')],
-                                stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, text=True)
+                                stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, text=True,
+                                env=dialog_environment())
     try:
         yield
     finally:
@@ -185,7 +216,7 @@ def show_usage():
     global HELP_PROCESS
     if HELP_PROCESS is not None and HELP_PROCESS.poll() is None:
         return
-    path = HERE / ('usage.' + UI['language']() + '.txt')
+    path = HERE / ('usage.' + ui_language() + '.txt')
     if not path.is_file():
         path = HERE / 'usage.txt'
     if not path.is_file():
@@ -194,7 +225,7 @@ def show_usage():
         ['zenity', '--text-info', '--title=' + T('help'),
          '--filename=' + str(path), '--width=760', '--height=650'],
         stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-        start_new_session=True)
+        start_new_session=True, env=dialog_environment())
 
 
 def select_id(title, entries, help_button=False):
@@ -266,7 +297,7 @@ def name_update(mount, request):
 def main():
     if not shutil.which('zenity'):
         sys.exit('Zenity is required; use the CLI instructions.')
-    categories = [{'id': item, 'label': item} for item in ('registration', 'registry', 'mok', 'maintenance')]
+    categories = [{'id': item, 'label': item} for item in ('registration', 'registry', 'mok', 'maintenance', 'language')]
     while True:
         try:
             try:
@@ -275,6 +306,12 @@ def main():
                 return
             if category is None:
                 show_usage()
+                continue
+            if category == 'language':
+                try:
+                    select_language()
+                except Cancelled:
+                    pass
                 continue
             try:
                 entries = UI['operations']('fedora', category)
@@ -316,7 +353,7 @@ def main():
             if operation in ('register', 'register-test'):
                 test = operation == 'register-test'
                 inventory = pick_json(mount, T('inventory'))
-                gpu = None if test else choose(T('gpu'), gpu_choices())
+                gpu = None if test else choose(T('gpu') + '\n' + T('gpu_experimental'), gpu_choices())
                 evidence_mode = select_id(T('evidence'), [{'id': 'embedded', 'label': 'embedded'}, {'id': 'separate', 'label': 'separate'}])
                 request = {'operation': 'registration-preview', 'inventory': inventory, 'gpu_bdf': gpu, 'no_gpu_test': test}
                 if evidence_mode == 'separate':

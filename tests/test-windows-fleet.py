@@ -39,6 +39,16 @@ def host(test=False, mbr=False):
 
 @unittest.skipUnless(Path(PWSH).is_file(), 'Optional fixed PowerShell fixture runner needed')
 class WindowsFleetTests(unittest.TestCase):
+    def test_manual_language_changes_preserve_pending_inputs(self):
+        result = subprocess.run([PWSH, '-NoProfile', '-NonInteractive', '-File',
+                                 str(ROOT / 'tests/windows-language-fixture.ps1'),
+                                 '-GuiDirectory', str(ROOT / 'gui')], capture_output=True, text=True,
+                                env={**os.environ, 'POWERSHELL_TELEMETRY_OPTOUT': '1',
+                                     'DOTNET_SYSTEM_GLOBALIZATION_INVARIANT': '1',
+                                     'XDG_CACHE_HOME': str(ROOT / '.cache/powershell-xdg'),
+                                     'XDG_CONFIG_HOME': str(ROOT / '.cache/powershell-config')})
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
     def test_name_editor_retains_all_pc_drafts_and_plans_one_batch(self):
         result = subprocess.run([PWSH, '-NoProfile', '-NonInteractive', '-File',
                                  str(ROOT / 'tests/windows-name-editor-fixture.ps1'),
@@ -325,18 +335,23 @@ if ($controls -lt 10) {throw 'GUI initialization was not inspected'}
 
     def test_mixed_gpu_and_test_hosts_generate_same_grub_environment_as_python(self):
         cpu = host(test=True)
-        gpu = host()
-        gpu['hardware_uuid'] = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee'
-        gpu['storage_directory'] = 'GPU-Linux-normal'
-        registry = self.write('mixed.json', [cpu, gpu], generation=3)
+        records = [cpu]
+        for index, pci in enumerate(('10de:2504', '10de:1e04', '10de:2684', '10de:2582'), 1):
+            gpu = host()
+            gpu.update(hardware_uuid=f'{index:08x}-bbbb-cccc-dddd-eeeeeeeeeeee',
+                       gpu_pci_id=pci, storage_directory=f'GPU-Linux-{index}')
+            records.append(gpu)
+        registry = self.write('mixed.json', records, generation=3)
         usb = self.usb()
         self.call('Deploy', Inputs=[str(registry)], UsbRoot=str(usb))
         reference = self.base / 'reference'; reference.mkdir()
         (reference / 'usb-config.json').write_bytes((usb / 'usb-config.json').read_bytes())
         fleet.deploy(fleet.load(registry), reference)
-        for record in (cpu, gpu):
+        for record in records:
             name = 'gpu-config/hosts/' + record['hardware_uuid'] + '.env'
             self.assertEqual((usb / name).read_bytes(), (reference / name).read_bytes())
+            if record['gpu_pci_id'] in ('10de:1e04', '10de:2684'):
+                self.assertIn(b'gpu_targets=0000:01:00.0\ngpu_default=0\n', (usb / name).read_bytes())
 
     def test_unknown_schema_is_rejected_while_root_release_differences_are_accepted(self):
         old = self.write('old.json', [host(test=True)], version='0.9.0-shared')

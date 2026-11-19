@@ -24,14 +24,14 @@ def cpio(files):
 
 
 def stage(config, fedora, certificate):
-    for path in (config, fedora):
+    for path in ([config, fedora] if fedora is not None else [config]):
         if path.is_symlink() or not path.resolve().is_relative_to(ROOT / 'build') or not path.is_dir():
             raise ValueError('Generated build/ staging directories required')
     if certificate.is_symlink() or not certificate.is_file():
         raise ValueError('Ordinary public DER certificate required')
     subprocess.run(['openssl', 'x509', '-inform', 'DER', '-in', str(certificate), '-noout'], check=True, capture_output=True)
     pin = {'schema': 1, 'certificate_sha256': hashlib.sha256(certificate.read_bytes()).hexdigest()}
-    for tree in (config, fedora):
+    for tree in ([config, fedora] if fedora is not None else [config]):
         gui = tree / 'gui'
         if gui.exists():
             raise ValueError('GUI staging must be fresh')
@@ -43,6 +43,8 @@ def stage(config, fedora, certificate):
         (tree / 'start-windows-gui.cmd').write_bytes(b'@echo off\r\ncall "%~dp0gui\\start-windows-gui.cmd"\r\n')
         (tree / 'start-fedora-gui.sh').write_text('#!/bin/sh\nexec /usr/bin/bash "$(dirname -- "$0")/gui/start-fedora-gui.sh"\n')
         shutil.copy2(ROOT / 'gui/gpu-linux.desktop', tree / 'gpu-linux.desktop')
+    if fedora is None:
+        return pin
     files = [
         ('var/lib/dracut/hooks/pre-pivot/99-gpu-gui-launchers.sh', (ROOT / 'gui/fedora-launchers-hook.sh').read_bytes(), stat.S_IFREG | 0o755),
         ('usr/lib/gpu-linux-launchers-runtime.sh', (ROOT / 'gui/fedora-launchers-runtime.sh').read_bytes(), stat.S_IFREG | 0o755),

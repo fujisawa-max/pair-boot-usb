@@ -1,6 +1,7 @@
 """Repair only generated ext4 files; no mount, physical storage or power calls."""
 import importlib.util
 import json
+import re
 from pathlib import Path
 import runpy
 import subprocess
@@ -152,10 +153,10 @@ class RootMaintenanceTests(unittest.TestCase):
             helper['apply_upgrade'](api, self.image, payload, {'sha256': '0' * 64}, self.parent)
 
 
-class Rtx30PolicyTests(unittest.TestCase):
+class GpuPolicyTests(unittest.TestCase):
     def test_policy_sources_and_legacy_registry_conversion(self):
         fleet = runpy.run_path(str(ROOT / 'runtime/fleet-registry.py'))
-        policy = json.loads((ROOT / 'config/rtx30-gpu-policy.json').read_text())
+        policy = json.loads((ROOT / 'config/gpu-policy.json').read_text())
         self.assertEqual(fleet['GPU_NORMAL_IDS'], set(policy['products']))
         self.assertEqual(fleet['GPU_UNLOCK_IDS'], set(policy['unlock_ids']))
         self.assertIn('10de:2484', fleet['GPU_UNLOCK_IDS'])
@@ -171,16 +172,22 @@ class Rtx30PolicyTests(unittest.TestCase):
         self.assertIn(b'gpu_targets=unsupported', fleet['environment'](host['gpu_bdf'], False))
         self.assertIn(b'gpu_default=0', fleet['environment'](host['gpu_bdf'], True, True))
         powershell = (ROOT / 'toolkit/fleet.ps1').read_text()
-        for pci in policy['products']:
-            self.assertIn(pci, powershell)
+        for variable, expected in (('SupportedGpuIds', policy['products']), ('UnlockGpuIds', policy['unlock_ids'])):
+            literal = re.search(r'^\$' + variable + r' = @\(([^\n]+)\)$', powershell, re.M)[1]
+            self.assertEqual(set(re.findall(r"'([^']+)'", literal)), set(expected))
+        lock = json.loads((ROOT / 'inputs/gpu-unlock-source.json').read_text())
+        self.assertEqual(policy['gpu_unlock_commit'], lock['commit'])
 
-    def test_gui_offers_rtx30_but_not_other_generations(self):
+    def test_gui_offers_supported_rtx20_30_40_but_not_rtx50_or_other_vendors(self):
         gui = runpy.run_path(str(ROOT / 'gui/fedora-gui.py'))
         with tempfile.TemporaryDirectory() as folder:
             sysfs = Path(folder)
-            for index, pci in enumerate(('2504', '2484', '2582', '2684')):
+            for index, pci in enumerate(('2504', '2484', '2582', '2684', '1e04', '2b85')):
                 device = sysfs / f'0000:0{index + 1}:00.0'
                 device.mkdir()
                 (device / 'vendor').write_text('0x10de')
                 (device / 'device').write_text('0x' + pci)
-            self.assertEqual(gui['gpu_choices'](sysfs), ['0000:01:00.0', '0000:02:00.0', '0000:03:00.0'])
+            other = sysfs / '0000:07:00.0'; other.mkdir()
+            (other / 'vendor').write_text('0x1002'); (other / 'device').write_text('0x2684')
+            self.assertEqual(gui['gpu_choices'](sysfs), [f'0000:0{i}:00.0' for i in range(1, 6)])
+        self.assertTrue({'10de:1e04', '10de:2684'} <= runpy.run_path(str(ROOT / 'runtime/fleet-registry.py'))['GPU_UNLOCK_IDS'])

@@ -168,7 +168,7 @@ def main():
     if args.version != RELEASE["version"]:
         raise ValueError("Root build version must match config/release.json")
     image_info = {**RELEASE, "schema": 1, "version": args.version, "kernel_release": KERNEL,
-                  "state_schema": 1, "gpu_unlock_commit": "af28cbbfd3d922a659227ecfb7369adfd924cf03",
+                  "state_schema": 1, "gpu_unlock_commit": RELEASE['components']['gpu-unlock commit'],
                   "nvidia_driver_installed": bool(pilot), "torch_installed": False,
                   "status": "pilot-components-staged-not-hardware-qualified" if pilot else
                             "storage-and-benchmark-prototype-not-hardware-qualified"}
@@ -180,14 +180,15 @@ def main():
         image_info["secure_boot_artifacts"] = "signed-shim-grub-kernel-and-six-gpu-modules-not-hardware-qualified"
     image_info["usb_ready_message_staged"] = True
     if args.local_console:
-        image_info["local_maintenance_console"] = "passwordless physical tty2; PAIR on tty1; experimental candidate"
+        image_info['console_layout'] = {'logs': '/dev/tty1', 'maintenance': '/dev/tty2', 'pair': '/dev/tty3'}
+        image_info["local_maintenance_console"] = "passwordless physical tty2; PAIR on tty3; logs on tty1"
         image_info["local_pair_menu"] = "startup-and-exit-v1"
     if args.network_overlay:
         image_info["dns_service"] = "systemd-resolved with DHCP DNS and system D-Bus"
     write(stage, "/usr/lib/gpu-root/image.json", json.dumps(image_info, indent=2) + "\n")
     shutil.copy2(ROOT / "runtime/initialize-identity.py", stage / "usr/lib/gpu-root/initialize-identity.py")
     shutil.copy2(ROOT / "runtime/announce-usb-ready.py", stage / "usr/lib/gpu-root/announce-usb-ready.py")
-    for helper in ("pair-console.py", "boot-banner.py", "pair-session.py", "release-info.py"):
+    for helper in ("pair-console.py", "boot-banner.py", "pair-session.py", "release-info.py", "console-layout.py"):
         shutil.copy2(ROOT / "runtime" / helper, stage / "usr/lib/gpu-root" / helper)
     shutil.copy2(ROOT / "runtime/prepare-shutdown.py", stage / "usr/lib/gpu-root/prepare-shutdown.py")
     if args.pair_runtime:
@@ -210,7 +211,10 @@ def main():
         symlink(stage, "/etc/systemd/system/sockets.target.wants/dbus.socket", "/usr/lib/systemd/system/dbus.socket")
         symlink(stage, "/etc/resolv.conf", "/run/systemd/resolve/stub-resolv.conf")
     if args.local_console:
-        symlink(stage, "/etc/systemd/system/getty@tty1.service", "/dev/null")
+        for terminal in (1, 2, 3):
+            symlink(stage, f"/etc/systemd/system/getty@tty{terminal}.service", "/dev/null")
+        write(stage, "/etc/systemd/journald.conf.d/20-pair-console.conf",
+              "[Journal]\nStorage=volatile\nRuntimeMaxUse=64M\nRuntimeKeepFree=32M\nForwardToConsole=no\nForwardToWall=no\n")
         symlink(stage, "/etc/systemd/system/multi-user.target.wants/gpu-root-console.service",
                 "/usr/lib/systemd/system/gpu-root-console.service")
         symlink(stage, "/etc/systemd/system/multi-user.target.wants/gpu-pair.service",
@@ -230,7 +234,7 @@ def main():
     module_dir = stage / f"usr/lib/modules/{KERNEL}/updates"
     module_dir.mkdir(parents=True, exist_ok=True)
     shutil.copy2((args.signed_modules / "gpu_unlock.ko") if signed else
-                 (ROOT / f"build/modules/{KERNEL}/gpu_unlock.ko"), module_dir)
+                 (ROOT / f"build/modules/gpu-unlock-2.0.0/{KERNEL}/gpu_unlock.ko"), module_dir)
     if signed:
         nvidia_dir = module_dir / "dkms"
         for name in ("nvidia", "nvidia-modeset", "nvidia-drm", "nvidia-uvm", "nvidia-peermem"):
@@ -238,10 +242,10 @@ def main():
             if not destination.is_file() or destination.is_symlink():
                 raise ValueError(f"pilot source lacks ordinary NVIDIA module: {destination}")
             shutil.copy2(args.signed_modules / (name + ".ko"), destination)
-    shutil.copytree(ROOT / "build/assets", stage / "usr/lib/firmware/gpu-unlock/610.43.03", dirs_exist_ok=True)
+    shutil.copytree(ROOT / "build/assets-gpu-unlock-2.0.0", stage / "usr/lib/firmware/gpu-unlock/610.43.03", dirs_exist_ok=True)
     run("depmod", "-b", stage, KERNEL)
-    shutil.copytree(ROOT / "vendor/gpu-unlock/licenses", stage / "usr/share/licenses/gpu-unlock", dirs_exist_ok=True)
-    shutil.copy2(ROOT / "vendor/gpu-unlock/firmware/NOTICE.md", stage / "usr/share/licenses/gpu-unlock/NOTICE.md")
+    shutil.copytree(ROOT / "vendor/gpu-unlock-2.0/licenses", stage / "usr/share/licenses/gpu-unlock", dirs_exist_ok=True)
+    shutil.copy2(ROOT / "vendor/gpu-unlock-2.0/firmware/NOTICE.md", stage / "usr/share/licenses/gpu-unlock/NOTICE.md")
     moddir = stage / "usr/lib/dracut/modules.d/95gpu-root"
     shutil.copytree(ROOT / "runtime/dracut/95gpu-root", moddir)
     shutil.copy2(ROOT / "runtime/gpu-root.py", moddir / "gpu-root.py")

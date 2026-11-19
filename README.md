@@ -6,7 +6,7 @@ A build tool for creating a **USB-bootable Linux environment optimized for LLM i
 
 This tool allows you to safely spin up a dedicated inference node using only the USB drive and a designated storage folder, **without destroying or altering your existing Windows environment**.
 
-For supported GPUs (primarily the RTX 30 series), it also features an "Unlock Boot" option utilizing `gpu-unlock` for enhanced performance acceleration.
+Supported RTX 20, 30, and 40 GPUs can also use "Unlock Boot" with `gpu-unlock` 2.0. RTX 20/40 Unlock is experimental upstream. Start with Normal mode and verify operation on your hardware.
 
 ## Workflow Overview
 
@@ -43,6 +43,7 @@ English versions are linked where available. Links marked (Japanese) lead to Jap
 3. **[Quick Start Guide](docs/quick-start.md)**: Gathering system info on Windows, enrolling MOK/PC registration on Fedora, and launching PAIR BOOT.
 
 ### Operation & Integration
+* **[Partial Update Manifest](docs/update-bundle.md)**: Generate an updater bundle and explicitly identify compatible source media.
 * **[Windows and Fedora Management Tools (Japanese)](docs/management-ui.md)**: Operation categories, PC names, and legacy registry conversion.
 * **[Operation, Models, and Recovery (Japanese)](docs/user-guide.md)**: How to deploy LLM models, proper shutdown/USB removal procedures, and troubleshooting.
 * **[Ledger Management via Windows (Japanese)](docs/windows-fleet.md)**: Procedures for consolidating registration data from multiple PCs onto a single Windows machine.
@@ -75,7 +76,7 @@ English versions are linked where available. Links marked (Japanese) lead to Jap
 
 ## Supported Specifications
 
-* **Target GPUs**: Primarily NVIDIA RTX 30 series (Normal/Unlock compatibility varies depending on the specific model).
+* **Target GPUs**: Listed NVIDIA RTX 20, 30, and 40 PCI IDs; Normal/Unlock eligibility varies by model. RTX 20/40 Unlock is experimental. See the [GPU policy](config/gpu-policy.json) and [hardware verification status (Japanese)](TODO.md).
 * **Storage Target**: A designated NTFS partition on the host PC (Default: `GPU-Linux` folder). Safety checks are automatically performed before access to ensure Windows data integrity remains intact.
 
 ## Out of Scope (Not Included)

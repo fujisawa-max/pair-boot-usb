@@ -29,14 +29,19 @@ def verify(directory, commit):
         raise ValueError('Upstream checkout lacks the module source')
 
 
+def source_lock(root=ROOT):
+    lock = json.loads((root / 'inputs/gpu-unlock-source.json').read_text())
+    if lock != {'schema': 1, 'version': '2.0.0', 'url': 'https://github.com/Zagitta/gpu-unlock.git',
+                'commit': '7eb51bccae0a0b7e599e084d971170e9a1e82d0c', 'directory': 'vendor/gpu-unlock-2.0'}:
+        raise ValueError('Unexpected gpu-unlock source lock')
+    return lock
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--offline', action='store_true')
     args = parser.parse_args()
-    lock = json.loads((ROOT / 'inputs/gpu-unlock-source.json').read_text())
-    if lock != {'schema': 1, 'url': 'https://github.com/Zagitta/gpu-unlock.git',
-                'commit': 'af28cbbfd3d922a659227ecfb7369adfd924cf03', 'directory': 'vendor/gpu-unlock'}:
-        raise ValueError('Unexpected gpu-unlock source lock')
+    lock = source_lock()
     destination = ROOT / lock['directory']
     if (ROOT / 'vendor').is_symlink() or destination.is_symlink():
         raise ValueError('Refusing symlink source path')

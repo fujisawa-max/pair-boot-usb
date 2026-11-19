@@ -27,10 +27,11 @@ def main():
             sha256 = hashlib.file_digest(stream, "sha256").hexdigest()
         records.append({"name": name, "version": version, "vermagic": vermagic,
                         "size": path.stat().st_size, "sha256": sha256})
-    unlock = ROOT / f"build/modules/{RELEASE}/gpu_unlock.ko"
+    unlock = ROOT / f"build/modules/gpu-unlock-2.0.0/{RELEASE}/gpu_unlock.ko"
     unlock_vermagic = subprocess.check_output(["modinfo", "-F", "vermagic", str(unlock)], text=True).strip()
-    if not unlock_vermagic.startswith(RELEASE + " "):
-        raise ValueError("gpu_unlock module uses a different kernel")
+    unlock_version = subprocess.check_output(["modinfo", "-F", "version", str(unlock)], text=True).strip()
+    if not unlock_vermagic.startswith(RELEASE + " ") or unlock_version != "2.0.0":
+        raise ValueError("gpu_unlock module uses a different kernel or version")
     result = {"schema": 1, "kernel_release": RELEASE, "nvidia_driver_version": VERSION,
               "gpu_unlock_vermagic": unlock_vermagic, "modules": records,
               "hardware_verified": False}

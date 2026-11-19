@@ -59,6 +59,22 @@ class UnifiedRootReleaseTests(unittest.TestCase):
         self.fixture.run_replace()
         self.assertEqual(api.digest(self.fixture.target), self.fixture.manifest['sha256'])
 
+    def test_0_99_0_upgrades_0_9_3_when_unlock_changes_and_preserves_state(self):
+        self.prepare(release='0.99.0')
+        self.current_release('0.9.3')
+        manifest = self.fixture.manifest
+        manifest['components'] = {'NVIDIA driver package': '615.71.10-1',
+                                  'gpu-unlock commit': 'new-unlock-fixture'}
+        self.rewrite(self.fixture.master, manifest)
+        manifest['sha256'] = api.digest(self.fixture.master)
+        before = api.digest(self.fixture.target)
+        self.fixture.run_replace(ask=lambda *_: self.fail('Upgrade must be automatic'))
+        self.assertEqual(api.digest(self.fixture.target), manifest['sha256'])
+        self.assertEqual(api.digest(next(self.fixture.parent.glob('root-before-update-*.img'))), before)
+        self.assertEqual(self.fixture.state.read_bytes(), b'retained fixture settings')
+        receipt = json.loads((self.fixture.parent / 'root-image.json').read_text())
+        self.assertEqual((receipt['version'], receipt['state_schema']), ('0.99.0', 1))
+
     def test_older_release_can_keep_current_or_downgrade_with_explicit_choice(self):
         for action in ('keep', 'replace', 'poweroff'):
             with self.subTest(action=action):

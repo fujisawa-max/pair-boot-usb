@@ -6,14 +6,15 @@
 
 | 外部ソフトウェア・資料 | 取得元・確認事項 |
 | --- | --- |
-| gpu-unlock | https://github.com/Zagitta/gpu-unlock 。固定基準は `af28cbbfd3d922a659227ecfb7369adfd924cf03`。モジュールとfirmwareの条件は別。上流のlicensesとfirmware/NOTICE.mdを保存する |
+| gpu-unlock | https://github.com/Zagitta/gpu-unlock 。固定基準は `7eb51bccae0a0b7e599e084d971170e9a1e82d0c`。モジュールとfirmwareの条件は別。上流のlicensesとfirmware/NOTICE.mdを保存する |
 | NVIDIA open modules | https://github.com/NVIDIA/open-gpu-kernel-modules 。使用するドライバの版は615.71.10。ソースのCOPYINGと実行ライブラリ・firmwareの条件を分けて確認する |
 | NVIDIA/CUDA | https://developer.download.nvidia.com/compute/cuda/repos/debian13/x86_64/ 。inputs/nvidia-driver-inputs.jsonと公式署名メタデータで検証する |
-| firmware生成用の外部資料 | inputs/firmware-inputs.jsonに版・URL・ハッシュを指定。NVIDIAの610.43.03ソースと https://archive.cachyos.org/ の指定版のnvidia-utilsパッケージを取得し、gpu-unlockの指定版のgeneratorで生成する。生成物とNVIDIA-LICENSE・上流NOTICEを保持する |
+| firmware生成用の外部資料 | inputs/firmware-inputs.jsonに版・URL・ハッシュを指定。NVIDIA公式の610.43.03ソースと同版のLinux用installerを取得し、installer自体は実行せずfirmwareとライセンスを抽出する。gpu-unlock 2.0の固定extractorでBooter等を生成し、inputs/firmware-output.jsonのサイズ・SHA-256で照合する。生成物とNVIDIA-LICENSE・上流NOTICEを保持する |
 | PAIR | https://github.com/NVIDIA/Personal-AI-Router 。inputs/pair-headless-input.jsonの固定releaseを取得。現在の上流はApache-2.0だが、取得版のLICENSE/NOTICEと同梱物を確認する |
 | llama.cpp | https://github.com/ggml-org/llama.cpp 。inputs/pair-llamacpp-inputs.jsonのb11146/CUDA12.8。MIT本体と同梱CUDA等の条件を区別する |
 | Fedora Workstation Live | https://fedoraproject.org/workstation/download/ 。現行抽出処理は44-1.7の固定ISO用。公式CHECKSUMの署名とISOのハッシュを検証する |
 | Debian | https://deb.debian.org/ 。inputs/debian-build-inputs.json、debian-runtime-inputs.json等。公式パッケージの各ライセンスを保持する |
+| 更新束の検査ツール | inputs/updater-inspection-tools.jsonの固定Debianパッケージ。e2fsprogs、dosfstools、kmod、OpenSSLと共有ライブラリを作業領域に展開し、各パッケージの著作権・ライセンス表示を保持する。ホストへのインストールや実デバイスの操作は行わない |
 | pycdlib | https://pypi.org/project/pycdlib/1.14.0/ 。inputs/fedora-tools-inputs.jsonのwheelをSHA照合してFedora ISOの展開に使用。wheel本体は同梱しない |
 | PowerShell（任意の開発用試験） | https://github.com/PowerShell/PowerShell/releases/tag/v7.5.4 。inputs/powershell-test-input.jsonのLinux x64 archiveをサイズ・SHA照合し、合成fixtureの実行に使用。MIT本体と同梱物のLICENSE・ThirdPartyNoticesを展開先に保持し、USBへは含めない |
 
@@ -25,7 +26,7 @@
 
 参照：
 
-- https://github.com/Zagitta/gpu-unlock/blob/af28cbbfd3d922a659227ecfb7369adfd924cf03/firmware/NOTICE.md
+- https://github.com/Zagitta/gpu-unlock/blob/7eb51bccae0a0b7e599e084d971170e9a1e82d0c/firmware/NOTICE.md
 - https://github.com/NVIDIA/Personal-AI-Router/blob/85f523d3624cf1596bdda6e36c28eb8ad3969737/LICENSE
 - https://github.com/NVIDIA/open-gpu-kernel-modules/blob/main/COPYING
 - https://docs.nvidia.com/cuda/eula/index.html

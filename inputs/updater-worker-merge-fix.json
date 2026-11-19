@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "id": "source-0-9-3-r2-worker-merge-fix",
+  "base_version": "0.9.3",
+  "managed_path": "gui/windows-worker.ps1",
+  "before": {
+    "commit": "0e2753699e3f03d4168c8180c70d106b463c7b6e",
+    "bytes": 4010,
+    "sha256": "80a3988d32b7ac456611ee9787ad8cee1804d6d6ee3d121f886763503814d439"
+  },
+  "after": {
+    "commit": "da9526cfd04887bd602926f891c7e326331d00be",
+    "bytes": 4236,
+    "sha256": "afa9e3c956762789dbc73eff1dde1e15f4cb921973ab631fd93e26ac11bc500d"
+  }
+}

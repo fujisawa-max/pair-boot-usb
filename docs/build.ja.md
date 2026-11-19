@@ -102,18 +102,20 @@ gpu-unlockのソースは指定されたcommit、PAIR/llama.cpp・firmware生成
 署名が終わったら次を実行。
 
 ```sh
-python scripts/build-usb.py image
+python scripts/build-usb.py image --update-bundle --update-sequence 1
 ```
 
 別名の署名束を使う場合：
 
 ```sh
-python scripts/build-usb.py image --signed-modules build/signed-modules-update
+python scripts/build-usb.py image --signed-modules build/signed-modules-update --update-bundle --update-sequence 1
 ```
 
 署名束と元moduleの整合性、payloadの不変、選択した証明書によるCMS署名を検査してから、GUI・空の共有台帳・MOK操作ツール、6GiBのroot.img、初期状態用の1GiBのstate.img、initramfs、署名済みEFIを組み合わせます。同じ公開証明書を署名束とGUI・MOKツールで使用します。
 
 最終出力は `build/usb-image/gpu-linux-usb.img` と `SHA256SUMS`、検査レポートです。GPT、FAT/ext4、initramfs、状態テンプレートのSHAと初期内容、イメージ内部の内容、パーティションの読戻しを検査します。ログは `build/image-01.log` 等です。
+
+上の `--update-bundle` 指定により、部分更新用の `build/usb-image-update-bundle/manifest.json` と管理ファイル・検証記録も生成します。最初の `--update-sequence` は1とし、その後は同じ配布系統で増やします。以前のUSBからの更新に対応させるには、以前の構築物も明示して検査します。[部分更新用manifestの生成](update-bundle.ja.md)を参照してください。適用には対応するupdaterとLOGS加工helperが別途必要です。全体イメージだけが必要な場合は `--update-bundle` を外せます。
 
 USBに同梱する利用者向けMarkdown手順書は、当面は日本語版を使います。コピー先では`.ja`を外し、日英版の切替リンクを除いて、文書間のリンクも同梱ファイル名へ変更します。GUIから案内する`QUICK-START.md`や`DETAILS.md`等の名前は維持し、リンク先の手順書も一緒に`GPU-LOGS/tools/`とFedoraの`tools/`へ配置します。リポジトリ内の原稿と、第三者のライセンス表示は変更しません。
 
@@ -126,7 +128,7 @@ GPU-MASTERは配布元の領域です。root.imgの論理サイズ6GiBとstate.i
 新しいrootを構築して配布する場合は全体版を進め、既存出力を保持して、すべて新しい出力先を指定します。
 
 ```sh
-python scripts/build-usb.py image \
+python scripts/build-usb.py image --update-bundle --update-sequence 2 \
   --appliance-output build/appliance-next \
   --tools-output build/shared-usb-tools-next \
   --fedora-output build/fedora-live-tools-next \
@@ -183,10 +185,16 @@ NVIDIA GPUのないPCで起動画面・root/stateの分離を調べる場合は�
 
 `config/release.json` が全体版、boot ABI、state schemaを定義します。rootには同じ全体版を記録します。新しいrootを配布するときは全体版を進め、同じ版の異なるrootを混在させないでください。同じ版で配布元のSHA-256が異なる場合は、起動を停止します。完成rootを再生成するとUUID等でもSHAが変わるため、配布したrootは保持し、追加のUSBは同じrootから組み立てます。旧0.9.1のroot revisionは、旧rootを認識するために読み取ります。
 
-0.9.3ではPC名を保存する台帳形式2を使用し、形式1の読取り・変換にも対応します。内容の更新順は `generation` で管理します。形式2には対応する起動処理が必要です。今回の更新はroot内のinitramfsも対象とするため、全体版とroot版を0.9.3にそろえます。state schemaは1を維持します。[管理ツールの使い方](management-ui.md)も参照してください。
+0.99.0では全体版とroot版を0.99.0にそろえます。gpu-unlock 2.0、追加firmware、コンソール分離を反映するため、新しいrootと、利用者による新モジュールへの署名が必要です。台帳形式2・state schema 1・boot ABI 1は維持し、形式1の読取り・変換にも対応します。PCや保存先に変更がなければ再登録は不要です。内容の更新順は `generation` で管理します。[管理ツールの使い方](management-ui.md)も参照してください。
 
 `GPU-LOGS/MEDIA-INFO.txt` とFedoraパーティション直下に、使用した外部資料の版などをまとめた構成一覧を配置します。Debian、kernel、gpu-unlock commit、NVIDIA、PAIR、llama.cpp、Fedoraの版を確認できます。これは媒体の情報であり、起動中rootの情報とは区別します。バナーはroot内の同じ形式のメタデータから版を、起動状態からNormal/Unlock/TESTを表示します。
 
 boot ABIはinitramfs・root・stateの取り決めです。kernelだけでなくGPUドライバとgpu-unlockの版も照合します。起動・終了・設定保存の互換性を変える開発では、ABIとstate schemaを見直して、互換性のない組合せを許可しないでください。
 
 確認済みの範囲と残っている確認項目は [TODO](../TODO.md) にまとめています。
+
+## 通常版と貸出版
+
+通常版／貸出版の選択、同じrootの再利用、PC用管理ツールセットについては[媒体の構成と管理ツール](media-profiles.md)を参照してください。
+
+0.99.1では起動直後のカーネルログ混在修正をrootへ反映します。署名時の元の未署名モジュールと固定ソース・構築定義を保持し、kernel・署名鍵の構成も同じ場合は、照合済みの署名束と元データの組を再利用できます。NVIDIAモジュールはビルド日時の埋込みで同じソースでもハッシュが変わる場合があるため、再ビルド品との不一致を無視して再利用してはいけません。元データを保持していない場合は、利用者が再署名します。rootは0.99.1として一度構築し、両媒体で共有します。

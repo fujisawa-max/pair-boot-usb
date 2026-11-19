@@ -6,6 +6,7 @@ import json
 import os
 from pathlib import Path
 import re
+import runpy
 import shutil
 import stat
 import subprocess
@@ -14,6 +15,12 @@ import threading
 import time
 
 STATE = Path('/run/gpu-diagnostic')
+
+
+def qualify_gpu(profile, vendor, device, unlock_ids):
+    pci_id = vendor.removeprefix('0x').lower() + ':' + device.removeprefix('0x').lower()
+    if vendor != '0x10de' or pci_id != profile.get('gpu_pci_id') or pci_id not in unlock_ids:
+        raise ValueError('Diagnostic GPU does not match the registered Unlock PCI policy')
 
 
 def preconditions(profile, boot_id, hardware, bound, nvidia_loaded, targets, attempted, cold):
@@ -59,8 +66,8 @@ def attempt(log_uuid, cold):
                            (gpu / 'driver').exists(), Path('/sys/module/nvidia').exists(),
                            diag.read('/sys/module/gpu_unlock/parameters/targets'),
                            (STATE / 'manual-unlock-attempt.json').exists(), cold)
-    if diag.read(gpu / 'vendor') != '0x10de' or diag.read(gpu / 'device') != '0x2504':
-        raise ValueError('This diagnostic attempt is restricted to the reviewed RTX3060 10de:2504')
+    policy = runpy.run_path('/usr/lib/fleet-registry.py')
+    qualify_gpu(profile, diag.read(gpu / 'vendor'), diag.read(gpu / 'device'), policy['GPU_UNLOCK_IDS'])
     if not re.fullmatch(r'[A-Fa-f0-9]{4}-[A-Fa-f0-9]{4}', log_uuid):
         raise ValueError('Explicit USB FAT log UUID required')
     storage = diag.storage_module()

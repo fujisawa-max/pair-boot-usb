@@ -46,7 +46,7 @@ def verify(directory):
                 not info["vermagic"].startswith(signing.KERNEL + " ") or
                 info["signer"] != item.get("signer") or info["sig_id"] != "PKCS#7" or
                 info["sig_hashalgo"].lower() != "sha256" or
-                (name != "gpu_unlock" and info["version"] != signing.DRIVER)):
+                info["version"] != (signing.UNLOCK_VERSION if name == "gpu_unlock" else signing.DRIVER)):
             raise ValueError(f"module metadata mismatch: {name}")
         signing.verify_cms(signed, source, cert)
     return manifest

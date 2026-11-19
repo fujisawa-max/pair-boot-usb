@@ -1,0 +1,111 @@
+{
+  "contract_version": 1,
+  "contract_revision": 1,
+  "id": "pair-r3-gpt512-v1",
+  "logical_sector_bytes": 512,
+  "partition_table": "preserve-all-bytes",
+  "partitions": [
+    {
+      "role": "efi",
+      "number": 1,
+      "geometry": "fixed",
+      "start_sector": 2048,
+      "sector_count": 131072,
+      "type_guid": "c12a7328-f81f-11d2-ba4b-00a0c93ec93b",
+      "filesystem": "fat32",
+      "label": "GPU-EFI",
+      "operation": "replace"
+    },
+    {
+      "role": "master",
+      "number": 2,
+      "geometry": "fixed",
+      "start_sector": 133120,
+      "sector_count": 9437184,
+      "type_guid": "0fc63daf-8483-4772-8e79-3d69d8477de4",
+      "filesystem": "ext4",
+      "label": "GPU-MASTER",
+      "operation": "replace"
+    },
+    {
+      "role": "logs",
+      "number": 3,
+      "geometry": "fixed",
+      "start_sector": 9570304,
+      "sector_count": 524288,
+      "type_guid": "ebd0a0a2-b9e5-4433-87c0-68b6b72699c7",
+      "filesystem": "fat32",
+      "label": "GPU-LOGS",
+      "operation": "merge"
+    },
+    {
+      "role": "fedora",
+      "number": 4,
+      "geometry": "fixed",
+      "start_sector": 10094592,
+      "sector_count": 6291456,
+      "type_guid": "ebd0a0a2-b9e5-4433-87c0-68b6b72699c7",
+      "filesystem": "fat32",
+      "label": "GPU-FEDORA",
+      "operation": "replace"
+    },
+    {
+      "role": "models",
+      "number": 5,
+      "geometry": "target-preserved",
+      "start_sector": 0,
+      "sector_count": 0,
+      "type_guid": "ebd0a0a2-b9e5-4433-87c0-68b6b72699c7",
+      "filesystem": "ntfs",
+      "label": "target-preserved",
+      "operation": "preserve"
+    }
+  ],
+  "coherence_groups": [
+    [
+      "efi",
+      "master"
+    ]
+  ],
+  "required_roles": [
+    "efi",
+    "master",
+    "logs"
+  ],
+  "write_order": [
+    "master",
+    "fedora",
+    "logs",
+    "efi"
+  ],
+  "managed_roots": [
+    "tools",
+    "gui"
+  ],
+  "managed_exact_paths": [
+    "MEDIA-INFO.txt",
+    "start-windows-gui.cmd",
+    "start-windows-gui-debug.cmd",
+    "start-fedora-gui.sh",
+    "gpu-linux.desktop"
+  ],
+  "merge": {
+    "role": "logs",
+    "registry_path": "gpu-config/registry.json",
+    "derived_hosts_path": "gpu-config/hosts",
+    "marker_path": "usb-config.json",
+    "receipt_path": "gpu-config/updater-receipt.json",
+    "migrations": [
+      "registry-1-to-2",
+      "identity-2"
+    ],
+    "protected_roots": [
+      "data",
+      "candidates",
+      "observations",
+      "gpu-config",
+      "signing-cert.der",
+      "signing-cert-info.txt"
+    ]
+  }
+}
