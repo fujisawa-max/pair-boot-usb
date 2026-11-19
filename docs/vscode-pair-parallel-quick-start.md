@@ -24,7 +24,7 @@ VS Code標準チャットの **Local harnessとCustom Endpoint** を使います
         "url": "http://127.0.0.1:8080/v1/chat/completions",
         "toolCalling": true,
         "vision": false,
-        "maxInputTokens": 14336,
+        "maxInputTokens": 63488,
         "maxOutputTokens": 2048
       },
       {
@@ -33,7 +33,7 @@ VS Code標準チャットの **Local harnessとCustom Endpoint** を使います
         "url": "http://127.0.0.1:8080/v1/chat/completions",
         "toolCalling": true,
         "vision": true,
-        "maxInputTokens": 14336,
+        "maxInputTokens": 253440,
         "maxOutputTokens": 2048
       }
     ]

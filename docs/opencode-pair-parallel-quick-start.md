@@ -28,7 +28,7 @@
             "input": ["text"],
             "output": ["text"]
           },
-          "limit": { "context": 16384, "output": 2048 }
+          "limit": { "context": 65536, "output": 2048 }
         },
         "vision": {
           "name": "PAIR Vision",
@@ -38,7 +38,7 @@
             "input": ["text", "image"],
             "output": ["text"]
           },
-          "limit": { "context": 16384, "output": 2048 }
+          "limit": { "context": 255488, "output": 2048 }
         }
       }
     }
