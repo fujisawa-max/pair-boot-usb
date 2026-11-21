@@ -67,6 +67,11 @@ def stage(root):
                     raise ValueError('Staged engine bytes differ')
     else:
         engine['extract'](inputs, target)
+    # Keep the engine path already used by persisted PAIR configurations.
+    launcher = target / 'llama-server'
+    launcher.rename(target / 'llama-server.real')
+    shutil.copyfile(ROOT / 'runtime/llama-server-launch.sh', launcher)
+    launcher.chmod(0o755)
     (root / 'usr/lib/gpu-root/pair-runtime.json').write_text(json.dumps({
         'schema': 1, 'llamacpp': 'b11146', 'managed_preinstalled': True,
         'models_dir': '/models', 'engine_autostart': True, 'packages': lock['packages'],

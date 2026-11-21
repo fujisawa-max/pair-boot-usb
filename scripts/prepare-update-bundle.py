@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Produce a contract-bound update bundle from verified ordinary image files."""
 import argparse
+import errno
 import hashlib
 import json
 import os
@@ -130,11 +131,38 @@ def check_release(master, inside, certificate, marker):
     return release
 
 
+def archive_path(repository, version, profile, sequence):
+    if (not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9._-]{0,79}', version)
+            or profile not in ('standard', 'loan') or type(sequence) is not int or sequence < 1):
+        raise ValueError('Invalid update archive identity')
+    return Path(repository).absolute() / 'build/update-bundles' / version / profile / f'sequence-{sequence}'
+
+
+def bundle_destination(output, repository, version, profile, sequence):
+    path = output.absolute()
+    archive = archive_path(repository, version, profile, sequence)
+    if path != archive:
+        return runpy.run_path(str(ROOT / 'scripts/prepare-firmware.py'))['fresh_output'](path)
+    ordinary(Path(repository), True)
+    if '..' in path.parts or any(part.is_symlink() for part in (path, *path.parents)):
+        raise ValueError('Refusing symlink or ambiguous archive path')
+    if path.exists():
+        raise ValueError('Update archive already exists; preserve it and choose a fresh output')
+    return path
+
+
+def media_paths(image_dir):
+    evidence_path = image_dir / 'shared-media-verification.json'
+    if not evidence_path.exists() and (image_dir / 'manifest.json').is_file():
+        return image_dir / 'reports/shared-media-verification.json', image_dir / 'images/gpu-linux-usb.img'
+    return evidence_path, image_dir / 'gpu-linux-usb.img'
+
+
 def inspect(image_dir, work, sysroot, layout, module, *, image=None):
     image_dir = ordinary(image_dir, True)
-    evidence_path = image_dir / 'shared-media-verification.json'
+    evidence_path, original_image = media_paths(image_dir)
     evidence = read_json(evidence_path)
-    image = ordinary(image or image_dir / 'gpu-linux-usb.img')
+    image = ordinary(image or original_image)
     if image.stat().st_size != evidence['bytes']:
         raise ValueError('Image does not match independent readback evidence')
     parts = A['read_gpt'](image, layout)
@@ -331,11 +359,18 @@ def external_evidence(source_root, source, signed_modules):
 
 
 def produce(args):
-    module, contract_root, layout, lock_sha = contract(getattr(args, 'profile', 'standard'))
-    fresh = runpy.run_path(str(ROOT / 'scripts/prepare-firmware.py'))['fresh_output']
-    output = fresh(args.output)
+    if args.output.exists():
+        raise ValueError('Output already exists; preserve it and choose a fresh path')
+    profile = getattr(args, 'profile', 'standard')
+    module, contract_root, layout, lock_sha = contract(profile)
+    version = read_json(args.source_root / 'config/release.json')['version']
+    output = bundle_destination(args.output, args.repository, version, profile, args.update_sequence)
     image_dir = ordinary(args.image_directory, True)
     if output.is_relative_to(image_dir) or image_dir.is_relative_to(output): raise ValueError('Bundle/image directories overlap')
+    readback_path, image_source = media_paths(image_dir)
+    publish = getattr(args, 'publish_image', False)
+    if publish and (image_source.parent != image_dir or not image_source.is_relative_to(ROOT / 'build')):
+        raise ValueError('Only a workspace image can be published')
     if not args.inspection_sysroot.absolute().is_relative_to(ROOT / 'build'):
         raise ValueError('Inspection sysroot must be prepared below build/')
     tools_evidence = verify_tools(ordinary(args.inspection_sysroot, True))
@@ -347,13 +382,27 @@ def produce(args):
     externals=external_evidence(args.source_root,source,args.signed_modules or args.source_root/'build/signed-modules')
     output.mkdir(parents=True)
     for folder in ('images', 'payload', 'reports'): (output / folder).mkdir()
-    evidence = read_json(image_dir / 'shared-media-verification.json')
-    if ordinary(image_dir / 'gpu-linux-usb.img').stat().st_size != evidence['bytes']:
+    evidence = read_json(readback_path)
+    image_source = ordinary(image_source)
+    source_stat = image_source.stat()
+    if source_stat.st_size != evidence['bytes']:
         raise ValueError('Image size differs from readback evidence')
-    print('Copying verified distribution image into a fresh bundle', flush=True)
+    print('Preparing verified distribution image in a fresh bundle', flush=True)
     image = output / 'images/gpu-linux-usb.img'
-    image_record = {'path': 'images/gpu-linux-usb.img', **A['copy_region'](
-        image_dir / 'gpu-linux-usb.img', image, 0, evidence['bytes'], evidence['sha256'])}
+    linked = False
+    if publish:
+        try:
+            os.link(image_source, image)
+            linked = True
+        except OSError as error:
+            if error.errno != errno.EXDEV:
+                raise
+    # inspect() below independently hashes the entire linked or copied image.
+    image_record = {'path': 'images/gpu-linux-usb.img'}
+    if linked:
+        image_record.update(bytes=evidence['bytes'], sha256=evidence['sha256'])
+    else:
+        image_record.update(A['copy_region'](image_source, image, 0, evidence['bytes'], evidence['sha256']))
     scratch = Path(tempfile.mkdtemp(prefix='update-inspection-', dir=ROOT / 'build'))
     try:
         target = inspect(image_dir, scratch / 'target', args.inspection_sysroot, layout, module, image=image)
@@ -421,6 +470,10 @@ def produce(args):
                   'scope': 'producer only; LOGS merge helper and updater raw worker are separate implementations',
                   'native_hardware_tested': False}
         report_path = output / 'reports/verification.json'; report_path.write_bytes(canonical(report))
+        readback = ordinary(readback_path).read_bytes()
+        if hashlib.sha256(readback).hexdigest() != target['verification_evidence_sha256']:
+            raise ValueError('Image readback report changed during update bundle generation')
+        (output / 'reports/shared-media-verification.json').write_bytes(readback)
         manifest = {'contract_version': 1, 'contract_revision': layout['contract_revision'], 'contract_lock_sha256': lock_sha,
                     'helper_protocol': 1, 'kind': 'pair-boot-usb-update', 'minimum_updater': '1.0.0',
                     'layout': {'id': layout['id'], 'sha256': digest(contract_root / module['PROFILE'])},
@@ -437,6 +490,12 @@ def produce(args):
         if len(raw) > 1024**2: raise ValueError('Manifest exceeds contract metadata limit')
         (output / 'manifest.json').write_bytes(raw)
         (output / 'SHA256SUMS').write_text(hashlib.sha256(raw).hexdigest() + '  manifest.json\n')
+        if publish:
+            current = ordinary(image_source).stat()
+            if ((source_stat.st_dev, source_stat.st_ino, source_stat.st_size, source_stat.st_mtime_ns)
+                    != (current.st_dev, current.st_ino, current.st_size, current.st_mtime_ns)):
+                raise ValueError('Workspace image changed; refusing to remove it')
+            image_source.unlink()
         print(f'Validated update manifest: {output / "manifest.json"}', flush=True)
         if maintenance:
             print('This bundle requires updater 1.0.7 or later for maintenance-source disambiguation.', flush=True)
@@ -532,6 +591,8 @@ def main():
                         help='explicit accepted-source.json for the pinned 0.9.3 Windows worker maintenance fix')
     parser.add_argument('--update-sequence', type=int, default=1)
     parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--publish-image', action='store_true',
+                        help='keep the verified image only in the bundle after successful generation')
     args = parser.parse_args()
     if args.update_sequence < 1: parser.error('Positive update sequence required')
     produce(args)

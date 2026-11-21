@@ -246,18 +246,48 @@ class UpdateBundleTests(unittest.TestCase):
         build=runpy.run_path(str(ROOT/'scripts/build-usb.py'))
         args=SimpleNamespace(signed_modules=ROOT/'build/signed',appliance_output=ROOT/'build/appliance-test',
             tools_output=ROOT/'build/tools-test',fedora_output=ROOT/'build/fedora-test',output=ROOT/'build/image-test',
-            update_bundle=False,source_extra=[],accepted_image_directory=[],accepted_bundle=[],update_output=None,update_sequence=1)
+            update_bundle=False,source_extra=[],accepted_image_directory=[],accepted_bundle=[],update_output=None,
+            update_sequence=1,no_previous_source=True)
         plain=build['image_commands'](args)
         self.assertEqual(len(plain),9)
         args.update_bundle=True;commands=build['image_commands'](args)
         self.assertIn('record-build-source.py',commands[0][1])
         self.assertIn('prepare-update-bundle.py',commands[-1][1])
+        self.assertEqual(Path(commands[-1][commands[-1].index('--output')+1]),
+                         ROOT/'build/update-bundles'/build['VERSION']/'standard/sequence-1')
         self.assertEqual(commands[1:10],plain)
         args.accepted_worker_merge_fix=ROOT/'build/source-record.json'
         commands=build['image_commands'](args)
         self.assertEqual(commands[-1][-2:],['--accepted-worker-merge-fix',str(args.accepted_worker_merge_fix)])
         args.update_output=args.output
         with self.assertRaisesRegex(ValueError,'overlap'):build['validate_image_outputs'](args)
+
+    def test_default_update_source_uses_the_latest_completed_archive_for_the_profile(self):
+        build=runpy.run_path(str(ROOT/'scripts/build-usb.py'))
+        with tempfile.TemporaryDirectory() as directory:
+            repository=Path(directory)
+            def bundle(version,profile,sequence,complete=True):
+                output=P['archive_path'](repository,version,profile,sequence)
+                output.mkdir(parents=True)
+                raw=json.dumps({'release':{'version':version},'update_sequence':sequence}).encode()
+                (output/'manifest.json').write_bytes(raw)
+                if complete:
+                    (output/'SHA256SUMS').write_text(hashlib.sha256(raw).hexdigest()+'  manifest.json\n')
+                return output
+            bundle('0.9.9','standard',7)
+            latest=bundle('0.10.1','standard',8)
+            bundle('0.10.1','standard',9,complete=False)
+            loan=bundle('0.10.1','loan',6)
+            bundle('0.11.0','standard',10)
+            self.assertEqual(build['previous_archive'](repository,'standard','0.11.0'),latest)
+            self.assertEqual(build['previous_archive'](repository,'loan','0.11.0'),loan)
+            args=SimpleNamespace(accepted_image_directory=[],accepted_bundle=[],source_repository=repository,update_sequence=12)
+            with patch.dict(build['accepted_update_arguments'].__globals__,{'VERSION':'0.11.0'}):
+                self.assertEqual(build['accepted_update_arguments'](args),['--accepted-bundle',latest/'manifest.json'])
+                args.profile='loan'
+                self.assertEqual(build['accepted_update_arguments'](args),['--accepted-image-directory',loan])
+                args.no_previous_source=True
+                self.assertEqual(build['accepted_update_arguments'](args),[])
 
 
 if __name__=='__main__':unittest.main()

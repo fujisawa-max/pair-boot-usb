@@ -387,6 +387,10 @@ def main():
         platform = override['platforms']['linux/amd64']
         if platform['detect'] != ['/opt/llama.cpp/bin/llama-server'] or platform['runtime']['bin'] != '/opt/llama.cpp/bin/llama-server':
             raise ValueError('State does not select root-owned engine')
+        engine_path = '/opt/llama.cpp/bin/llama-server'
+        expected_launcher = (Path(__file__).resolve().parents[1] / 'runtime/llama-server-launch.sh').read_text()
+        if debug('cat ' + engine_path) != expected_launcher or 'Type: regular' not in debug('stat ' + engine_path + '.real'):
+            raise ValueError('Root-owned llama.cpp launcher or engine is missing')
         if 'Type:' in state_debug('stat ' + json.dumps(app + '/engine-bin/llamacpp/llama-server')):
             raise ValueError('State template contains engine executable')
         if json.loads(state_debug('cat ' + json.dumps(app + '/engine-bin/engine-state.json'))) != {'engines': {'llamacpp': True}}:

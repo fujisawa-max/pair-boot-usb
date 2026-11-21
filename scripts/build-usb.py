@@ -3,6 +3,7 @@
 import argparse
 import json
 from pathlib import Path
+import re
 import runpy
 import shlex
 import subprocess
@@ -12,6 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 RELEASE = json.loads((ROOT / 'config/release.json').read_text())
 LAYOUT = json.loads((ROOT / 'config/usb-layout.json').read_text())
 VERSION = RELEASE['version']
+UPDATE_BUNDLE = runpy.run_path(str(ROOT / 'scripts/prepare-update-bundle.py'))
 PREPARED = ('debian-root', 'appliance-root', 'nvidia-runtime-615.71.10', 'pair-v1.0.0-headless',
             'pair-llamacpp-b11146', 'candidate-network-overlay-v1', 'pair-runtime-overlay-v1',
             'efi-inputs', 'assets-gpu-unlock-2.0.0', 'fedora-live', 'runtime-root')
@@ -19,6 +21,67 @@ PREPARED = ('debian-root', 'appliance-root', 'nvidia-runtime-615.71.10', 'pair-v
 
 def python(script, *args):
     return [sys.executable, str(ROOT / 'scripts' / script), *map(str, args)]
+
+
+def update_output(args):
+    return args.update_output or UPDATE_BUNDLE['archive_path'](
+        getattr(args, 'source_repository', ROOT), VERSION,
+        getattr(args, 'profile', 'standard'), args.update_sequence)
+
+
+def previous_archive(repository, profile, version):
+    def version_key(name):
+        if re.fullmatch(r'[0-9]+\.[0-9]+\.[0-9]+', name):
+            return tuple(map(int, name.split('.')))
+        return None
+
+    current = version_key(version)
+    archive = Path(repository).absolute() / 'build/update-bundles'
+    if current is None or not archive.exists():
+        return None
+    UPDATE_BUNDLE['ordinary'](archive, True)
+    candidates = []
+    for version_dir in archive.iterdir():
+        key = version_key(version_dir.name)
+        if key is None or key >= current:
+            continue
+        profile_dir = version_dir / profile
+        if not profile_dir.exists():
+            continue
+        UPDATE_BUNDLE['ordinary'](profile_dir, True)
+        for folder in profile_dir.iterdir():
+            match = re.fullmatch(r'sequence-([1-9][0-9]*)', folder.name)
+            if match and (folder / 'manifest.json').exists() and (folder / 'SHA256SUMS').exists():
+                candidates.append((key, int(match[1]), folder))
+    if not candidates:
+        return None
+    _, sequence, folder = max(candidates)
+    manifest = UPDATE_BUNDLE['ordinary'](folder / 'manifest.json')
+    checksum = UPDATE_BUNDLE['ordinary'](folder / 'SHA256SUMS').read_text().splitlines()
+    if not checksum or checksum[0].split() != [UPDATE_BUNDLE['digest'](manifest), 'manifest.json']:
+        raise ValueError('Previous archived manifest checksum mismatch')
+    metadata = UPDATE_BUNDLE['read_json'](manifest)
+    if metadata['update_sequence'] != sequence or metadata['release']['version'] != folder.parent.parent.name:
+        raise ValueError('Previous archived manifest does not match its version and sequence')
+    return folder
+
+
+def accepted_update_arguments(args):
+    images = args.accepted_image_directory
+    bundles = args.accepted_bundle
+    if not (images or bundles or getattr(args, 'no_previous_source', False)
+            or getattr(args, 'accepted_worker_merge_fix', None)):
+        profile = getattr(args, 'profile', 'standard')
+        previous = previous_archive(getattr(args, 'source_repository', ROOT), profile, VERSION)
+        if previous:
+            if int(previous.name.removeprefix('sequence-')) >= args.update_sequence:
+                raise ValueError('Update sequence must increase beyond the previous archived bundle')
+            if profile == 'standard':
+                bundles = [previous / 'manifest.json']
+            else:
+                images = [previous]
+    return ([value for path in images for value in ('--accepted-image-directory', path)]
+            + [value for path in bundles for value in ('--accepted-bundle', path)])
 
 
 def prepare_commands(profile='standard'):
@@ -87,17 +150,17 @@ def image_commands(args):
     if getattr(args, 'update_bundle', False):
         record = args.output.with_name(args.output.name + '-source.json')
         inspection = args.output.with_name(args.output.name + '-inspection-tools')
-        bundle = args.update_output or args.output.with_name(args.output.name + '-update-bundle')
+        bundle = update_output(args)
         source_args = [value for path in args.source_extra for value in ('--source-extra', path)]
-        accepted_args = [value for path in args.accepted_image_directory for value in ('--accepted-image-directory', path)]
-        accepted_args += [value for path in args.accepted_bundle for value in ('--accepted-bundle', path)]
+        accepted_args = accepted_update_arguments(args)
         if getattr(args, 'accepted_worker_merge_fix', None) is not None:
             accepted_args += ['--accepted-worker-merge-fix', args.accepted_worker_merge_fix]
         commands = [python('record-build-source.py', '--output', record, '--repository', getattr(args, 'source_repository', ROOT), *source_args)] + commands
         commands += [python('prepare-updater-inspection.py', '--offline', '--output', inspection),
                      python('prepare-update-bundle.py', '--image-directory', args.output,
                             '--source-record', record, '--inspection-sysroot', inspection,'--signed-modules',args.signed_modules,
-                            '--repository', getattr(args, 'source_repository', ROOT), '--output', bundle, '--profile', profile, '--update-sequence', args.update_sequence, *accepted_args)]
+                            '--repository', getattr(args, 'source_repository', ROOT), '--output', bundle, '--publish-image',
+                            '--profile', profile, '--update-sequence', args.update_sequence, *accepted_args)]
     return commands
 
 
@@ -116,9 +179,12 @@ def validate_image_outputs(args):
         outputs.append(args.fedora_output)
     if getattr(args, 'update_bundle', False):
         outputs += [args.output.with_name(args.output.name + '-source.json'),
-                    args.output.with_name(args.output.name + '-inspection-tools'),
-                    args.update_output or args.output.with_name(args.output.name + '-update-bundle')]
+                    args.output.with_name(args.output.name + '-inspection-tools')]
     paths = [fresh(path) for path in outputs]
+    if getattr(args, 'update_bundle', False):
+        paths.append(UPDATE_BUNDLE['bundle_destination'](
+            update_output(args), getattr(args, 'source_repository', ROOT), VERSION,
+            getattr(args, 'profile', 'standard'), args.update_sequence))
     for i, left in enumerate(paths):
         for right in paths[i+1:]:
             if left == right or left.is_relative_to(right) or right.is_relative_to(left):
@@ -142,6 +208,8 @@ def main():
     parser.add_argument('--update-sequence', type=int, default=1)
     parser.add_argument('--accepted-image-directory', type=Path, action='append', default=[])
     parser.add_argument('--accepted-bundle', type=Path, action='append', default=[])
+    parser.add_argument('--no-previous-source', action='store_true',
+                        help='do not automatically accept the previous archived release')
     parser.add_argument('--accepted-worker-merge-fix', type=Path,
                         help='explicit source record for the pinned 0.9.3 Windows worker maintenance fix')
     parser.add_argument('--source-repository', type=Path, default=ROOT, help='Git repository used for build-source provenance')
@@ -182,10 +250,12 @@ def main():
         print('Preparation complete. The owner must create or select an external key and sign the six module copies.')
         print('See docs/secure-boot.md; then run: python3 scripts/build-usb.py image')
     else:
-        print(f'Validated file image: {args.output / "gpu-linux-usb.img"}')
         if args.update_bundle:
-            bundle = args.update_output or args.output.with_name(args.output.name + '-update-bundle')
+            bundle = update_output(args)
+            print(f'Validated file image: {bundle / "images/gpu-linux-usb.img"}')
             print(f'Validated update manifest: {bundle / "manifest.json"}')
+        else:
+            print(f'Validated file image: {args.output / "gpu-linux-usb.img"}')
         print('No physical USB was written; native boot qualification is still required.')
 
 
