@@ -17,7 +17,9 @@ README.md、THIRD-PARTY.md、docs/build.md、docs/secure-boot.mdを読み、利�
 
 構築の検証では、空の作業環境から固定入力を取得し、通常ファイルの成果物を生成・検査する。入力ハッシュ、署名、内部構造、処理結果を確認する。鍵やUUID等が異なる完成媒体の全体ハッシュ一致を合格条件にしない。構築成功やWSL上の試験を実機起動成功と扱わない。
 
-USBイメージを新規構築するときは `scripts/build-usb.py image --update-bundle --update-sequence N` で部分更新用manifestも生成・検証する。Nは同じ配布系統で1から単調増加させる。対応する旧媒体は実物を検査して明示し、版名だけで対応範囲を広げない。手順と生成処理の範囲は `docs/update-bundle.md`、日本語版は `docs/update-bundle.ja.md` を参照する。
+USBイメージを新規構築するときは `scripts/build-usb.py image --update-bundle --update-sequence N` で部分更新用manifestも生成・検証する。Nは同じ配布系統で1から単調増加させる。対応する旧媒体は実物を検査して明示し、版名だけで対応範囲を広げない。手順と生成処理の範囲は `docs/updater/update-bundle.md`、日本語版は `docs/updater/update-bundle.ja.md` を参照する。
+
+生成済みの更新束は作業領域と分けてプロジェクトの `build/update-bundles/<version>/<profile>/sequence-N/` に保管する。次版で更新元に使う場合は、書き込み用イメージも含めてフォルダ全体を保持する。
 
 # 安全境界
 

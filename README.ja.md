@@ -40,11 +40,12 @@ PAIR BOOTでは Secure Boot の利用が前提となっています。Secure Boo
 
 ### 運用・連携
 
-- [部分更新用manifest](docs/update-bundle.ja.md)：更新束の生成と、対応する更新元USBの指定
+- [部分更新用manifest](docs/updater/update-bundle.ja.md)：更新束の生成と、対応する更新元USBの指定
 - [Windows・Fedoraの管理ツール](docs/management-ui.md)：カテゴリ別の操作、PC名の表示、旧台帳の形式変換
 - [運用・モデル・終了・回復](docs/user-guide.md)：モデルの配置方法、正常終了・USB取り外し手順、トラブル対応
 - [Windowsでの台帳管理](docs/windows-fleet.md)：複数台のPC登録情報を1台のWindowsでまとめる手順
-- [開発ツールからPAIRを利用する準備](docs/pair-client-setup.md)：[VS Code](docs/vscode-pair-parallel-quick-start.md)／[OpenCode](docs/opencode-pair-parallel-quick-start.md)から推論ノードを利用する設定
+- [開発ツールからPAIRを利用する準備](docs/pair-usage/pair-client-setup.md)：[VS Code](docs/pair-usage/vscode-pair-parallel-quick-start.md)／[OpenCode](docs/pair-usage/opencode-pair-parallel-quick-start.md)から推論ノードを利用する設定
+- [コンテキスト長の決め方](docs/pair-usage/pair-client-setup.md#コンテキスト長の決め方)：推論ノードでの調整と、VS Code・OpenCodeのトークン上限への換算
 
 動作確認の状況と残りの確認項目は [TODO](TODO.md) にまとめています。
 

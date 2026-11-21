@@ -43,11 +43,12 @@ English versions are linked where available. Links marked (Japanese) lead to Jap
 3. **[Quick Start Guide](docs/quick-start.md)**: Gathering system info on Windows, enrolling MOK/PC registration on Fedora, and launching PAIR BOOT.
 
 ### Operation & Integration
-* **[Partial Update Manifest](docs/update-bundle.md)**: Generate an updater bundle and explicitly identify compatible source media.
+* **[Partial Update Manifest](docs/updater/update-bundle.md)**: Generate an updater bundle and explicitly identify compatible source media.
 * **[Windows and Fedora Management Tools (Japanese)](docs/management-ui.md)**: Operation categories, PC names, and legacy registry conversion.
 * **[Operation, Models, and Recovery (Japanese)](docs/user-guide.md)**: How to deploy LLM models, proper shutdown/USB removal procedures, and troubleshooting.
 * **[Ledger Management via Windows (Japanese)](docs/windows-fleet.md)**: Procedures for consolidating registration data from multiple PCs onto a single Windows machine.
-* **[Developer Tool Integration (Japanese)](docs/pair-client-setup.md)**: Setting up [VS Code (Japanese)](docs/vscode-pair-parallel-quick-start.md) / [OpenCode (Japanese)](docs/opencode-pair-parallel-quick-start.md) to connect to and utilize your newly created inference node, including image analysis and parallel editing agents.
+* **[Developer Tool Integration (Japanese)](docs/pair-usage/pair-client-setup.md)**: Setting up [VS Code (Japanese)](docs/pair-usage/vscode-pair-parallel-quick-start.md) / [OpenCode (Japanese)](docs/pair-usage/opencode-pair-parallel-quick-start.md) to connect to and utilize your newly created inference node, including image analysis and parallel editing agents.
+* **[Choosing Context Limits (Japanese)](docs/pair-usage/pair-client-setup.md#コンテキスト長の決め方)**: Tune llama.cpp on each inference node and translate the effective context size into VS Code and OpenCode settings.
 
 *Current development status and pending verification items are tracked in [TODO.md (Japanese)](TODO.md).*
 
