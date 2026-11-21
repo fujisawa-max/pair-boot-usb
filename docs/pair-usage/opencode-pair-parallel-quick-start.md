@@ -8,7 +8,7 @@
 
 開発対象プロジェクトの `opencode.jsonc` に次を統合します。ユーザー全体で使う場合は、OpenCodeのユーザー設定 `~/.config/opencode/opencode.json(c)` を使えます。同じ目的のjsonとjsoncを重複して作らず、既存設定を残して統合してください。
 
-2つの `modelID` を `/v1/models` の実際の値へ置き換えます。以下のcontext/outputは1要求に16384トークンを使える場合の例です。実際のエンジン設定に合わせます。[モデルIDとOpenAI互換サーバ](https://opencode.ai/docs/models/#compatible)
+2つの `modelID` を `/v1/models` の実際の値へ置き換えます。下の `limit` は、コード用モデルに65,536、画像用モデルに131,072トークンの実効コンテキストがある場合の例です。[コンテキスト長の決め方](pair-client-setup.md#コンテキスト長の決め方)・[モデルIDとOpenAI互換サーバ](https://opencode.ai/docs/models/#compatible)
 
 ```json
 {
@@ -52,7 +52,7 @@
 
 ### エディターから実際にファイルを読ませる
 
-ここからは、上の接続設定を済ませたエディターで操作します。開発対象のフォルダを開き、次の2ファイルを新規作成して保存してください。同名ファイルがあれば別名にして、依頼文のパスも変更します。USBや推論ノードへ作る必要はありません。
+ここからは、上の接続設定を済ませたエディターで操作します。開発対象のフォルダを開き、次の2ファイルを新規作成して保存してください。同名ファイルがあれば別名にして、依頼文のパスも変更します。
 
 `pair-check-a.txt`：
 
@@ -435,6 +435,6 @@ DeveloperとUI Coordinatorの冒頭に、短い追加依頼でも最初に `pair
 | ファイルを読めない | プロジェクト内のパス、子のread/glob/grep権限、モデルのツール対応 |
 | コンテキスト上限やcompactionで失敗する | 新しい会話と短い依頼で、サーバの1要求あたりの枠とlimitを照合する |
 
-2026-11-10時点の公式v2資料に基づく設定例です。Desktop／CLIのUIや設定読込位置は利用する版で確認してください。USBイメージの再生成は不要です。[VS Code用の手順](vscode-pair-parallel-quick-start.md)もあります。確認済みの範囲と残っている確認項目は [TODO](../TODO.md) を参照してください。
+2026-11-10時点の公式v2資料に基づく設定例です。Desktop／CLIのUIや設定読込位置は利用する版で確認してください。[VS Code用の手順](vscode-pair-parallel-quick-start.md)もあります。確認済みの範囲と残っている確認項目は [TODO](../../TODO.md) を参照してください。
 
 確認用の `pair-check-a.txt` と `pair-check-b.txt` は、確認後に削除して構いません。

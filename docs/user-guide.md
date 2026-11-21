@@ -40,9 +40,33 @@ PC名を登録すると、次回起動時のhostnameとPAIRの表示に「PC名�
 
 /modelsは登録先のModelsを読み取り専用で公開します。画像モデルのGGUFとmmprojは対応する組み合わせをモデルごとのサブフォルダへ置きます。mmprojのファイル名はmmprojで始めます。モデルを追加したら推論エンジンを再起動して一覧を確認します。
 
+### モデルごとにllama.cppの設定を変える
+
+0.99.2以降では、Windows側の登録先に `GPU-Linux\Models\llama-presets.ini` を置き、PAIRの推論エンジンを再起動すると、ノードごとにモデルのコンテキスト長やGPUへの配置を調整できます。登録時に別の保存フォルダを選んだ場合は、その中の `Models` に置きます。このファイルはroot更新後も保持されます。
+
+```ini
+version = 1
+
+[Gemma-Vision]
+ctx-size = 8192
+parallel = 1
+
+[Gemma-Code]
+ctx-size = 16384
+parallel = 1
+```
+
+角括弧にはllama.cppのモデル一覧（`/v1/models`）で表示されるIDを使います。自動検出では、モデル用フォルダを作った場合はその名前、`Models` 直下にGGUFを置いた場合は拡張子を除いたファイル名です。上のID・数値は例です。ノードのGPUと空きVRAMに合わせて調整し、推論時の実効コンテキスト長はllama.cppの `/slots` の `n_ctx` を確認します。GPUへ載せる層数は `n-gpu-layers`、KVキャッシュの型は `cache-type-k` と `cache-type-v` で指定できます。
+
+INIがなければ従来の起動設定を使います。INIがあっても、対応するセクションがないモデルには個別設定はかかりません。共通セクション `[*]` を書いた場合は、その設定が適用されます。追加するセクションはそのノードで使うモデルのIDに合わせてください。
+
+VRAMに合わせた `ctx-size` の調整と、VS Code・OpenCodeの値への換算は、[コンテキスト長の決め方](pair-usage/pair-client-setup.md#コンテキスト長の決め方)を参照してください。
+
 開発者PCでもPAIRを起動し、推論ノードと同じクラスタへ参加させます。通常のllama.cpp接続先は、その開発者PCの http://127.0.0.1:8080/v1 です。APIに送るモデル名は/v1/modelsで確認します。モデル名、コンテキスト上限、画像・ツール対応はクライアント設定と実際のエンジンを揃えます。
 
-開発ツールの設定と動作確認は[共通準備](pair-client-setup.md)、[VS Code](vscode-pair-parallel-quick-start.md)、[OpenCode](opencode-pair-parallel-quick-start.md)を参照してください。子エージェントの並行実行と、PAIRが実際にどのノードへ要求を振り分けたかは分けて確認します。
+開発ツールの設定と動作確認は[共通準備](pair-usage/pair-client-setup.md)、[VS Code](pair-usage/vscode-pair-parallel-quick-start.md)、[OpenCode](pair-usage/opencode-pair-parallel-quick-start.md)を参照してください。子エージェントの並行実行と、PAIRが実際にどのノードへ要求を振り分けたかは分けて確認します。
+
+複数人が使うクラスタでは、フォルダ名を `PAIR-Code` や `PAIR-Vision` にして[モデルIDを役割名で固定](pair-usage/pair-client-setup.md#モデルidを役割名で固定する)できます。
 
 ### USBにroot.imgやModelsを保存する場合
 

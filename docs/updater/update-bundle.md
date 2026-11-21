@@ -6,30 +6,37 @@ The build can produce an update bundle for production contract **1.1**. It conta
 
 ## Generate during a build
 
-Prepare and sign the modules as described in [Build Instructions](build.md), then run:
+Prepare and sign the modules as described in the [build instructions](../build.md). Start at sequence 1 when there is no archived previous release.
 
 ```sh
 python3 scripts/build-usb.py image --update-bundle --update-sequence 1
 ```
 
-The normal image remains at `build/usb-image/gpu-linux-usb.img`. Additional outputs are:
+The build creates the whole image in the workspace first. Once bundle verification succeeds, use `images/gpu-linux-usb.img` in the saved bundle for both flashing and updates.
 
 - `build/usb-image-source.json`: actual Git base, public source inventory, and uncommitted changes.
 - `build/usb-image-inspection-tools/`: extracted, hash-pinned Debian inspection tools.
-- `build/usb-image-update-bundle/manifest.json`: update contract and file hashes.
-- `build/usb-image-update-bundle/images/`: the whole image, used only as a source for selected partition ranges.
-- `build/usb-image-update-bundle/payload/`: individually listed management files.
-- `build/usb-image-update-bundle/reports/verification.json`: source, external-input, signature, and filesystem evidence.
+- `build/update-bundles/<version>/standard/sequence-1/manifest.json`: update contract and file hashes.
+- `build/update-bundles/<version>/standard/sequence-1/images/`: the whole image, used for flashing and as the source of updated partition ranges.
+- `build/update-bundles/<version>/standard/sequence-1/payload/`: individually listed management files.
+- `build/update-bundles/<version>/standard/sequence-1/reports/verification.json`: source, external-input, signature, and filesystem evidence.
+- `shared-media-verification.json` in the same `reports/` directory: readback record used when accepting the original flashed image as an update source.
+
+Bundles default to `build/update-bundles/<version>/<profile>/sequence-N/` in the project repository. When building from a separate workspace, this means the repository supplied with `--source-repository`. Use `--update-output` to choose another fresh destination.
+
+Keep the entire directory, or move it to another disk, if it will serve as a future update source. The manifest requires the image, payload, and reports for reinspection. Pass the saved bundle directory to `--accepted-image-directory` when qualifying the original flashed image as an update source.
 
 All output locations must be fresh and must not overlap. Use `--plan` to preview commands. The original image-only command remains available without `--update-bundle`.
 
-The bundle keeps another copy of the whole image, and inspection temporarily extracts root images and other files. Each accepted source also needs inspection space. Failed outputs and inspection files are retained for investigation; inspect the log and retry with a fresh output location.
+On the same filesystem, the image is published without copying its contents. For a destination on another filesystem, the build copies and verifies the image. It removes the workspace image path only after verification succeeds. Inspection temporarily extracts root images and other files. Failed runs retain the workspace image and partial outputs.
 
 Commit new source files before building, or explicitly include each untracked public source using repeated `--source-extra PATH` arguments. Modified tracked files are allowed and identified in the report. Keys, private notes, caches, vendored dependencies, and generated outputs are excluded from the public source inventory.
 
 ## Select known update sources
 
-By default, the bundle identifies the inspected initial media of its own release. This does **not** automatically authorize older or unknown USBs. To support an earlier initial build, select its verified image directory explicitly:
+The bundle accepts its own inspected image as an initial source. By default, it also selects the latest earlier release for the same profile from the archive, using the highest completed sequence within that release. Standard bundles accept media that was updated to that earlier release. Loan bundles accept media flashed from the earlier image. Use a new sequence higher than that of the selected bundle. Use `--plan` to see the selected source.
+
+An explicit `--accepted-bundle` or `--accepted-image-directory` replaces automatic selection. Use `--no-previous-source` to build without older sources. To explicitly accept initial media from an earlier build, supply its verified image directory.
 
 ```sh
 python3 scripts/build-usb.py image --update-bundle --update-sequence 1 \
@@ -41,8 +48,8 @@ The directory must contain the whole image and its `shared-media-verification.js
 For media previously updated with a known bundle, select that bundle's manifest and increase the sequence:
 
 ```sh
-python3 scripts/build-usb.py image --update-bundle --update-sequence 2 \
-  --accepted-bundle build/previous-update-bundle/manifest.json
+python3 scripts/build-usb.py image --update-bundle --update-sequence 4 \
+  --accepted-bundle build/update-bundles/0.99.1/standard/sequence-3/manifest.json
 ```
 
 Its image, payload, report, release fingerprint, and logical inventory are checked again. `update_sequence` must be unique and strictly increasing in the distribution series. The producer rejects release downgrades and unsupported layout, certificate, boot ABI, or state-schema changes.
@@ -98,3 +105,11 @@ The management payload excludes the registry, derived host files, candidates, ob
 Keep bundles, certificates, PC data, and inspection logs out of Git and public releases. A SHA-256 identifies bytes; it does not authenticate the publisher. Use explicitly selected, trusted local build artifacts.
 
 The immutable schemas and validation rules are in `inputs/updater-contract/v1/schemas/production-v1/README.md` (Japanese) in the repository. Filesystem inspection of ordinary files and contract tests do not establish Windows raw-device or hardware boot compatibility.
+
+## Apply a partial update to an existing USB
+
+1. Back up any data you need from the target USB to a separate location. Keep the update bundle’s directory structure intact.
+2. On Windows, open the GUI for a version of `pair-boot-usb-updater` that supports the media profile and update contract. Select `images/gpu-linux-usb.img` as the source image. The updater looks for `manifest.json` in the same bundle.
+3. Select the target USB and check its model, capacity, and the partitions listed for update before starting. Wait for final verification to finish, then safely eject the USB and test booting from it.
+
+For installation, resuming an interrupted update, or restoring from a backup, see `docs/usb-update.md` shipped with your version of the updater.

@@ -60,4 +60,4 @@ python3 scripts/build-usb.py image --profile loan \
   --update-bundle --update-sequence 1
 ```
 
-成果物は `build/usb-loan-update-bundle/manifest.json`、images、payload、reportsです。検証レポートには契約案への対応が必要な旨を記録します。秘密鍵、PC登録情報、実機ログは引継ぎ資料へ含めません。
+成果物は `build/update-bundles/<version>/loan/sequence-1/` のmanifest、images、payload、reportsです。検証レポートには契約案への対応が必要な旨を記録します。秘密鍵、PC登録情報、実機ログは引継ぎ資料へ含めません。

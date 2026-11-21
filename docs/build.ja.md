@@ -113,9 +113,11 @@ python scripts/build-usb.py image --signed-modules build/signed-modules-update -
 
 署名束と元moduleの整合性、payloadの不変、選択した証明書によるCMS署名を検査してから、GUI・空の共有台帳・MOK操作ツール、6GiBのroot.img、初期状態用の1GiBのstate.img、initramfs、署名済みEFIを組み合わせます。同じ公開証明書を署名束とGUI・MOKツールで使用します。
 
-最終出力は `build/usb-image/gpu-linux-usb.img` と `SHA256SUMS`、検査レポートです。GPT、FAT/ext4、initramfs、状態テンプレートのSHAと初期内容、イメージ内部の内容、パーティションの読戻しを検査します。ログは `build/image-01.log` 等です。
+上の例でUSBに書き込むイメージは `build/update-bundles/<version>/standard/sequence-1/images/gpu-linux-usb.img` です。manifestにイメージのSHA-256、更新束の検査レポートに検証結果が入ります。GPT、FAT/ext4、initramfs、状態テンプレートのSHAと初期内容、イメージ内部の内容、パーティションの読戻しを検査します。ログは `build/image-01.log` 等です。
 
-上の `--update-bundle` 指定により、部分更新用の `build/usb-image-update-bundle/manifest.json` と管理ファイル・検証記録も生成します。最初の `--update-sequence` は1とし、その後は同じ配布系統で増やします。以前のUSBからの更新に対応させるには、以前の構築物も明示して検査します。[部分更新用manifestの生成](update-bundle.ja.md)を参照してください。適用には対応するupdaterとLOGS加工helperが別途必要です。全体イメージだけが必要な場合は `--update-bundle` を外せます。
+上の `--update-bundle` 指定により、部分更新用の `build/update-bundles/<version>/standard/sequence-1/manifest.json` と管理ファイル・検証記録も生成します。最初の `--update-sequence` は1とし、その後は同じ配布系統で増やします。以前のUSBからの更新に対応させるには、以前の構築物も明示して検査します。[部分更新用manifestの生成](updater/update-bundle.ja.md)を参照してください。適用には対応するupdaterとLOGS加工helperが別途必要です。全体イメージだけが必要な場合は `--update-bundle` を外せます。
+
+**既存のUSBを部分更新する場合**は、Windowsで `pair-boot-usb-updater` を起動し、生成した更新束の `images/gpu-linux-usb.img` と対象USBを選びます。更新束は `manifest.json` や `payload/` を含め、フォルダごと使います。[既存USBに部分更新を適用する手順](updater/update-bundle.ja.md#既存usbに部分更新を適用する)を参照してください。
 
 USBに同梱する利用者向けMarkdown手順書は、当面は日本語版を使います。コピー先では`.ja`を外し、日英版の切替リンクを除いて、文書間のリンクも同梱ファイル名へ変更します。GUIから案内する`QUICK-START.md`や`DETAILS.md`等の名前は維持し、リンク先の手順書も一緒に`GPU-LOGS/tools/`とFedoraの`tools/`へ配置します。リポジトリ内の原稿と、第三者のライセンス表示は変更しません。
 

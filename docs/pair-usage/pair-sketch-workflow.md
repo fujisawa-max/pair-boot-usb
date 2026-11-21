@@ -2,7 +2,7 @@
 
 エディター別の定義ファイルは、[コピー用サンプルと配置方法](pair-agent-samples.md)から取得できます。画像担当・画面構造担当・外観担当を、PAIR DeveloperまたはUI Coordinatorから呼びます。Developerは一般コード・テスト・レビューも含む統括用、UI CoordinatorはUI実装専用です。[親の使い分け](pair-development-workflow.md#親の選び方)も参照してください。
 
-[VS Code](vscode-pair-parallel-quick-start.md#5-ポンチ絵から画面を実装する)／[OpenCode](opencode-pair-parallel-quick-start.md#4-ポンチ絵から画面を実装する)の画像・編集エージェントを使う手順です。設定や画像は、USBではなく**開発対象のプロジェクト**に置きます。依頼した言語・UIフレームワーク・対象OSに合わせて画面を設計・実装します。デスクトップ、モバイル、Webのいずれにも同じ役割分担を使えます。
+[VS Code](vscode-pair-parallel-quick-start.md#5-ポンチ絵から画面を実装する)／[OpenCode](opencode-pair-parallel-quick-start.md#4-ポンチ絵から画面を実装する)の画像・編集エージェントを使う手順です。設定や画像は**開発対象のプロジェクト**に置きます。依頼した言語・UIフレームワーク・対象OSに合わせて画面を設計・実装します。デスクトップ、モバイル、Webのいずれにも同じ役割分担を使えます。
 
 ## 1. 実装環境と画像を用意する
 

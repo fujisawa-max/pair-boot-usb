@@ -52,4 +52,4 @@ python3 scripts/build-usb.py image --profile loan \
 
 通常版には従来の契約1.1の更新束を生成します。貸出版には別ID `pair-loan-gpt512-v1` の契約1.2案を使います。**現行updaterは貸出版の契約に未対応であり、その対応と検証が済むまで貸出版の更新束を適用できません。** イメージ全体を新規USBへ書く用途とは区別してください。
 
-[updaterへの対応依頼](updater-loan-contract-request.md) と [更新束の生成手順](update-bundle.ja.md) を参照してください。通常版と貸出版を部分更新で相互変換することはできません。
+[updaterへの対応依頼](updater/updater-loan-contract-request.md) と [更新束の生成手順](updater/update-bundle.ja.md) を参照してください。通常版と貸出版を部分更新で相互変換することはできません。

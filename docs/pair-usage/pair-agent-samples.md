@@ -6,10 +6,10 @@
 
 | エディター | このリポジトリのサンプルフォルダ | 開発対象プロジェクト内のコピー先 |
 | --- | --- | --- |
-| VS Code | `docs/examples/pair-agents/vscode/agents/` | `.github/agents/` |
-| OpenCode v2 | `docs/examples/pair-agents/opencode/agents/` | `.opencode/agents/` |
+| VS Code | `docs/pair-usage/examples/pair-agents/vscode/agents/` | `.github/agents/` |
+| OpenCode v2 | `docs/pair-usage/examples/pair-agents/opencode/agents/` | `.opencode/agents/` |
 
-コピー先のフォルダがなければ作成します。同名ファイルがある場合は、内容を比較して必要な項目を統合してください。このリポジトリのフォルダをエディターへ登録する設定ではなく、作業するプロジェクトに定義を置く方式です。USBや推論PCへコピーする必要はありません。
+コピー先のフォルダがなければ作成します。同名ファイルがある場合は、内容を比較して必要な項目を統合してください。このリポジトリのフォルダをエディターへ登録する設定ではなく、作業するプロジェクトに定義を置く方式です。
 
 ## 用意した定義
 

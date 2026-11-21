@@ -8,7 +8,7 @@ VS Code標準チャットの **Local harnessとCustom Endpoint** を使います
 
 コマンドパレットで `Chat: Manage Language Models` を開き、Custom Endpointを追加します。API形式は **Chat Completions**、認証なしのローカルPAIR接続でキー入力が必須ならダミー値 `local` を使います。認証ありの環境では管理者指定の方法でキーを保存し、設定例へ実キーを書き込まないでください。
 
-開いた `chatLanguageModels.json` に次を統合します。2つの `id` を `/v1/models` の実際の値に置き換え、トークン数をエンジンの設定に合わせます。既存の接続先・認証参照は保持します。[公式のモデル設定](https://code.visualstudio.com/docs/agent-customization/language-models#custom-endpoint-configuration-reference)
+開いた `chatLanguageModels.json` に次を統合します。2つの `id` を `/v1/models` の実際の値に置き換え、トークン数をエンジンの実効値に合わせます。既存の接続先・認証参照は保持します。[コンテキスト長の決め方](pair-client-setup.md#コンテキスト長の決め方)・[公式のモデル設定](https://code.visualstudio.com/docs/agent-customization/language-models#custom-endpoint-configuration-reference)
 
 ```json
 [
@@ -45,7 +45,7 @@ VS Code標準チャットの **Local harnessとCustom Endpoint** を使います
 
 ### エディターから実際にファイルを読ませる
 
-ここからは、上の接続設定を済ませたエディターで操作します。開発対象のフォルダを開き、次の2ファイルを新規作成して保存してください。同名ファイルがあれば別名にして、依頼文のパスも変更します。USBや推論ノードへ作る必要はありません。
+ここからは、上の接続設定を済ませたエディターで操作します。開発対象のフォルダを開き、次の2ファイルを新規作成して保存してください。同名ファイルがあれば別名にして、依頼文のパスも変更します。
 
 `pair-check-a.txt`：
 
@@ -78,7 +78,7 @@ check_tokenとitem_countの値を報告してください。
 
 ## 3. 親と子の設定を作る
 
-**開発対象のプロジェクト**に次の3ファイルを作ります。既存ファイルがあれば統合します。USBや推論PCの設定ではありません。[カスタムエージェントの作成](https://code.visualstudio.com/docs/agent-customization/custom-agents)
+**開発対象のプロジェクト**に次の3ファイルを作ります。既存ファイルがあれば統合します。[カスタムエージェントの作成](https://code.visualstudio.com/docs/agent-customization/custom-agents)
 
 `.github/agents/pair-map.agent.md`：
 
@@ -336,6 +336,6 @@ LifeやHiScoreの位置について、newimage.pngを参照して調整してく
 | 子がファイルを知らない | 子の指示にパス・目的・制約を含める |
 | コンテキスト超過 | 小さいファイルと新しい会話で、サーバとクライアントの上限を照合する |
 
-2026-11-10時点の公式資料に基づくLocal用の設定例です。別のharnessへ同じツール名・設定を流用しないでください。USBイメージの再生成は不要です。[OpenCodeの手順](opencode-pair-parallel-quick-start.md)も用意しています。確認済みの範囲と残っている確認項目は [TODO](../TODO.md) を参照してください。
+2026-11-10時点の公式資料に基づくLocal用の設定例です。別のharnessへ同じツール名・設定を流用しないでください。[OpenCodeの手順](opencode-pair-parallel-quick-start.md)も用意しています。確認済みの範囲と残っている確認項目は [TODO](../../TODO.md) を参照してください。
 
 確認用の `pair-check-a.txt` と `pair-check-b.txt` は、確認後に削除して構いません。

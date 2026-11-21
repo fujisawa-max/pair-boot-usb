@@ -6,30 +6,37 @@
 
 ## 構築時に生成する
 
-[構築手順](build.ja.md)に従って準備とモジュールへの署名を済ませ、次を実行します。
+[構築手順](../build.ja.md)に従って準備とモジュールへの署名を済ませます。保管済みの旧版がない場合は、sequence 1から始めます。
 
 ```sh
 python3 scripts/build-usb.py image --update-bundle --update-sequence 1
 ```
 
-通常の全体イメージは `build/usb-image/gpu-linux-usb.img` に作成します。追加の出力は次のとおりです。
+構築時に全体イメージを作業先に生成します。更新束の検証が完了したら、書き込みにも更新にも、保管先の `images/gpu-linux-usb.img` を使います。
 
 - `build/usb-image-source.json`：実際のGit基準commit、公開ソースの一覧、未コミット変更の識別情報。
 - `build/usb-image-inspection-tools/`：固定したDebian検査ツールの展開先。
-- `build/usb-image-update-bundle/manifest.json`：更新契約と各ファイルのハッシュ。
-- `build/usb-image-update-bundle/images/`：選択区画の読取り元として使う全体イメージ。
-- `build/usb-image-update-bundle/payload/`：明示された個別の管理ファイル。
-- `build/usb-image-update-bundle/reports/verification.json`：ソース、外部データ、署名、ファイルシステムの検証記録。
+- `build/update-bundles/<version>/standard/sequence-1/manifest.json`：更新契約と各ファイルのハッシュ。
+- `build/update-bundles/<version>/standard/sequence-1/images/`：選択区画の読取り元として使う全体イメージ。
+- `build/update-bundles/<version>/standard/sequence-1/payload/`：明示された個別の管理ファイル。
+- `build/update-bundles/<version>/standard/sequence-1/reports/verification.json`：ソース、外部データ、署名、ファイルシステムの検証記録。
+- 同じ `reports/` の `shared-media-verification.json`：初回書き込み媒体を更新元に指定する際に使う読み戻し記録。
+
+更新束はプロジェクトの `build/update-bundles/<version>/<profile>/sequence-N/` に保存します。別の作業コピーで構築する場合、`--source-repository` で指定したリポジトリの `build/` が基準です。`--update-output` で新しい出力先を指定することもできます。
+
+更新束を今後も更新元として使う場合は、フォルダ全体を残すか、別のディスクへ移してください。manifestだけでは再検査できず、`images/`・`payload/`・`reports/` が必要です。保存した束は、その版を初回書き込みした媒体の検査にも `--accepted-image-directory` で指定できます。
 
 出力先はすべて新規の、互いに重ならない場所を指定します。`--plan` で実行予定を確認できます。`--update-bundle` を付けなければ、従来どおり全体イメージだけを生成します。
 
-更新束には全体イメージをもう1部保存し、検査中はroot等も一時展開します。更新元を追加するとその検査にも空き容量が必要です。失敗時の出力と検査用ファイルは調査のため保持するので、ログを確認し、新しい出力先で再試行します。
+同じファイルシステム上ではイメージを複製せずに保管し、検証成功後に作業先のファイル名を取り除きます。別のファイルシステムへの出力ではコピーを検証してから作業先のイメージを取り除きます。検査中はroot等を一時展開します。失敗した場合は作業先のイメージと途中の出力を保持します。
 
 新規ソースは構築前にコミットするか、`--source-extra PATH` を繰り返して未追跡の公開ソースを明示します。追跡済みファイルの未コミット変更はレポートで識別します。鍵、非公開メモ、cache、取得した第三者ソース、生成物は公開ソース一覧へ含めません。
 
 ## 対応する更新元を指定する
 
-既定では、その束で実検査した同じ版の初期媒体を識別します。古いUSBや未知のUSBまで自動的に対応するわけではありません。以前の初期構築媒体からの更新に対応する場合は、その検査済みイメージのディレクトリを明示します。
+新しいイメージに加え、既定では保管先から同じ種類の最新旧版を選びます。同じ旧版に複数の更新束がある場合は、完成済みのうち最大のsequenceを使います。通常版では、その旧版へ部分更新済みの媒体を更新元にします。貸出版では、その旧版のイメージを初回書き込みした媒体を更新元にします。新しいsequenceには、選ばれた更新束より大きな値を指定します。`--plan` で使う更新元を確認できます。
+
+`--accepted-bundle` や `--accepted-image-directory` で更新元を指定すると、既定の選択に代わります。旧版を更新元に含めず構築するには `--no-previous-source` を指定します。以前の初期構築媒体を明示する例は次のとおりです。
 
 ```sh
 python3 scripts/build-usb.py image --update-bundle --update-sequence 1 \
@@ -41,8 +48,8 @@ python3 scripts/build-usb.py image --update-bundle --update-sequence 1 \
 既知の更新束を適用した媒体からさらに更新する場合は、そのmanifestを指定し、sequenceを増やします。
 
 ```sh
-python3 scripts/build-usb.py image --update-bundle --update-sequence 2 \
-  --accepted-bundle build/previous-update-bundle/manifest.json
+python3 scripts/build-usb.py image --update-bundle --update-sequence 4 \
+  --accepted-bundle build/update-bundles/0.99.1/standard/sequence-3/manifest.json
 ```
 
 元のイメージ、payload、レポート、版の識別情報、論理ファイル一覧を再検査します。`update_sequence` は配布系統内で重複しない単調増加の番号にします。版の降格と、未対応の配置・証明書・boot ABI・state形式の変更は拒否します。
@@ -98,3 +105,11 @@ EFI・MASTER・LOGSは必須の更新対象です。Fedoraは契約の選択規�
 完成した更新束、証明書、PC情報、検査ログはGitや公開Releaseへ登録しません。SHA-256はバイト列の識別であり、配布者の真正性を保証しません。利用者が信頼するローカルの構築物を明示して使います。
 
 固定したschemaと検証規則は、リポジトリ内の `inputs/updater-contract/v1/schemas/production-v1/README.md` を参照してください。通常ファイルの検査や契約試験の成功は、Windowsの実デバイスへの適用や実機起動の確認とは区別します。
+
+## 既存USBに部分更新を適用する
+
+1. 対象USBに必要なデータがあれば、別の場所へバックアップします。更新束の中のファイルは、フォルダ構成を保ったまま使います。
+2. Windowsで、使う媒体の種類と更新契約に対応した `pair-boot-usb-updater` のGUIを開きます。更新元イメージに `images/gpu-linux-usb.img` を選ぶと、updaterが同じ更新束の `manifest.json` を探します。
+3. 対象USBを選び、型番・容量と、表示された更新対象を確認してから書き込みを開始します。最終検証の完了を確認し、安全に取り外して起動を試します。
+
+インストールや中断後の再開・復元に関する詳しい手順は、使用するupdaterに付属する `docs/usb-update.md` を参照してください。
