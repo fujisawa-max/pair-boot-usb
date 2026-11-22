@@ -6,9 +6,13 @@ VS Code標準チャットの **Local harnessとCustom Endpoint** を使います
 
 ## 1. モデルを登録する
 
-コマンドパレットで `Chat: Manage Language Models` を開き、Custom Endpointを追加します。API形式は **Chat Completions**、認証なしのローカルPAIR接続でキー入力が必須ならダミー値 `local` を使います。認証ありの環境では管理者指定の方法でキーを保存し、設定例へ実キーを書き込まないでください。
+1. `Ctrl+Shift+P`（macOSでは `Cmd+Shift+P`）でコマンドパレットを開き、`Chat: Manage Language Models` を実行します。
+2. モデル管理画面で **Add Models**（モデルの追加）を選び、一覧から **Custom Endpoint** を選びます。
+3. 画面の案内に沿って表示名（例 `PAIR`）とAPIキーを設定し、API形式に **Chat Completions** を選びます。認証なしのローカルPAIR接続でキー入力が必須ならダミー値 `local` を使います。認証ありの環境では管理者指定の方法でキーを保存します。
 
-開いた `chatLanguageModels.json` に次を統合します。2つの `id` を `/v1/models` の実際の値に置き換え、トークン数をエンジンの実効値に合わせます。既存の接続先・認証参照は保持します。[コンテキスト長の決め方](pair-client-setup.md#コンテキスト長の決め方)・[公式のモデル設定](https://code.visualstudio.com/docs/agent-customization/language-models#custom-endpoint-configuration-reference)
+追加操作の後、VS Codeが `chatLanguageModels.json` を開きます。下のJSONは、上の手順で作られた `PAIR` グループにモデル情報を加えたあとの完成例です。ファイル内で作成済みのグループを見つけ、その中の `models` を編集します。グループ全体を貼り付けると同じグループが重複します。
+
+2つの `id` を `/v1/models` の実際の値に置き換え、接続先URLとトークン数を環境に合わせて保存します。設定済みの認証情報や他のグループはそのままにします。[コンテキスト長の決め方](pair-client-setup.md#コンテキスト長の決め方)・[公式のモデル設定](https://code.visualstudio.com/docs/agent-customization/language-models#custom-endpoint-configuration-reference)
 
 ```json
 [
