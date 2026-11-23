@@ -242,7 +242,7 @@ $main = [Windows.Forms.TableLayoutPanel]::new(); $main.Dock='Fill'; $main.Column
 $main.Padding=[Windows.Forms.Padding]::new(12); $form.Controls.Add($main)
 $tabs=[Windows.Forms.TabControl]::new(); $tabs.Dock='Fill'
 foreach ($category in @('pc-info','registry','diagnostics')) { $tab=[Windows.Forms.TabPage]::new();$tab.Text=T $category;$tab.Tag=$category;[void]$tabs.TabPages.Add($tab) }
-$tabs.SelectedIndex=0
+$tabs.SelectedIndex=1
 $header=[Windows.Forms.TableLayoutPanel]::new();$header.Dock='Fill';$header.ColumnCount=2;$header.RowCount=1
 [void]$header.ColumnStyles.Add([Windows.Forms.ColumnStyle]::new('Percent',100))
 [void]$header.ColumnStyles.Add([Windows.Forms.ColumnStyle]::new('Absolute',300))

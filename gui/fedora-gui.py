@@ -297,7 +297,7 @@ def name_update(mount, request):
 def main():
     if not shutil.which('zenity'):
         sys.exit('Zenity is required; use the CLI instructions.')
-    categories = [{'id': item, 'label': item} for item in ('registration', 'registry', 'mok', 'maintenance', 'language')]
+    categories = [{'id': item, 'label': item} for item in ('registry', 'registration', 'mok', 'maintenance', 'language')]
     while True:
         try:
             try:
