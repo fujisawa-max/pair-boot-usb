@@ -3,6 +3,9 @@ check() { return 255; }
 depends() { echo 'base shutdown'; }
 installkernel() {
   hostonly='' instmods -c loop ext4 gpu_unlock
+  if [ -f "$moddir/boot-integrity-signer.pem" ]; then
+    hostonly='' instmods dm_verity
+  fi
   hostonly='' instmods vfat fat nls_cp437 nls_ascii nls_utf8
   hostonly='' instmods nvme ahci sd_mod usb_storage uas xhci_pci ehci_pci
   # A USB keyboard must also work before the root image is available.
@@ -29,6 +32,12 @@ install() {
     esac
   done < <(find /usr/lib/python3.13 -type f ! -path '*/__pycache__/*')
   inst_simple "$moddir/gpu-root.py" /usr/lib/gpu-root.py
+  inst_simple "$moddir/boot-integrity.py" /usr/lib/boot-integrity.py
+  if [ -f "$moddir/boot-integrity-signer.pem" ]; then
+    inst_binary /usr/bin/openssl || return 1
+    inst_multiple dmsetup || return 1
+    inst_simple "$moddir/boot-integrity-signer.pem" /usr/lib/pair-boot-integrity-signer.pem || return 1
+  fi
   inst_simple "$moddir/fleet-registry.py" /usr/lib/fleet-registry.py
   inst_simple "$moddir/storage-target.py" /usr/lib/storage-target.py
   inst_simple "$moddir/persistent-state.py" /usr/lib/persistent-state.py

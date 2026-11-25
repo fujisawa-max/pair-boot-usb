@@ -7,6 +7,7 @@ import subprocess
 import sys
 
 UNIT = 'gpu-pair-session.service'
+GATEWAY = 'gpu-pair-gateway.service'
 DESCRIPTION = 'PAIR BOOT managed session'
 
 
@@ -44,6 +45,7 @@ def session(call=subprocess.run, cgroups=Path('/sys/fs/cgroup')):
                '--service-type=exec', '--pty', '--wait', '--collect', '--quiet',
                '--property=User=gpu', '--property=Group=gpu', '--property=WorkingDirectory=/home/gpu',
                '--property=KillMode=control-group', '--property=SendSIGKILL=yes',
+               '--property=Wants=' + GATEWAY,
                '--property=TimeoutStopSec=15s', '--property=Restart=no',
                '--setenv=HOME=/home/gpu', '--setenv=XDG_CONFIG_HOME=/home/gpu/.config',
                '--setenv=XDG_CACHE_HOME=/var/cache/gpu-inference',
@@ -53,12 +55,17 @@ def session(call=subprocess.run, cgroups=Path('/sys/fs/cgroup')):
     try:
         result = call(command, check=False)
     finally:
-        current = status(call)
-        if current.get('LoadState') != 'not-found':
-            stopped = call(['/usr/bin/systemctl', 'stop', UNIT], capture_output=True, text=True, timeout=25)
+        try:
+            gateway = call(['/usr/bin/systemctl', 'stop', GATEWAY], capture_output=True, text=True, timeout=25)
+            if gateway.returncode:
+                raise RuntimeError('PAIR gateway cleanup could not be verified')
+        finally:
             current = status(call)
-            if stopped.returncode or not empty(current, cgroups):
-                raise RuntimeError('PAIR session cleanup could not be verified; restart is blocked')
+            if current.get('LoadState') != 'not-found':
+                stopped = call(['/usr/bin/systemctl', 'stop', UNIT], capture_output=True, text=True, timeout=25)
+                current = status(call)
+                if stopped.returncode or not empty(current, cgroups):
+                    raise RuntimeError('PAIR session cleanup could not be verified; restart is blocked')
     return result.returncode
 
 

@@ -193,7 +193,7 @@ class NoGpuTests(unittest.TestCase):
         hook = ROOT / 'runtime/dracut/95gpu-root/early-unlock.sh'
         shell = ('root=gpu-root; getarg() { echo "$test_flag"; }; '
                  'modprobe() { echo MODULE_ATTEMPT; return 1; }; '
-                 'warn() { :; }; emergency_shell() { exit 23; }; . "$1"')
+                 'warn() { :; }; sleep() { exit 23; }; emergency_shell() { exit 99; }; . "$1"')
         for flag, expected in [('1', 0), ('', 23), ('0', 23)]:
             result = subprocess.run(['sh', '-c', 'test_flag=' + flag + '; ' + shell, 'fixture', str(hook)],
                                     capture_output=True, text=True)

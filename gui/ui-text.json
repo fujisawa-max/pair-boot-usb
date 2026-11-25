@@ -1,4 +1,15 @@
 {
+  "gateway": {"ja": "学生向けAPIの端末登録", "en": "Student API node enrollment"},
+  "gateway_request": {"ja": "端末鍵と公開CSRを生成", "en": "Generate node key and public CSR"},
+  "gateway_verify": {"ja": "返却されたサーバー証明書を照合", "en": "Verify the returned server certificate"},
+  "gateway_dns": {"ja": "授業用の共通DNS名", "en": "Shared DNS name for the class"},
+  "gateway_parent": {"ja": "管理者専用の保存先フォルダを選択", "en": "Select an owner-only storage folder"},
+  "gateway_node_directory": {"ja": "端末鍵とCSRを生成したフォルダを選択", "en": "Select the folder containing the node key and CSR"},
+  "gateway_private_directory": {"ja": "実行ユーザーが所有し、他のユーザーに権限がないフォルダを指定してください。", "en": "Select a folder owned by the current user with no permissions for other users."},
+  "gateway_trusted_ca": {"ja": "事前に信頼したCA証明書を選択", "en": "Select the previously trusted CA certificate"},
+  "gateway_server_certificate": {"ja": "返却されたサーバー証明書を選択", "en": "Select the returned server certificate"},
+  "gateway_send_csr": {"ja": "署名担当者へ渡すのは次の公開CSRだけです。", "en": "Send only the following public CSR to the certificate issuer."},
+  "gateway_verified": {"ja": "CA、共通DNS名、CSR、端末鍵と証明書が一致しました。", "en": "The certificate matches the trusted CA, shared DNS name, CSR, and node key."},
   "title": {
     "ja": "PAIR BOOT 管理ツール",
     "en": "PAIR BOOT Manager"

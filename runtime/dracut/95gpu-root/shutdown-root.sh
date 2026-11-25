@@ -14,7 +14,7 @@ if [ -f "$gpu_state/state.json" ]; then
   if ismounted /oldroot/models; then
     umount /oldroot/models || { gpu_shutdown_fail 'models busy'; return 1; }
   fi
-  for gpu_bind in var/cache/gpu-inference etc/hostname etc/machine-id var/lib/gpu-root home/gpu persist; do
+  for gpu_bind in var/tmp/gpu-inference var/cache/gpu-inference etc/hostname etc/machine-id var/lib/gpu-root home/gpu persist; do
     if ismounted "/oldroot/$gpu_bind"; then
       umount "/oldroot/$gpu_bind" || { gpu_shutdown_fail "state mount $gpu_bind busy"; return 1; }
     fi
@@ -32,11 +32,20 @@ if [ -f "$gpu_state/state.json" ]; then
   fi
   gpu_loop=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["loop"])' "$gpu_state/state.json") || return 1
   case "$gpu_loop" in /dev/loop[0-9]*) ;; *) gpu_shutdown_fail 'invalid loop state'; return 1 ;; esac
+  gpu_hash_loop=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("verity_hash_loop", ""))' "$gpu_state/state.json") || return 1
+  if [ -n "$gpu_hash_loop" ]; then
+    case "$gpu_hash_loop" in /dev/loop[0-9]*) ;; *) gpu_shutdown_fail 'invalid verity hash loop state'; return 1 ;; esac
+    if [ -e /dev/mapper/pair-root-verity ]; then
+      dmsetup remove pair-root-verity || { gpu_shutdown_fail 'verity mapping still busy'; return 1; }
+    fi
+    python3 /usr/lib/detach-loop.py "$gpu_hash_loop" || { gpu_shutdown_fail 'verity hash loop cleanup not confirmed'; return 1; }
+  fi
   python3 /usr/lib/detach-loop.py "$gpu_loop" || { gpu_shutdown_fail 'root loop cleanup not confirmed'; return 1; }
   if ismounted "$gpu_state/ntfs"; then
     sync -f "$gpu_state/ntfs" || { gpu_shutdown_fail 'NTFS sync failed'; return 1; }
     umount "$gpu_state/ntfs" || { gpu_shutdown_fail 'NTFS still busy'; return 1; }
   fi
   rm "$gpu_state/state.json"
+  [ -z "$gpu_hash_loop" ] || rm -f "$gpu_state/root.verity"
 fi
-unset gpu_loop gpu_state_loop gpu_state
+unset gpu_loop gpu_hash_loop gpu_state_loop gpu_state

@@ -4,6 +4,7 @@ import argparse
 import hashlib
 import json
 import re
+import runpy
 from pathlib import Path
 import struct
 import subprocess
@@ -276,6 +277,27 @@ def main():
                 raise ValueError('Missing configuration FAT driver: ' + module)
         if not args.diagnostic and 'load_env --file=' not in (tree / 'boot/grub/grub.cfg').read_text():
             raise ValueError('Shared registry boot selection missing')
+    integrity_signer = 'usr/lib/pair-boot-integrity-signer.pem'
+    source_root = Path(__file__).resolve().parents[1]
+    integrity_files = ('gpu-linux/boot-integrity.json', 'gpu-linux/boot-integrity.sig')
+    if integrity_signer in entries or 'boot_integrity_signer_sha256' in manifest:
+        if not {integrity_signer, 'usr/lib/boot-integrity.py', 'usr/bin/openssl'} <= entries.keys():
+            raise ValueError('Boot authorization dependencies are missing from initramfs')
+        offset, size = entries['usr/lib/boot-integrity.py']
+        if data[offset:offset+size] != (source_root / 'runtime/boot-integrity.py').read_bytes():
+            raise ValueError('Boot authorization verifier differs from source')
+        offset, size = entries[integrity_signer]
+        integrity = runpy.run_path(str(source_root / 'runtime/boot-integrity.py'))
+        with tempfile.TemporaryDirectory(prefix='pair-master-pinned-signer-') as folder:
+            signer = Path(folder) / 'signer.pem'
+            signer.write_bytes(data[offset:offset+size])
+            verity = []
+            integrity['verify_master'](tree, signer, verity_result=verity)
+        if verity and (not any(Path(name).name == 'dmsetup' for name in entries)
+                       or not any('/dm-verity.ko' in name for name in entries)):
+            raise ValueError('Verity dependencies are missing from initramfs')
+    elif any((tree / path).exists() or (tree / path).is_symlink() for path in integrity_files):
+        raise ValueError('Boot authorization files have no embedded release signer')
     runtime_entry = entries["usr/lib/gpu-root.py"]
     controller = data[runtime_entry[0]:runtime_entry[0]+runtime_entry[1]]
     if controller != (Path(__file__).resolve().parents[1] / "runtime/gpu-root.py").read_bytes():
@@ -361,8 +383,21 @@ def main():
         pair_unit = debug('cat /usr/lib/systemd/system/gpu-pair.service')
         if 'ExecStart=/usr/bin/python3 /usr/lib/gpu-root/pair-console.py' not in pair_unit:
             raise ValueError('PAIR service does not launch the local menu')
-        if 'KillSignal=SIGHUP' not in debug('cat /usr/lib/systemd/system/gpu-root-console.service'):
+        if inside.get('local_maintenance_console') and 'KillSignal=SIGHUP' not in debug('cat /usr/lib/systemd/system/gpu-root-console.service'):
             raise ValueError('Maintenance console lacks graceful shutdown signal')
+    locked_console = inside.get('console_login_policy') == 'disabled'
+    if locked_console or manifest['version'] == '1.1.1':
+        if not locked_console or inside.get('local_maintenance_console'):
+            raise ValueError('Console login policy differs from release')
+        for name in ('gpu-root-console.service', 'getty@.service', 'serial-getty@.service',
+                     'console-getty.service', 'container-getty@.service', 'debug-shell.service',
+                     'emergency.service', 'rescue.service'):
+            if 'Fast link dest: "/dev/null"' not in debug(f'stat /etc/systemd/system/{name}'):
+                raise ValueError('Console login service is not masked: ' + name)
+        required_args = {'rd.shell=0', 'rd.systemd.mask=debug-shell.service'}
+        if any(not required_args.issubset(line.split()) or 'SYSTEMD_SULOGIN_FORCE=1' in line.split()
+               for line in kernel_lines):
+            raise ValueError('Initramfs shell restrictions are missing')
     pair_runtime_checked = False
     if manifest.get('persistent_state'):
         meta = manifest['persistent_state']
@@ -402,9 +437,23 @@ def main():
         for helper in ('boot-banner.py', 'pair-session.py'):
             if 'Type: regular' not in debug('stat /usr/lib/gpu-root/' + helper):
                 raise ValueError('PAIR console helper missing: ' + helper)
+        if inside.get('student_gateway_schema') == 1 or manifest['version'] in ('1.1.0', '1.1.1'):
+            for path in ('/usr/bin/caddy', '/usr/sbin/keepalived', '/usr/sbin/nft',
+                         '/usr/lib/gpu-root/pair-gateway.py', '/usr/lib/systemd/system/gpu-pair-gateway.service'):
+                if 'Type: regular' not in debug('stat ' + path):
+                    raise ValueError('Student gateway component missing: ' + path)
+            for name in ('caddy', 'keepalived', 'nftables'):
+                if 'Fast link dest: "/dev/null"' not in debug(f'stat /etc/systemd/system/{name}.service'):
+                    raise ValueError('Unmanaged gateway service is not masked: ' + name)
+            for path in ('/run/pair-gateway', '/run/pair-gateway-credentials'):
+                if 'Type:' in debug('stat ' + path):
+                    raise ValueError('Student gateway runtime directory in master image')
         if inside.get('console_layout') is not None:
             pair_unit = debug('cat /usr/lib/systemd/system/gpu-pair.service')
-            if (inside['console_layout'] != {'logs': '/dev/tty1', 'maintenance': '/dev/tty2', 'pair': '/dev/tty3'}
+            expected_console = {'logs': '/dev/tty1', 'pair': '/dev/tty3'}
+            if not locked_console:
+                expected_console['maintenance'] = '/dev/tty2'
+            if (inside['console_layout'] != expected_console
                     or 'TTYPath=/dev/tty3' not in pair_unit or 'console-layout.py logs' not in pair_unit
                     or any('console=tty1' not in line for line in kernel_lines)):
                 raise ValueError('PAIR and log consoles are not separated')

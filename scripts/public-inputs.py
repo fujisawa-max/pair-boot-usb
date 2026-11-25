@@ -43,7 +43,7 @@ def public_key(name):
     return path, entry['fingerprint']
 
 
-def signed_cleartext(signed, name):
+def signed_cleartext(signed, name, *, allow_unknown_cosigners=False):
     key, expected = public_key(name)
     with tempfile.TemporaryDirectory(prefix='public-signature-verification-') as folder:
         home = Path(folder)
@@ -56,12 +56,18 @@ def signed_cleartext(signed, name):
         plain = home / 'verified-content'
         result = subprocess.run(['gpgv', '--homedir', str(home), '--keyring', str(ring),
                                  '--status-fd', '1', '--output', str(plain), str(signed)],
-                                check=True, capture_output=True, text=True)
+                                capture_output=True, text=True)
         valid = [line.split() for line in result.stdout.splitlines()
                  if line.startswith('[GNUPG:] VALIDSIG ')]
-        if any(line.split()[1] in ('BADSIG', 'ERRSIG', 'EXPKEYSIG', 'EXPSIG', 'REVKEYSIG')
-               for line in result.stdout.splitlines() if line.startswith('[GNUPG:] ')):
+        statuses = [line.split()[1:] for line in result.stdout.splitlines() if line.startswith('[GNUPG:] ')]
+        errors = [fields for fields in statuses if fields[0] == 'ERRSIG']
+        unknown = {fields[1] for fields in statuses if fields[0] == 'NO_PUBKEY'}
+        if any(fields[0] in ('BADSIG', 'EXPKEYSIG', 'EXPSIG', 'REVKEYSIG', 'NODATA', 'FAILURE')
+               for fields in statuses):
             raise ValueError('Rejected invalid, expired or revoked signature')
+        if result.returncode and not (allow_unknown_cosigners and result.returncode == 2 and errors
+                                      and all(fields[6] == '9' and fields[1] in unknown for fields in errors)):
+            result.check_returncode()
         if not any(expected in (line[2], line[-1]) for line in valid):
             raise ValueError('Signature is not from the pinned official key')
         return plain.read_bytes()

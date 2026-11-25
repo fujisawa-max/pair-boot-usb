@@ -53,7 +53,7 @@ def boot_failure(error):
     border = '=' * 70
     return '\n\n' + border + '\nPAIR BOOT - STARTUP STOPPED\n\n' + title + '\n\n' + \
         textwrap.fill(hint, width=70) + '\n\nDetails:\n' + textwrap.fill(detail, width=70) + \
-        '\n\nAutomatic boot will not continue. A maintenance prompt follows.\n' + border + '\n\n'
+        '\n\nAutomatic boot will not continue.\n' + border + '\n\n'
 
 
 def require_gpu_unlock_loaded(module_root=Path("/sys/module")):
@@ -238,9 +238,9 @@ def new_json(path, value):
     sync_directory(path.parent)
 
 
-def manifest_at(path):
+def manifest_at(path, authorized=None):
     regular(path)
-    value = json.loads(path.read_text())
+    value = json.loads(path.read_bytes() if authorized is None else authorized)
     if value.get("schema") != 1 or not re.fullmatch(r"[a-zA-Z0-9._-]{1,64}", value.get("version", "")):
         raise SafetyError("Invalid master manifest schema/version")
     if not re.fullmatch(r"[a-f0-9]{64}", value.get("sha256", "")):
@@ -577,6 +577,10 @@ def boot(config):
     for path in (usb_mount, ntfs_mount):
         path.mkdir(exist_ok=True)
     loop = None
+    hash_loop = None
+    verity_open = False
+    verity_copy = state / 'root.verity'
+    verity_result = []
     root_mounted = False
     models_mounted = False
     persistent_mounts = []
@@ -586,7 +590,19 @@ def boot(config):
         if run("blkid", "-p", "-s", "TYPE", "-o", "value", usb) != "ext4":
             raise SafetyError("USB master data partition must be ext4 (separate from EFI FAT)")
         run("mount", "-t", "ext4", "-o", "ro,noload,nodev,nosuid,noexec", usb, str(usb_mount))
-        manifest = manifest_at(usb_mount / "gpu-linux/master.json")
+        import runpy
+        integrity = runpy.run_path('/usr/lib/boot-integrity.py')
+        try:
+            authorized = integrity['verify_master'](usb_mount, verity_copy=verity_copy,
+                                                    verity_result=verity_result)
+            if verity_result:
+                run('modprobe', 'dm-verity')
+                run('dmsetup', 'version')
+        except (OSError, ValueError, subprocess.SubprocessError) as error:
+            raise SafetyError('MASTER boot authorization rejected; stopping before NTFS access') from error
+        manifest = manifest_at(usb_mount / "gpu-linux/master.json", authorized)
+        if authorized is None and 'boot_integrity_signer_sha256' in manifest:
+            raise SafetyError('MASTER requires an embedded boot integrity signer')
         if manifest["kernel_release"] != os.uname().release:
             raise SafetyError("USB kernel and master image version do not match")
         hardware = Path("/sys/class/dmi/id/product_uuid").read_text()
@@ -608,7 +624,6 @@ def boot(config):
         selected = [word.split("=", 1)[1] for word in Path("/proc/cmdline").read_text().split()
                     if word.startswith("gpu_unlock.targets=")]
         if manifest.get('automatic_root_recovery') is True and not test:
-            import runpy
             policy = runpy.run_path('/usr/lib/fleet-registry.py')
             gpu = Path('/sys/bus/pci/devices') / profile['gpu_bdf']
             actual = (gpu / 'vendor').read_text().strip().removeprefix('0x') + ':' + (gpu / 'device').read_text().strip().removeprefix('0x')
@@ -626,7 +641,6 @@ def boot(config):
                 raise SafetyError("Master SHA-256 mismatch before NTFS mount")
         with progress.step('Checking USB root.img filesystem'):
             validate_ext4(master)
-        import runpy
         import types
         state_api = types.SimpleNamespace(**globals())
         template = runpy.run_path('/usr/lib/persistent-state.py')['metadata'](state_api, manifest)
@@ -645,7 +659,6 @@ def boot(config):
         check_volume(kind, probe)
         mount_readwrite(ntfs, ntfs_mount)
         parent, models = storage_paths(ntfs_mount, profile.get("storage_directory", "GPU-Linux"))
-        import runpy
         import types
         api = types.SimpleNamespace(**globals())
         helper = runpy.run_path('/usr/lib/root-maintenance.py')['maintain']
@@ -669,6 +682,13 @@ def boot(config):
                 return replacement(api, master, target, receipt, manifest)
             return helper(api, target, receipt, manifest, None, state)
         image, created = provision(master, parent, manifest, maintenance=maintenance, prepare_new=create_state)
+        if authorized is not None:
+            installed_progress = ImageProgress('Checking the selected root against the signed MASTER', 1)
+            with installed_progress.step('Verifying installed root.img SHA-256', manifest['size']):
+                try:
+                    integrity['verify_installed_root'](image, manifest, installed_progress)
+                except (OSError, ValueError) as error:
+                    raise SafetyError(f'Installed root authorization rejected: {error}') from error
         state_image, state_receipt = persistent['inspect'](api, parent, hardware)
         state_release = {'version': 'state-v1', 'sha256': state_receipt['original_sha256']}
         helper(api, state_image, state_receipt, state_release, None, state, prefix='state')
@@ -680,21 +700,36 @@ def boot(config):
         policy = runpy.run_path('/usr/lib/release-info.py')
         if not policy['compatible'](release, os.uname().release, manifest):
             raise SafetyError("Existing root version/kernel incompatible; no automatic update")
-        loop = run("losetup", "--find", "--show", "--nooverlap", str(image))
-        run("mount", "-t", "ext4", "-o", "rw,noatime", loop, "/sysroot")
+        loop_args = ('--read-only',) if verity_result else ()
+        loop = run("losetup", "--find", "--show", "--nooverlap", *loop_args, str(image))
+        if verity_result:
+            hash_loop = run('losetup', '--find', '--show', '--read-only', str(verity_copy))
+            table = integrity['verity_table'](verity_result[0], loop, hash_loop)
+            run('dmsetup', 'create', 'pair-root-verity', '--readonly', '--table', table)
+            verity_open = True
+            run('mount', '-t', 'ext4', '-o', 'ro,noload,noatime', '/dev/mapper/pair-root-verity', '/sysroot')
+        else:
+            run("mount", "-t", "ext4", "-o", "rw,noatime", loop, "/sysroot")
         root_mounted = True
         if test:
             runpy.run_path('/usr/lib/no-gpu-test.py')['install'](Path('/sysroot'), state)
         state_loop = persistent['attach'](api, state_image, hardware, Path('/sysroot'), persistent_mounts)
+        if verity_open:
+            scratch = Path('/sysroot/var/tmp/gpu-inference')
+            run('mount', '-t', 'tmpfs', '-o', 'nodev,nosuid,mode=0700,uid=1000,gid=1000',
+                'tmpfs', str(scratch))
+            persistent_mounts.append(scratch)
         run("mount", "--bind", str(models), "/sysroot/models")
         models_mounted = True
         run("mount", "-o", "remount,bind,ro,nodev,nosuid,noexec", "/sysroot/models")
         run("umount", str(usb_mount))
         new_json(state / "state.json", {"loop": loop, "created": created,
+                                        **({'verity_hash_loop': hash_loop} if verity_open else {}),
                                         "version": release["version"],
                                         **({'root_revision': release['root_revision']} if 'root_revision' in release else {}),
                                         "usb_version": manifest["version"], "windows_computer_name": profile.get("windows_computer_name"), "state_schema": 1, "state_loop": state_loop,
                                         "mode": "TEST" if test else ("Unlock" if selected else "Normal"),
+                                        "storage_directory": parent.name,
                                         "usb_device": usb, "usb_unmounted": True, **storage_state})
         # /run survives switch_root; shutdown hook tears down root -> loop -> NTFS.
     except BaseException:
@@ -706,8 +741,14 @@ def boot(config):
             run("losetup", "--detach", state_loop)
         if root_mounted:
             run("umount", "/sysroot")
+        if verity_open:
+            run('dmsetup', 'remove', 'pair-root-verity')
+        if hash_loop:
+            run('losetup', '--detach', hash_loop)
         if loop:
             run("losetup", "--detach", loop)
+        if verity_result:
+            verity_copy.unlink(missing_ok=True)
         if os.path.ismount(ntfs_mount):
             run("sync", "-f", str(ntfs_mount))
             run("umount", str(ntfs_mount))

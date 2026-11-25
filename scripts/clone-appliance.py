@@ -57,11 +57,15 @@ def clone(source, output, profile):
     output.mkdir(parents=True)
     subprocess.run(['cp', '-a', '--reflink=auto', '--sparse=always', str(source) + '/.', str(output)], check=True)
     tree = output / 'usb-tree'
+    if 'boot_integrity_signer_sha256' in manifest:
+        # The clone has a new MASTER identity and menu. Its authorization
+        # must be issued for those new bytes, never carried from the source.
+        for name in ('boot-integrity.json', 'boot-integrity.sig'):
+            (tree / 'gpu-linux' / name).unlink()
     manifest['usb_data_uuid'] = str(uuid.uuid4())
     write_copied_metadata(tree / 'gpu-linux/master.json', json.dumps(manifest, indent=2) + '\n')
     menu = runpy.run_path(str(ROOT / 'scripts/generate-boot-menu.py'))
     text = menu['generate'](manifest['usb_data_uuid'], {}, shared_registry=True)
-    text = text.replace('rd.auto=0 noresume', 'rd.auto=0 noresume SYSTEMD_SULOGIN_FORCE=1')
     text = text.replace('set timeout=15', 'set timeout=60', 1)
     if profile == 'standard':
         text += menu['generate_fedora_entry']('F044-0107')

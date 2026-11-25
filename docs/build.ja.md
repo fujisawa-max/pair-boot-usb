@@ -66,6 +66,7 @@ python scripts/build-usb.py prepare --plan
 
 1. `inputs/` の取得元URL・バージョン情報・SHA-256などの検証情報に従って、パッケージ、archive、Fedora ISO、公式公開鍵、抽出ツールを取得し `.cache/` へ格納する。
 2. fingerprintを照合した公開鍵で署名付きDebian/NVIDIA APT情報を検証し、固定したパッケージの版・SHA・公開パス等を照合する。
+   現行索引から外れたDebianパッケージは、`inputs/debian-history-inputs.json` に固定した履歴索引でも照合する。Debianの署名と `InRelease` が示す索引のハッシュを検証し、アーカイブ日時が署名対象の公開期間内であることを確認する。現行索引は従来どおり有効期限を検証する。
 3. gpu-unlockの指定されたcommitを `vendor/gpu-unlock` へ取得し、commit・作業ツリー・Gitオブジェクトを検査する。
 4. Debianのビルド用sysrootとruntime baseを別々に展開し、対象kernel用の6つの未署名moduleを隔離環境で構築・検査する。
 5. NVIDIA、PAIR、llama.cpp、ネットワーク、gzip/公開CA、署名済みshim/GRUBを展開する。
@@ -200,3 +201,5 @@ boot ABIはinitramfs・root・stateの取り決めです。kernelだけでなく
 通常版／貸出版の選択、同じrootの再利用、PC用管理ツールセットについては[媒体の構成と管理ツール](media-profiles.md)を参照してください。
 
 0.99.1では起動直後のカーネルログ混在修正をrootへ反映します。署名時の元の未署名モジュールと固定ソース・構築定義を保持し、kernel・署名鍵の構成も同じ場合は、照合済みの署名束と元データの組を再利用できます。NVIDIAモジュールはビルド日時の埋込みで同じソースでもハッシュが変わる場合があるため、再ビルド品との不一致を無視して再利用してはいけません。元データを保持していない場合は、利用者が再署名します。rootは0.99.1として一度構築し、両媒体で共有します。
+
+1.1.0の共通rootから学生PCに推論APIを提供する場合は、GPUノードを起動してから入口を設定します。[学生向け推論APIの設定](pair-usage/student-inference-api.md)

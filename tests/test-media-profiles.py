@@ -58,6 +58,28 @@ class MediaProfileTests(unittest.TestCase):
             with patch.object(sys,'argv',argv),self.assertRaises(ValueError):STAGE['main']()
             self.assertEqual((output/'usb-config.json').read_bytes(),before)
 
+    def test_standard_fedora_stages_the_gateway_certificate_tool(self):
+        with tempfile.TemporaryDirectory(dir=ROOT / 'build') as folder:
+            root = Path(folder)
+            cert = root / 'fixture.der'
+            cert.write_bytes(b'synthetic public certificate')
+            source = root / 'source'
+            initrd = source / 'boot/x86_64/loader/initrd'
+            initrd.parent.mkdir(parents=True)
+            initrd.write_bytes(b'synthetic initrd')
+            (source / 'fedora-manifest.json').write_text('{}')
+            fedora = root / 'fedora'
+            argv = ['prepare-shared-usb-tools.py', '--output', str(root / 'config'),
+                    '--fedora-output', str(fedora), '--fedora-source', str(source),
+                    '--certificate', str(cert)]
+            with patch.object(sys, 'argv', argv), patch(
+                    'subprocess.run', return_value=subprocess.CompletedProcess([], 0)):
+                STAGE['main']()
+            tool = 'tools/issue-pair-gateway-certificate.py'
+            self.assertEqual((fedora / tool).read_bytes(),
+                             (ROOT / 'scripts' / Path(tool).name).read_bytes())
+            self.assertIn(tool, json.loads((fedora / 'fedora-manifest.json').read_text())['files'])
+
     def test_bad_certificate_leaves_both_outputs_absent(self):
         with tempfile.TemporaryDirectory(dir=ROOT/'build') as folder:
             root=Path(folder);cert=root/'fixture.der';cert.write_bytes(b'bad')

@@ -40,7 +40,7 @@ def generate(usb_uuid, profiles, shared_registry=False):
                   '  fi', 'fi',
                   'if [ "$gpu_targets" = unsupported -o "$gpu_default" = 0 ]; then', '  set default=0', 'fi']
     common = (f"root=gpu-root gpu_root.usb_uuid={usb_uuid} gpu_root.allow_ntfs_write=1 "
-              "rd.driver.blacklist=nouveau rd.auto=0 noresume console=tty1")
+              "rd.driver.blacklist=nouveau rd.auto=0 rd.shell=0 rd.systemd.mask=debug-shell.service noresume console=tty1")
     if shared_registry:
         common += " gpu_root.shared_registry=1"
     for title, extra in (("Normal / baseline", ""), ("gpu-unlock enabled / RTX 20/40 experimental", " gpu_unlock.targets=$gpu_targets")):
@@ -62,7 +62,7 @@ def generate_diagnostic(usb_uuid):
             'menuentry "Read-only USB/input diagnostic (no GPU unlock)" {\n'
             f"  linux /boot/vmlinuz root=gpu-root gpu_root.usb_uuid={usb_uuid} "
             "gpu_root.allow_ntfs_write=0 gpu_root.diagnostic=1 "
-            "rd.driver.blacklist=nouveau rd.auto=0 noresume console=tty1\n"
+            "rd.driver.blacklist=nouveau rd.auto=0 rd.shell=0 rd.systemd.mask=debug-shell.service noresume console=tty1\n"
             "  initrd /boot/initramfs.img\n}\n")
 
 

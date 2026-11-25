@@ -9,6 +9,7 @@ import html
 from pathlib import Path
 import shutil
 import runpy
+import stat
 import subprocess
 import sys
 
@@ -294,10 +295,46 @@ def name_update(mount, request):
             show(T('failure'), str(error))
 
 
+def gateway_enrollment(tool):
+    action = select_id(T('gateway'), [
+        {'id': 'request', 'label': 'gateway_request'},
+        {'id': 'verify', 'label': 'gateway_verify'},
+    ])
+    hostname = dialog('--entry', '--title=' + T('gateway'), '--text=' + T('gateway_dns'))
+    title = T('gateway_parent' if action == 'request' else 'gateway_node_directory')
+    directory = Path(dialog('--file-selection', '--directory', '--title=' + title))
+    if not directory.is_absolute():
+        raise ValueError(T('gateway_private_directory'))
+    info = directory.stat()
+    if not stat.S_ISDIR(info.st_mode) or info.st_uid != os.geteuid() or info.st_mode & 0o077:
+        raise ValueError(T('gateway_private_directory'))
+    if action == 'request':
+        output = directory / 'pair-gateway-registration'
+        confirm(T('confirm'), T('gateway_request') + '\n' + str(output))
+        arguments = ['--output', str(output)]
+    else:
+        ca = dialog('--file-selection', '--title=' + T('gateway_trusted_ca'))
+        certificate = dialog('--file-selection', '--title=' + T('gateway_server_certificate'))
+        arguments = ['--csr', str(directory / 'node.csr.pem'), '--node-key', str(directory / 'key.pem'),
+                     '--ca-cert', ca, '--certificate', certificate]
+    with busy():
+        result = subprocess.run([sys.executable, str(tool), action, '--dns-name', hostname, *arguments],
+                                capture_output=True, text=True, timeout=30)
+    if result.returncode:
+        raise ValueError(result.stderr.strip() or T('failure'))
+    if action == 'request':
+        show(T('result'), T('gateway_send_csr') + '\n' + str(output / 'node.csr.pem'))
+    else:
+        show(T('result'), T('gateway_verified'))
+
+
 def main():
     if not shutil.which('zenity'):
         sys.exit('Zenity is required; use the CLI instructions.')
     categories = [{'id': item, 'label': item} for item in ('registry', 'registration', 'mok', 'maintenance', 'language')]
+    gateway_tool = HERE.parent / 'tools/issue-pair-gateway-certificate.py'
+    if gateway_tool.is_file():
+        categories.insert(2, {'id': 'gateway', 'label': 'gateway'})
     while True:
         try:
             try:
@@ -306,6 +343,9 @@ def main():
                 return
             if category is None:
                 show_usage()
+                continue
+            if category == 'gateway':
+                gateway_enrollment(gateway_tool)
                 continue
             if category == 'language':
                 try:

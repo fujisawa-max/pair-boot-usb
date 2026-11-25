@@ -1,0 +1,45 @@
+{
+  "schema": 1,
+  "sources": [
+    {
+      "suite": "trixie",
+      "key": "debian-archive",
+      "timestamp": "20261115T000000Z",
+      "release": ".cache/repository-history/trixie.InRelease",
+      "packages": ".cache/repository-history/trixie.Packages.xz"
+    },
+    {
+      "suite": "trixie-security",
+      "key": "debian-security",
+      "timestamp": "20261123T120000Z",
+      "release": ".cache/repository-history/trixie-security-20261123T120000Z.InRelease",
+      "packages": ".cache/repository-history/trixie-security.Packages.xz"
+    }
+  ],
+  "archives": [
+    {
+      "file": ".cache/repository-history/trixie.InRelease",
+      "url": "https://snapshot.debian.org/file/aa33cb317177428f33c9ff72fc3e9b634645f6ae/InRelease",
+      "size": 140421,
+      "sha256": "0584fba32e13e0ab8285fb16c27adea1ec03a73669c18702821094fd6ca86675"
+    },
+    {
+      "file": ".cache/repository-history/trixie.Packages.xz",
+      "url": "https://snapshot.debian.org/file/32fc3b1c3e78ef911b125ee266a7e73d5884083f/7778d3e3f303b7ddb8ce0fe7c8d57473a076c6bf2e8f241f75421d2396352498",
+      "size": 9678380,
+      "sha256": "7778d3e3f303b7ddb8ce0fe7c8d57473a076c6bf2e8f241f75421d2396352498"
+    },
+    {
+      "file": ".cache/repository-history/trixie-security-20261123T120000Z.InRelease",
+      "url": "https://snapshot.debian.org/file/48368985d265e4f2c901e8f7a475c56be4a0d92b/InRelease",
+      "size": 43409,
+      "sha256": "6594343424d41a49919534585b630ece98cdacf3ce0eb9a9000b77a215401399"
+    },
+    {
+      "file": ".cache/repository-history/trixie-security.Packages.xz",
+      "url": "https://snapshot.debian.org/file/349ff23ec805eaecbd927b772b987e09b3734892/9b641b3080d3f78923cac1b24512399af75d743997174934d733f5cf9b6fabda",
+      "size": 309200,
+      "sha256": "9b641b3080d3f78923cac1b24512399af75d743997174934d733f5cf9b6fabda"
+    }
+  ]
+}

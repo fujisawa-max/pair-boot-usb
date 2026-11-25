@@ -1,0 +1,17 @@
+[Unit]
+Description=PAIR student HTTPS gateway
+BindsTo=gpu-pair-session.service
+PartOf=gpu-pair-session.service
+After=gpu-pair-session.service
+ConditionPathExists=/run/gpu-root/state.json
+
+[Service]
+Type=exec
+RuntimeDirectory=pair-gateway
+RuntimeDirectoryMode=0750
+UMask=0077
+Environment=PYTHONDONTWRITEBYTECODE=1
+ExecStart=/usr/bin/python3 /usr/lib/gpu-root/pair-gateway.py serve
+ExecStopPost=/usr/bin/python3 /usr/lib/gpu-root/pair-gateway.py cleanup
+KillMode=mixed
+TimeoutStopSec=20

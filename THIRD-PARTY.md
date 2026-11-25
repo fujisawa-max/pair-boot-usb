@@ -14,6 +14,7 @@
 | llama.cpp | https://github.com/ggml-org/llama.cpp 。inputs/pair-llamacpp-inputs.jsonのb11146/CUDA12.8。MIT本体と同梱CUDA等の条件を区別する |
 | Fedora Workstation Live | https://fedoraproject.org/workstation/download/ 。現行抽出処理は44-1.7の固定ISO用。公式CHECKSUMの署名とISOのハッシュを検証する |
 | Debian | https://deb.debian.org/ 。inputs/debian-build-inputs.json、debian-runtime-inputs.json等。公式パッケージの各ライセンスを保持する |
+| 学生向け推論API | Caddy・Keepalived・nftablesと依存パッケージをDebian公式配布から取得。版・URL・SHA-256は `inputs/debian-runtime-inputs.json` に固定し、各パッケージの `/usr/share/doc/` にある著作権表示とライセンスを保持する |
 | 更新束の検査ツール | inputs/updater-inspection-tools.jsonの固定Debianパッケージ。e2fsprogs、dosfstools、kmod、OpenSSLと共有ライブラリを作業領域に展開し、各パッケージの著作権・ライセンス表示を保持する。ホストへのインストールや実デバイスの操作は行わない |
 | pycdlib | https://pypi.org/project/pycdlib/1.14.0/ 。inputs/fedora-tools-inputs.jsonのwheelをSHA照合してFedora ISOの展開に使用。wheel本体は同梱しない |
 | PowerShell（任意の開発用試験） | https://github.com/PowerShell/PowerShell/releases/tag/v7.5.4 。inputs/powershell-test-input.jsonのLinux x64 archiveをサイズ・SHA照合し、合成fixtureの実行に使用。MIT本体と同梱物のLICENSE・ThirdPartyNoticesを展開先に保持し、USBへは含めない |

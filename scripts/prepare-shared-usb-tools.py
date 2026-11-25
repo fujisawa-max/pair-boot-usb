@@ -102,6 +102,8 @@ def main():
     shutil.copytree(source, fedora,
                     ignore=lambda folder, names: ['mok-cert'] if 'mok-cert' in names else [])
     shutil.copytree(tools, fedora / 'tools')
+    shutil.copy2(ROOT / 'scripts/issue-pair-gateway-certificate.py',
+                 fedora / 'tools/issue-pair-gateway-certificate.py')
     shutil.copy2(output / 'MEDIA-INFO.txt', fedora / 'MEDIA-INFO.txt')
     runpy.run_path(str(ROOT / 'scripts/stage-shared-mok-commands.py'))['stage'](cert, fedora / 'mok-cert')
     runpy.run_path(str(ROOT / 'scripts/stage-gui-tools.py'))['stage'](output, fedora, cert)

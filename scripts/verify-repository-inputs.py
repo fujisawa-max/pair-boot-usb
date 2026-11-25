@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
 """Verify fixed package locks with authenticated, workspace-only APT indices."""
 import argparse
+from collections import defaultdict
+from datetime import datetime, timezone
+from email.utils import parsedate_to_datetime
 import hashlib
 import json
+import lzma
 import os
 from pathlib import Path
 import runpy
@@ -11,6 +15,8 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 BASE = ROOT / '.cache/repositories'
+HISTORY = 'debian-history-inputs.json'
+HISTORY_INDEX = 'main/binary-amd64/Packages.xz'
 LOCKS = ('debian-build-inputs.json', 'debian-runtime-inputs.json', 'debian-build-tools-inputs.json',
          'nvidia-driver-inputs.json', 'candidate-network-inputs.json', 'debian-support-inputs.json',
          'updater-inspection-tools.json')
@@ -89,6 +95,42 @@ def configure():
     return dict(os.environ, APT_CONFIG=str(config))
 
 
+def historical_records(source, release_path, index_path, verify_signature):
+    release = verify_signature(release_path, source['key'], allow_unknown_cosigners=True).decode('utf-8')
+    header, _, checksums = release.partition('\nSHA256:\n')
+    metadata, = fields(header.split('\nMD5Sum:', 1)[0])
+    timestamp = datetime.strptime(source['timestamp'], '%Y%m%dT%H%M%SZ').replace(tzinfo=timezone.utc)
+    if (metadata['Codename'] != source['suite'] or timestamp < parsedate_to_datetime(metadata['Date'])
+            or ('Valid-Until' in metadata and timestamp > parsedate_to_datetime(metadata['Valid-Until']))):
+        raise ValueError('Historical index is outside its signed suite or publication interval')
+    expected = [line.split() for line in checksums.splitlines() if line.startswith(' ') and
+                line.split()[-1:] == [HISTORY_INDEX]]
+    with index_path.open('rb') as stream:
+        actual = [hashlib.file_digest(stream, 'sha256').hexdigest(), str(index_path.stat().st_size), HISTORY_INDEX]
+        if expected != [actual]:
+            raise ValueError('Historical Packages index SHA-256 or size differs from signed InRelease')
+        stream.seek(0)
+        return fields(lzma.decompress(stream.read()).decode('utf-8'))
+
+
+def history_candidates():
+    public = runpy.run_path(str(ROOT / 'scripts/public-inputs.py'))
+    fetch = public['FETCH']
+    sources = json.loads((ROOT / 'inputs' / HISTORY).read_text())['sources']
+    archives = {item['file']: item for item in fetch['input_plan'](['debian-history'])}
+    prefixes = {'debian-archive': ('https://deb.debian.org/debian/',),
+                'debian-security': ('https://security.debian.org/debian-security/',
+                                    'https://deb.debian.org/debian-security/')}
+    for source in sources:
+        paths = []
+        for key in ('release', 'packages'):
+            item = archives[source[key]]
+            fetch['fetch'](item, offline=True)
+            paths.append(fetch['cache_path'](ROOT, item['file']))
+        for record in historical_records(source, *paths, public['signed_cleartext']):
+            yield prefixes[source['key']], record
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--metadata-only', action='store_true', help='prepare authenticated indices before maintaining locks')
@@ -106,13 +148,20 @@ def main():
     selectors = sorted({entry['package'] + '=' + entry['version'] for entry in entries})
     result = subprocess.run(['apt-cache', 'show', *selectors], env=environment,
                             check=True, capture_output=True, text=True)
-    candidates = fields(result.stdout)
-    missing = [entry for entry in entries if not any(package_matches(entry, item) for item in candidates)]
+    candidates = defaultdict(list)
+    for item in fields(result.stdout):
+        candidates[item['Package']].append(((), item))
+    for prefixes, item in history_candidates():
+        candidates[item['Package']].append((prefixes, item))
+    missing = [entry for entry in entries if not any(
+        (not prefixes or entry['url'].startswith(prefixes)) and package_matches(entry, item)
+        for prefixes, item in candidates[entry['package']])]
     if missing:
         raise ValueError('Locked packages absent from authenticated metadata: ' +
                          ', '.join(sorted({e['package'] + '=' + e['version'] for e in missing})))
     report = {'schema': 1, 'verified_lock_entries': len(entries),
               'host_apt_changed': False, 'package_installation_performed': False,
+              'historical_indices_lock_sha256': hashlib.sha256((ROOT / 'inputs' / HISTORY).read_bytes()).hexdigest(),
               'locks': {name: hashlib.sha256((ROOT / 'inputs' / name).read_bytes()).hexdigest()
                         for name in LOCKS if (ROOT / 'inputs' / name).exists()}}
     output = ROOT / 'build/repository-verification.json'

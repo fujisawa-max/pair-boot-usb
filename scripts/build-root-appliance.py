@@ -38,6 +38,13 @@ def symlink(stage, path, target):
     destination.symlink_to(target)
 
 
+def mask_console_logins(stage):
+    for name in ('gpu-root-console.service', 'getty@.service', 'serial-getty@.service',
+                 'console-getty.service', 'container-getty@.service', 'debug-shell.service',
+                 'emergency.service', 'rescue.service'):
+        symlink(stage, f'/etc/systemd/system/{name}', '/dev/null')
+
+
 def require_empty_home(source):
     for relative in ('home', 'home/gpu'):
         path = source / relative
@@ -58,10 +65,12 @@ def main():
     parser.add_argument("--profiles", type=Path, default=ROOT / "config/gpu-profiles.example.json")
     parser.add_argument("--hosts", type=Path, help="reviewed Windows inventory JSON directory")
     parser.add_argument("--signed-modules", type=Path, help="verified production bundle; also selects Debian signed EFI")
+    parser.add_argument("--boot-integrity-signer", type=Path,
+                        help="one trusted release signer PEM certificate embedded in the initramfs")
     parser.add_argument("--efi-root", type=Path, help="extracted hash-verified signed shim/GRUB tree below build/")
     parser.add_argument("--shared-registry", action="store_true", help="read same-USB GPU-LOGS external fleet registry")
     parser.add_argument("--diagnostic", action="store_true", help="single baseline entry; display USB/input state without NTFS writes")
-    parser.add_argument("--local-console", action="store_true", help="experimental appliance: physical root console without a password")
+    parser.add_argument("--local-console", action="store_true", help="show the local PAIR startup and power menu")
     parser.add_argument("--network-overlay", type=Path, help="verified candidate-network overlay under build/")
     parser.add_argument("--storage-directory", default="GPU-Linux", help="single safe folder on selected NTFS volume")
     parser.add_argument("--fedora-tree", type=Path, help="verified Fedora Live tree under build/")
@@ -76,6 +85,14 @@ def main():
         storage_policy.validate_storage_directory(args.storage_directory)
     except ValueError as error:
         parser.error(str(error))
+    boot_signer = None
+    if args.boot_integrity_signer:
+        if args.diagnostic or not args.signed_modules:
+            parser.error("boot integrity authorization requires signed production boot")
+        integrity = runpy.run_path(str(ROOT / 'runtime/boot-integrity.py'))
+        boot_signer = integrity['signer_pem'](args.boot_integrity_signer)
+        subprocess.run(['openssl', 'x509', '-noout'], input=boot_signer,
+                       capture_output=True, check=True, timeout=15)
     if args.diagnostic and args.local_console:
         parser.error("diagnostic and local-console are separate boot modes")
     output = args.output.resolve()
@@ -148,8 +165,8 @@ def main():
     write(stage, "/etc/hostname", "")
     write(stage, "/etc/hosts", "127.0.0.1 localhost\n::1 localhost ip6-localhost\n")
     write(stage, "/etc/fstab", "# Root loop and backing NTFS are managed by the initramfs; no Windows mounts here.\n")
-    write(stage, "/etc/passwd", "root:x:0:0:root:/root:/bin/bash\ngpu:x:1000:1000:GPU user:/home/gpu:/bin/bash\nnobody:x:65534:65534:nobody:/nonexistent:/usr/sbin/nologin\n")
-    write(stage, "/etc/group", "root:x:0:\ngpu:x:1000:\nnogroup:x:65534:\n")
+    write(stage, "/etc/passwd", "root:x:0:0:root:/root:/bin/bash\ngpu:x:1000:1000:GPU user:/home/gpu:/bin/bash\npair-gateway:x:997:997:PAIR gateway:/nonexistent:/usr/sbin/nologin\nnobody:x:65534:65534:nobody:/nonexistent:/usr/sbin/nologin\n")
+    write(stage, "/etc/group", "root:x:0:\ngpu:x:1000:\npair-gateway:x:997:\nnogroup:x:65534:\n")
     write(stage, "/etc/shadow", "root:!:20000:0:99999:7:::\ngpu:!:20000:0:99999:7:::\n").chmod(0o600)
     symlink(stage, "/var/lib/dbus/machine-id", "/etc/machine-id")
     for path in stage.glob("etc/ssh/ssh_host_*"):
@@ -179,16 +196,18 @@ def main():
         image_info["module_signing_certificate_sha256"] = signed["certificate_sha256"]
         image_info["secure_boot_artifacts"] = "signed-shim-grub-kernel-and-six-gpu-modules-not-hardware-qualified"
     image_info["usb_ready_message_staged"] = True
+    image_info["console_login_policy"] = "disabled"
+    if args.pair_runtime:
+        image_info["student_gateway_schema"] = 1
     if args.local_console:
-        image_info['console_layout'] = {'logs': '/dev/tty1', 'maintenance': '/dev/tty2', 'pair': '/dev/tty3'}
-        image_info["local_maintenance_console"] = "passwordless physical tty2; PAIR on tty3; logs on tty1"
+        image_info['console_layout'] = {'logs': '/dev/tty1', 'pair': '/dev/tty3'}
         image_info["local_pair_menu"] = "startup-and-exit-v1"
     if args.network_overlay:
         image_info["dns_service"] = "systemd-resolved with DHCP DNS and system D-Bus"
     write(stage, "/usr/lib/gpu-root/image.json", json.dumps(image_info, indent=2) + "\n")
     shutil.copy2(ROOT / "runtime/initialize-identity.py", stage / "usr/lib/gpu-root/initialize-identity.py")
     shutil.copy2(ROOT / "runtime/announce-usb-ready.py", stage / "usr/lib/gpu-root/announce-usb-ready.py")
-    for helper in ("pair-console.py", "boot-banner.py", "pair-session.py", "release-info.py", "console-layout.py"):
+    for helper in ("pair-console.py", "boot-banner.py", "pair-session.py", "release-info.py", "console-layout.py", "pair-gateway.py"):
         shutil.copy2(ROOT / "runtime" / helper, stage / "usr/lib/gpu-root" / helper)
     shutil.copy2(ROOT / "runtime/prepare-shutdown.py", stage / "usr/lib/gpu-root/prepare-shutdown.py")
     if args.pair_runtime:
@@ -203,6 +222,8 @@ def main():
     (stage / "usr/local/bin/gpu-pair").chmod(0o755)
     for unit in (ROOT / "runtime/systemd").glob("*.service"):
         shutil.copy2(unit, stage / "usr/lib/systemd/system" / unit.name)
+    for name in ("caddy", "keepalived", "nftables"):
+        symlink(stage, f"/etc/systemd/system/{name}.service", "/dev/null")
     for name in ("gpu-root-identity", "gpu-root-usb-ready", "systemd-networkd"):
         symlink(stage, f"/etc/systemd/system/multi-user.target.wants/{name}.service", f"/usr/lib/systemd/system/{name}.service")
     if args.network_overlay:
@@ -210,13 +231,12 @@ def main():
                 "/usr/lib/systemd/system/systemd-resolved.service")
         symlink(stage, "/etc/systemd/system/sockets.target.wants/dbus.socket", "/usr/lib/systemd/system/dbus.socket")
         symlink(stage, "/etc/resolv.conf", "/run/systemd/resolve/stub-resolv.conf")
+    mask_console_logins(stage)
     if args.local_console:
         for terminal in (1, 2, 3):
             symlink(stage, f"/etc/systemd/system/getty@tty{terminal}.service", "/dev/null")
         write(stage, "/etc/systemd/journald.conf.d/20-pair-console.conf",
               "[Journal]\nStorage=volatile\nRuntimeMaxUse=64M\nRuntimeKeepFree=32M\nForwardToConsole=no\nForwardToWall=no\n")
-        symlink(stage, "/etc/systemd/system/multi-user.target.wants/gpu-root-console.service",
-                "/usr/lib/systemd/system/gpu-root-console.service")
         symlink(stage, "/etc/systemd/system/multi-user.target.wants/gpu-pair.service",
                 "/usr/lib/systemd/system/gpu-pair.service")
     symlink(stage, "/etc/systemd/system/multi-user.target.requires/gpu-root-storage-guard.service",
@@ -249,6 +269,13 @@ def main():
     moddir = stage / "usr/lib/dracut/modules.d/95gpu-root"
     shutil.copytree(ROOT / "runtime/dracut/95gpu-root", moddir)
     shutil.copy2(ROOT / "runtime/gpu-root.py", moddir / "gpu-root.py")
+    shutil.copy2(ROOT / "runtime/boot-integrity.py", moddir / "boot-integrity.py")
+    signer_path = moddir / 'boot-integrity-signer.pem'
+    if signer_path.exists() or signer_path.is_symlink():
+        raise ValueError('Source root already contains a boot integrity signer')
+    if boot_signer is not None:
+        with signer_path.open('xb') as stream:
+            stream.write(boot_signer)
     shutil.copy2(ROOT / "runtime/fleet-registry.py", moddir / "fleet-registry.py")
     shutil.copy2(ROOT / "runtime/storage-target.py", moddir / "storage-target.py")
     for helper in ("root-maintenance.py", "persistent-state.py", "replace-root.py", "no-gpu-test.py", "release-info.py", "detach-loop.py", "ntfs-hibernation.py"):
@@ -284,7 +311,6 @@ def main():
     (tree / "boot/grub").mkdir()
     grub_text = menu.generate_diagnostic(data_uuid) if args.diagnostic else menu.generate(data_uuid, profiles, shared_registry=args.shared_registry)
     if args.local_console:
-        grub_text = grub_text.replace("rd.auto=0 noresume", "rd.auto=0 noresume SYSTEMD_SULOGIN_FORCE=1")
         grub_text = grub_text.replace("set timeout=15", "set timeout=60", 1)
     if args.fedora_tree:
         fedora = args.fedora_tree.resolve()
@@ -355,6 +381,8 @@ def main():
                 "persistent_state": {"schema": 1, "filename": "state.img",
                                      "size": state_master.stat().st_size, "sha256": state_sha}}
     manifest['automatic_root_recovery'] = True
+    if boot_signer is not None:
+        manifest['boot_integrity_signer_sha256'] = hashlib.sha256(boot_signer).hexdigest()
     state_master.chmod(0o444)
     (tree / "gpu-linux/master.json").write_text(json.dumps(manifest, indent=2) + "\n")
     master.chmod(0o444)

@@ -5,9 +5,8 @@ gpu_root_stop() {
     if [ -s /run/gpu-root-boot-error.txt ]; then
       cat /run/gpu-root-boot-error.txt >&2
     else
-      printf '\n\n======================================================================\nPAIR BOOT - STARTUP STOPPED\n\n%s\n\nA maintenance prompt follows. Automatic boot will not continue.\n======================================================================\n\n' "$*" >&2
+      printf '\n\n======================================================================\nPAIR BOOT - STARTUP STOPPED\n\n%s\n\nAutomatic boot will not continue.\n======================================================================\n\n' "$*" >&2
     fi
-    emergency_shell -n gpu-root "$*"
     sleep 1
   done
 }
@@ -16,7 +15,7 @@ if [ "${root:-}" = gpu-root ] && ! ismounted /sysroot; then
   modprobe ext4 || gpu_root_stop 'ext4 module unavailable'
   gpu_root_result=0
   # dracut's service stdout normally goes only to the journal. Show progress
-  # on the physical console while retaining stderr for the failure prompt.
+  # on the physical console while retaining stderr for the failure display.
   /usr/bin/python3 /usr/lib/gpu-root.py boot >/dev/console 2>/run/gpu-root-boot-error.txt || gpu_root_result=$?
   if [ "$gpu_root_result" = 64 ]; then
     systemctl --no-block poweroff || gpu_root_stop 'Poweroff request failed'

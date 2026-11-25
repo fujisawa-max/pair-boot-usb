@@ -54,6 +54,8 @@ python3 scripts/build-usb.py image --update-bundle --update-sequence 4 \
 
 Its image, payload, report, release fingerprint, and logical inventory are checked again. `update_sequence` must be unique and strictly increasing in the distribution series. The producer rejects release downgrades and unsupported layout, certificate, boot ABI, or state-schema changes.
 
+The updater selects a source using its release fingerprint and the paths, sizes, and SHA-256 hashes of the old managed files. It checks the update receipt after selection. If an initial image and an updated medium have identical fingerprints and managed files, choose a single receipt policy for the distribution.
+
 ## Add the 0.9.3 Windows worker maintenance variant
 
 An additional source can retain the 0.9.3 boot files and root while carrying only the `gui/windows-worker.ps1` fix for merging registries without selecting a USB. Keep the original 0.9.3 source and add the maintenance variant as `source-0-9-3-r2-worker-merge-fix`. Its project/root version remains 0.9.3.

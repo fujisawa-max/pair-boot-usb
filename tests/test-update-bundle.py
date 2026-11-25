@@ -21,6 +21,25 @@ A = P['A']
 S = runpy.run_path(str(ROOT / 'scripts/updater-source.py'))
 
 
+class SourceFingerprintTests(unittest.TestCase):
+    def test_receipt_and_manifest_id_do_not_distinguish_identical_media(self):
+        release = {key: key for key in P['SOURCE_RELEASE_FIELDS']}
+        files = [
+            {'path': 'gui/windows-worker.ps1', 'bytes': 1, 'sha256': 'a' * 64},
+            {'path': 'tools/version.txt', 'bytes': 2, 'sha256': 'b' * 64},
+        ]
+        initial = {'id': 'source-2', 'kind': 'built-media', 'release': release,
+                   'managed_files': files}
+        updated = {**initial, 'id': 'updated-1', 'kind': 'updated-media',
+                   'prior_manifest_sha256': 'c' * 64, 'update_sequence': 4,
+                   'managed_files': list(reversed(files))}
+        with self.assertRaisesRegex(ValueError, 'source-2 and updated-1'):
+            P['require_distinct_sources']([initial, updated])
+        variant = {**initial, 'id': 'maintenance', 'managed_files': [
+            {**files[0], 'sha256': 'd' * 64}, files[1]]}
+        P['require_distinct_sources']([updated, variant])
+
+
 def gpt(path, layout):
     size = (10094592 + 6291456 + 2048) * 512
     table = bytearray(128 * 128)

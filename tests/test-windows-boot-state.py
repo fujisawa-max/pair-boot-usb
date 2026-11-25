@@ -10,7 +10,7 @@ import shutil
 import subprocess
 import tempfile
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 ROOT = Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location('windows_boot_api', ROOT / 'runtime/gpu-root.py')
@@ -72,7 +72,7 @@ class WindowsBootStateTests(unittest.TestCase):
             api.check_windows_hibernation('/dev/fixture-root')
 
     def test_boot_entry_stops_before_any_root_write_for_encryption_or_hibernation(self):
-        for kind in ('BitLocker', 'ntfs'):
+        for kind in ('BitLocker', 'ntfs', 'bad-signature'):
             with self.subTest(kind=kind), tempfile.TemporaryDirectory() as folder, ExitStack() as stack:
                 root = Path(folder)
                 runtime = root / 'run'
@@ -103,7 +103,12 @@ class WindowsBootStateTests(unittest.TestCase):
                 stack.enter_context(patch.object(api, 'validate_ext4'))
                 stack.enter_context(patch.object(api, 'verify_root_storage', return_value={}))
                 actual_run_path = runpy.run_path
-                stack.enter_context(patch.object(runpy, 'run_path', side_effect=lambda p: STATE if p == '/usr/lib/persistent-state.py' else actual_run_path(p)))
+                authorization = Mock(side_effect=ValueError('fixture tampering')
+                                     if kind == 'bad-signature' else None, return_value=None)
+                modules = {'/usr/lib/persistent-state.py': STATE,
+                           '/usr/lib/boot-integrity.py': {'verify_master': authorization}}
+                stack.enter_context(patch.object(
+                    runpy, 'run_path', side_effect=lambda p: modules[p] if p in modules else actual_run_path(p)))
                 writes = stack.enter_context(patch.object(api, 'mount_readwrite'))
                 copies = stack.enter_context(patch.object(api, 'provision'))
                 stack.enter_context(patch.object(api.os.path, 'ismount', return_value=False))
@@ -125,10 +130,15 @@ class WindowsBootStateTests(unittest.TestCase):
                     return subprocess.CompletedProcess(args, 0, '{"schema":1,"status":"hibernated"}')
                 stack.enter_context(patch.object(api.subprocess, 'run', side_effect=subprocess_run))
                 stack.enter_context(redirect_stdout(io.StringIO()))
-                reason = 'BitLocker volume' if kind == 'BitLocker' else 'hibernation/Fast Startup'
+                reason = {'BitLocker': 'BitLocker volume', 'ntfs': 'hibernation/Fast Startup',
+                          'bad-signature': 'MASTER boot authorization rejected'}[kind]
                 with self.assertRaisesRegex(api.SafetyError, reason):
                     api.boot({'gpu_root.allow_ntfs_write': '1', 'gpu_root.shared_registry': '1',
                               'gpu_root.no_gpu_test': '1'})
+                authorization.assert_called_once_with(
+                    runtime / 'usb', verity_copy=runtime / 'root.verity', verity_result=[])
+                if kind == 'bad-signature':
+                    self.assertFalse(any('/dev/fixture-root' in args for args in calls))
                 writes.assert_not_called()
                 copies.assert_not_called()
                 self.assertFalse(any('/sysroot' in args for args in calls))

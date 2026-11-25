@@ -35,7 +35,7 @@ class BootFailureDisplayTests(unittest.TestCase):
                 self.assertIn(reason, text)
                 self.assertLessEqual(max(map(len, text.splitlines())), 70)
 
-    def test_original_reason_is_repeated_before_each_maintenance_prompt(self):
+    def test_original_reason_is_repeated_without_a_shell(self):
         with tempfile.TemporaryDirectory() as folder:
             base = Path(folder)
             error = base / 'boot-error.txt'
@@ -44,14 +44,12 @@ class BootFailureDisplayTests(unittest.TestCase):
             hook = base / 'hook.sh'
             source = (ROOT / 'runtime/dracut/95gpu-root/mount-root.sh').read_text()
             hook.write_text(source.replace('/run/gpu-root-boot-error.txt', str(error)))
-            # No devices, boot controller, or real maintenance shell are invoked.
-            shell = ('root=fixture; count=0; warn() { :; }; sleep() { :; }; '
-                     'emergency_shell() { count=$((count+1)); echo MAINTENANCE_PROMPT; '
-                     '[ "$count" -lt 2 ] || exit 23; }; . "$1"; gpu_root_stop fixture')
+            shell = ('root=fixture; count=0; warn() { :; }; '
+                     'sleep() { count=$((count+1)); [ "$count" -lt 2 ] || exit 23; }; '
+                     'emergency_shell() { exit 99; }; . "$1"; gpu_root_stop fixture')
             result = subprocess.run(['sh', '-c', shell, 'fixture', str(hook)],
-                                    stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+                                    stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                                    text=True, timeout=5)
             self.assertEqual(result.returncode, 23)
             self.assertEqual(result.stdout.count('THIS PC IS NOT REGISTERED'), 2)
-            sections = result.stdout.split('MAINTENANCE_PROMPT')
-            self.assertIn(reason, sections[0])
-            self.assertIn(reason, sections[1])
+            self.assertEqual(result.stdout.count(reason), 2)

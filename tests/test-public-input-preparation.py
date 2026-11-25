@@ -1,5 +1,7 @@
 """Synthetic trust, archive and build entry checks; no real signing keys."""
+import hashlib
 import io
+import lzma
 import json
 import os
 from pathlib import Path
@@ -8,7 +10,7 @@ import struct
 import tarfile
 import tempfile
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 ROOT = Path(__file__).resolve().parents[1]
 PUBLIC = runpy.run_path(str(ROOT / 'scripts/public-inputs.py'))
@@ -49,6 +51,29 @@ class PublicInputTests(unittest.TestCase):
         for field in ('Package', 'Version', 'SHA256', 'Size', 'Architecture', 'Filename'):
             with self.subTest(field=field):
                 self.assertFalse(REPO['package_matches'](entry, {**candidate, field: 'wrong'}))
+
+    def test_historical_index_requires_signed_hash_and_publication_interval(self):
+        index = lzma.compress(b'Package: fixture\nVersion: 1\n')
+        checksum = hashlib.sha256(index).hexdigest()
+        signed = (
+            'Codename: trixie-security\nDate: Fri, 13 Nov 2026 00:00:00 +0000\n'
+            'Valid-Until: Fri, 20 Nov 2026 00:00:00 +0000\nSHA256:\n'
+            f' {checksum} {len(index)} main/binary-amd64/Packages.xz\n'
+        ).encode()
+        source = {'key': 'debian-security', 'suite': 'trixie-security', 'timestamp': '20261115T000000Z'}
+        with tempfile.TemporaryDirectory() as folder:
+            index_path = Path(folder) / 'Packages.xz'
+            index_path.write_bytes(index)
+            release_path = Path(folder) / 'InRelease'
+            verify = Mock(return_value=signed)
+            records = REPO['historical_records'](source, release_path, index_path, verify)
+            verify.assert_called_once_with(release_path, 'debian-security', allow_unknown_cosigners=True)
+            self.assertEqual(records, [{'Package': 'fixture', 'Version': '1'}])
+            with self.assertRaisesRegex(ValueError, 'publication interval'):
+                REPO['historical_records']({**source, 'timestamp': '20261121T000000Z'}, release_path, index_path, verify)
+            index_path.write_bytes(index[:-1] + bytes([index[-1] ^ 1]))
+            with self.assertRaisesRegex(ValueError, 'SHA-256'):
+                REPO['historical_records'](source, release_path, index_path, verify)
 
     def test_firmware_reads_only_regular_unique_expected_members(self):
         with tempfile.TemporaryDirectory() as folder:

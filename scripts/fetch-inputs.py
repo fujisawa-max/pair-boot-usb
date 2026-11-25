@@ -24,6 +24,7 @@ GROUPS = {
     'firmware': ('firmware-inputs.json', None),
     'fedora': ('fedora-live-input.json', None),
     'fedora-tools': ('fedora-tools-inputs.json', None),
+    'debian-history': ('debian-history-inputs.json', None),
     'public-keys': ('public-keys.json', None),
 }
 PREFIXES = (
@@ -37,6 +38,7 @@ PREFIXES = (
     'https://download.nvidia.com/XFree86/Linux-x86_64/610.43.03/',
     'https://dl.fedoraproject.org/pub/fedora/linux/releases/44/Workstation/x86_64/iso/',
     'https://files.pythonhosted.org/packages/',
+    'https://snapshot.debian.org/file/',
     'https://ftp-master.debian.org/keys/',
     'https://fedoraproject.org/fedora.gpg',
 )

@@ -27,9 +27,11 @@ class PairSessionTests(unittest.TestCase):
         self.assertEqual(API['session'](call), 17)
         launch = next(c for c in calls if c[0].endswith('systemd-run'))
         for option in ('--property=User=gpu', '--property=KillMode=control-group',
-                       '--property=Restart=no', '--pty', '--wait'):
+                       '--property=Restart=no', '--property=Wants=' + API['GATEWAY'], '--pty', '--wait'):
             self.assertIn(option, launch)
-        self.assertIn(['/usr/bin/systemctl', 'stop', API['UNIT']], calls)
+        gateway_stop = ['/usr/bin/systemctl', 'stop', API['GATEWAY']]
+        pair_stop = ['/usr/bin/systemctl', 'stop', API['UNIT']]
+        self.assertLess(calls.index(gateway_stop), calls.index(pair_stop))
 
     def test_unknown_or_previous_unit_prevents_launch_without_kill(self):
         for state in ('LoadState=loaded\nDescription=someone else',

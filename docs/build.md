@@ -68,6 +68,7 @@ The script performs the following steps in order:
 
 1. Download packages, archives, the Fedora ISO, official public keys, and extraction tools according to the source URLs, versions, SHA-256 hashes, and other verification information in `inputs/`, and store them in `.cache/`.
 2. Verify signed Debian/NVIDIA APT metadata using public keys whose fingerprints have been checked, then verify the pinned package versions, SHA hashes, published paths, and other details.
+   For Debian packages that have moved out of the current index, the build also checks the historical indices pinned in `inputs/debian-history-inputs.json`. It verifies the Debian signature and the index hash from `InRelease`, and checks the archive timestamp against the signed publication interval. Current repository indices still undergo their normal freshness checks.
 3. Fetch the specified gpu-unlock commit into `vendor/gpu-unlock`, and check the commit, working tree, and Git objects.
 4. Extract the Debian build sysroot and runtime base separately, then build and validate six unsigned modules for the target kernel in an isolated environment.
 5. Extract NVIDIA, PAIR, llama.cpp, networking components, gzip/public CA certificates, and signed shim/GRUB.
@@ -202,3 +203,5 @@ Verified areas and remaining checks are summarized in [TODO (Japanese)](../TODO.
 See [media profiles and portable management tools (Japanese)](media-profiles.md) for profile selection, shared root reuse, and the PC management package. The loan updater contract is a proposal and requires a compatible updater.
 
 Version 0.99.1 updates the root with the early kernel-console routing fix. Reuse a verified signing bundle only together with its exact original unsigned inputs and matching pinned sources, build definitions, kernel, and signing identity. NVIDIA embeds build timestamps, so a rebuild can differ even from identical sources. Never bypass that mismatch; if the original inputs are unavailable, the owner must sign the rebuilt modules. Build the 0.99.1 root once and reuse it for both media profiles.
+
+For student access with the shared 1.1.0 root, configure the gateway after booting the GPU nodes. [Student inference API setup (Japanese)](pair-usage/student-inference-api.md)

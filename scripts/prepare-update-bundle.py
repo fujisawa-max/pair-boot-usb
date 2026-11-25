@@ -453,6 +453,7 @@ def produce(args):
                                                    args.repository, module, contract_root)
             accepted.append(entry)
             maintenance.append(proof)
+        require_distinct_sources(accepted)
         managed = []
         for item in target['managed_files']:
             path = output / 'payload' / item['path']; path.parent.mkdir(parents=True, exist_ok=True)
@@ -504,6 +505,32 @@ def produce(args):
         raise
     else:
         shutil.rmtree(scratch)
+
+
+# Fields returned by the updater's release_evidence() before receipt validation.
+SOURCE_RELEASE_FIELDS = (
+    'master_json_sha256', 'root_sha256', 'master_uuid', 'kernel',
+    'boot_abi', 'state_schema', 'certificate_sha256', 'root_version',
+)
+
+
+def source_fingerprint(source):
+    release = tuple(source['release'][key] for key in SOURCE_RELEASE_FIELDS)
+    files = tuple(sorted((item['path'], item['bytes'], item['sha256'])
+                         for item in source['managed_files']))
+    return release, files
+
+
+def require_distinct_sources(sources):
+    seen = {}
+    for source in sources:
+        fingerprint = source_fingerprint(source)
+        if fingerprint in seen:
+            raise ValueError(
+                f"Indistinguishable accepted sources: {seen[fingerprint]} and {source['id']}. "
+                "Select one receipt policy for identical media."
+            )
+        seen[fingerprint] = source['id']
 
 
 def source_entry(info, name):

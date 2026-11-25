@@ -1554,6 +1554,258 @@
       "filename": "zlib1g_1%3a1.3.dfsg+really1.3.1-1+b1_amd64.deb",
       "url": "https://deb.debian.org/debian/pool/main/z/zlib/zlib1g_1.3.dfsg+really1.3.1-1+b1_amd64.deb",
       "sha256": "015be740d6236ad114582dea500c1d907f29e16d6db00566ca32fb68d71ac90d"
+    },
+    {
+      "package": "caddy",
+      "version": "2.6.2-12+deb13u1",
+      "architecture": "amd64",
+      "filename": "caddy_2.6.2-12+deb13u1_amd64.deb",
+      "url": "https://security.debian.org/debian-security/pool/updates/main/c/caddy/caddy_2.6.2-12+deb13u1_amd64.deb",
+      "sha256": "f173515859f273c97219cc242d625a64650fefdd136a9570acb1b5f7581c9786",
+      "size": 10110872
+    },
+    {
+      "package": "iproute2",
+      "version": "6.15.0-1",
+      "architecture": "amd64",
+      "filename": "iproute2_6.15.0-1_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/i/iproute2/iproute2_6.15.0-1_amd64.deb",
+      "sha256": "7b2dcade4a83ded723fcab21c5a53c47f29352c9c5e1661a089a1e481b3fb48a",
+      "size": 1089184
+    },
+    {
+      "package": "keepalived",
+      "version": "1:2.3.3-1",
+      "architecture": "amd64",
+      "filename": "keepalived_2.3.3-1_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/k/keepalived/keepalived_2.3.3-1_amd64.deb",
+      "sha256": "bc252a7ac4f12b1fa9f1f36d578c9cfcbed4ce4bf5388f11d43fda7abafadfcd",
+      "size": 590684
+    },
+    {
+      "package": "libcap2-bin",
+      "version": "1:2.75-10+deb13u1+b3",
+      "architecture": "amd64",
+      "filename": "libcap2-bin_2.75-10+deb13u1+b3_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/libc/libcap2/libcap2-bin_2.75-10+deb13u1+b3_amd64.deb",
+      "sha256": "6404b8ee315ce3eb8e273981650e419ff0e91aed5213d4975a6895f98944ea80",
+      "size": 36456
+    },
+    {
+      "package": "libgdbm-compat4t64",
+      "version": "1.24-2",
+      "architecture": "amd64",
+      "filename": "libgdbm-compat4t64_1.24-2_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/g/gdbm/libgdbm-compat4t64_1.24-2_amd64.deb",
+      "sha256": "2cbd43cf2dfbf57ff48188b5d79d29cf7ea8f0dedaa61ab0bcc02eceff50ea01",
+      "size": 50280
+    },
+    {
+      "package": "libgdbm6t64",
+      "version": "1.24-2",
+      "architecture": "amd64",
+      "filename": "libgdbm6t64_1.24-2_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/g/gdbm/libgdbm6t64_1.24-2_amd64.deb",
+      "sha256": "e7b42c68c391e278733adb3c1efdacd24d660862bd7bac0efbc10a91e5696dfc",
+      "size": 75176
+    },
+    {
+      "package": "libglib2.0-0t64",
+      "version": "2.84.4-3~deb13u5",
+      "architecture": "amd64",
+      "filename": "libglib2.0-0t64_2.84.4-3~deb13u5_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/g/glib2.0/libglib2.0-0t64_2.84.4-3~deb13u5_amd64.deb",
+      "sha256": "e2baf92c57d1db1753e5781a61450d9a01e7833c7bd2dfe87776a6811c11ecc2",
+      "size": 1521120
+    },
+    {
+      "package": "libmnl0",
+      "version": "1.0.5-3",
+      "architecture": "amd64",
+      "filename": "libmnl0_1.0.5-3_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/libm/libmnl/libmnl0_1.0.5-3_amd64.deb",
+      "sha256": "4ec9c1096e0b954e3bdb03a62314ee7f49999045d3d55be3e4ded520ffc9baf5",
+      "size": 11928
+    },
+    {
+      "package": "libnftables1",
+      "version": "1.1.3-1",
+      "architecture": "amd64",
+      "filename": "libnftables1_1.1.3-1_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/n/nftables/libnftables1_1.1.3-1_amd64.deb",
+      "sha256": "c7cbee3dce8452ae5c3c4269f6f52e96b896d36a46ea3c490e0e11e8ff359896",
+      "size": 332448
+    },
+    {
+      "package": "libnftnl11",
+      "version": "1.2.9-1",
+      "architecture": "amd64",
+      "filename": "libnftnl11_1.2.9-1_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/libn/libnftnl/libnftnl11_1.2.9-1_amd64.deb",
+      "sha256": "1b3eae46bfb9c6ab44e404797fb45278045f926d73974a84097ad47a3e27d983",
+      "size": 65012
+    },
+    {
+      "package": "libnl-3-200",
+      "version": "3.7.0-2",
+      "architecture": "amd64",
+      "filename": "libnl-3-200_3.7.0-2_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/libn/libnl3/libnl-3-200_3.7.0-2_amd64.deb",
+      "sha256": "ce5c153953016be42def7b105f37d55eae07a9608d1dfe6bcb03cc017fc384cb",
+      "size": 59432
+    },
+    {
+      "package": "libnl-genl-3-200",
+      "version": "3.7.0-2",
+      "architecture": "amd64",
+      "filename": "libnl-genl-3-200_3.7.0-2_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/libn/libnl3/libnl-genl-3-200_3.7.0-2_amd64.deb",
+      "sha256": "8f2f81ef4c6f8636f0b0cb2ff40b3c54a497d121f49c485620ae43c94782cd94",
+      "size": 18136
+    },
+    {
+      "package": "libnspr4",
+      "version": "2:4.36-1",
+      "architecture": "amd64",
+      "filename": "libnspr4_4.36-1_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/n/nspr/libnspr4_4.36-1_amd64.deb",
+      "sha256": "87fc2039ee89cff2b8010fa9535706b1def40031acfc52bf12197dcb3cb7b064",
+      "size": 109800
+    },
+    {
+      "package": "libnss3",
+      "version": "2:3.110-1+deb13u5",
+      "architecture": "amd64",
+      "filename": "libnss3_3.110-1+deb13u5_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/n/nss/libnss3_3.110-1+deb13u5_amd64.deb",
+      "sha256": "7059839165c39e734ff59c712fde83ef5ea01328872819dfbabd1c08e75f3116",
+      "size": 1392784
+    },
+    {
+      "package": "libnss3-tools",
+      "version": "2:3.110-1+deb13u5",
+      "architecture": "amd64",
+      "filename": "libnss3-tools_3.110-1+deb13u5_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/n/nss/libnss3-tools_3.110-1+deb13u5_amd64.deb",
+      "sha256": "9b9c574e6fea56d9b3d3671b0ad563b82a640c46bda10249f1889a01e0ad9133",
+      "size": 1085848
+    },
+    {
+      "package": "libpci3",
+      "version": "1:3.13.0-2",
+      "architecture": "amd64",
+      "filename": "libpci3_3.13.0-2_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/p/pciutils/libpci3_3.13.0-2_amd64.deb",
+      "sha256": "f8f01883368fe86417b3845aa08ea3508ca59f5e1bb0983673629e227f5ac868",
+      "size": 75572
+    },
+    {
+      "package": "libperl5.40",
+      "version": "5.40.1-6+deb13u1",
+      "architecture": "amd64",
+      "filename": "libperl5.40_5.40.1-6+deb13u1_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/p/perl/libperl5.40_5.40.1-6+deb13u1_amd64.deb",
+      "sha256": "e44777ff47ad248d1debd57e1f96ab5e89061a341008ae39880ba3b5fc15f273",
+      "size": 4325996
+    },
+    {
+      "package": "libsensors-config",
+      "version": "1:3.6.2-2",
+      "architecture": "all",
+      "filename": "libsensors-config_3.6.2-2_all.deb",
+      "url": "https://deb.debian.org/debian/pool/main/l/lm-sensors/libsensors-config_3.6.2-2_all.deb",
+      "sha256": "3056da80c7d963af795dab480ab6f6f4b154ad4ac39f522dc52d17c834fea253",
+      "size": 16236
+    },
+    {
+      "package": "libsensors5",
+      "version": "1:3.6.2-2",
+      "architecture": "amd64",
+      "filename": "libsensors5_3.6.2-2_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/l/lm-sensors/libsensors5_3.6.2-2_amd64.deb",
+      "sha256": "f0a994a6d7cfa695dea5343d0d1ba7eed796c0ad920c7282998b95f60049c4f6",
+      "size": 37492
+    },
+    {
+      "package": "libsnmp-base",
+      "version": "5.9.4+dfsg-2+deb13u1",
+      "architecture": "all",
+      "filename": "libsnmp-base_5.9.4+dfsg-2+deb13u1_all.deb",
+      "url": "https://deb.debian.org/debian/pool/main/n/net-snmp/libsnmp-base_5.9.4+dfsg-2+deb13u1_all.deb",
+      "sha256": "a6221118a34ef418a77e923617ba009efae93b592abc4d7c373d46cb5daac69f",
+      "size": 1769852
+    },
+    {
+      "package": "libsnmp40t64",
+      "version": "5.9.4+dfsg-2+deb13u1",
+      "architecture": "amd64",
+      "filename": "libsnmp40t64_5.9.4+dfsg-2+deb13u1_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/n/net-snmp/libsnmp40t64_5.9.4+dfsg-2+deb13u1_amd64.deb",
+      "sha256": "4e454a4c7ca0e5a4acbd433c4d5ddf246335a508df99faf8c996842c09688fcd",
+      "size": 2579228
+    },
+    {
+      "package": "libtirpc-common",
+      "version": "1.3.6+ds-1",
+      "architecture": "all",
+      "filename": "libtirpc-common_1.3.6+ds-1_all.deb",
+      "url": "https://deb.debian.org/debian/pool/main/libt/libtirpc/libtirpc-common_1.3.6+ds-1_all.deb",
+      "sha256": "300f582e2c9151a8d329568c705cadc76252c417147312fe331c4560d2c7a6c3",
+      "size": 11004
+    },
+    {
+      "package": "libtirpc3t64",
+      "version": "1.3.6+ds-1",
+      "architecture": "amd64",
+      "filename": "libtirpc3t64_1.3.6+ds-1_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/libt/libtirpc/libtirpc3t64_1.3.6+ds-1_amd64.deb",
+      "sha256": "ef4536c09bf5063554310e22d586ae90990100ba66d2fe7c35660e9e658913b6",
+      "size": 83300
+    },
+    {
+      "package": "libxtables12",
+      "version": "1.8.11-2",
+      "architecture": "amd64",
+      "filename": "libxtables12_1.8.11-2_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/i/iptables/libxtables12_1.8.11-2_amd64.deb",
+      "sha256": "4de5aa59faef5e98d6ba9f5f521a915be5641f224f597862f8d29e8319e8db16",
+      "size": 31896
+    },
+    {
+      "package": "nftables",
+      "version": "1.1.3-1",
+      "architecture": "amd64",
+      "filename": "nftables_1.1.3-1_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/n/nftables/nftables_1.1.3-1_amd64.deb",
+      "sha256": "2ddfa61baaf3a76e2c499db9e521ba6affb226f85af0b6fef739f346ac5f0c39",
+      "size": 75864
+    },
+    {
+      "package": "openssl",
+      "version": "3.5.7-1~deb13u3",
+      "architecture": "amd64",
+      "filename": "openssl_3.5.7-1~deb13u3_amd64.deb",
+      "url": "https://security.debian.org/debian-security/pool/updates/main/o/openssl/openssl_3.5.7-1~deb13u3_amd64.deb",
+      "sha256": "43a9cbcf2a8a0e1f0a1c3f5a33ee1f56b269690e7a2129f2b2d0582e789589d7",
+      "size": 1508068
+    },
+    {
+      "package": "pci.ids",
+      "version": "0.0~2025.06.09-1",
+      "architecture": "all",
+      "filename": "pci.ids_0.0~2025.06.09-1_all.deb",
+      "url": "https://deb.debian.org/debian/pool/main/p/pci.ids/pci.ids_0.0~2025.06.09-1_all.deb",
+      "sha256": "132bc7520473e53939e277cbf4512261b8d73ae244d77c277f674ecaf174598c",
+      "size": 269172
+    },
+    {
+      "package": "perl-modules-5.40",
+      "version": "5.40.1-6+deb13u1",
+      "architecture": "all",
+      "filename": "perl-modules-5.40_5.40.1-6+deb13u1_all.deb",
+      "url": "https://deb.debian.org/debian/pool/main/p/perl/perl-modules-5.40_5.40.1-6+deb13u1_all.deb",
+      "sha256": "4c46cdd8f3135aa1c95f07e817f8e5d9be590687441ac1c27e3a8c49400f35ce",
+      "size": 3013728
     }
   ],
   "kernel_headers_policy": "Exact versioned kernel headers are pinned; the tracking linux-headers-amd64 metapackage is not a build input."

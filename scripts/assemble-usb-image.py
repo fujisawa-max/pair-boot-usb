@@ -114,6 +114,13 @@ def main():
     if not tree.is_relative_to(build) or not (tree / "gpu-linux/master.json").is_file():
         parser.error("tree must be a generated appliance tree below build/")
     manifest = json.loads((tree / "gpu-linux/master.json").read_text())
+    sidecars = [tree / 'gpu-linux' / name for name in ('boot-integrity.json', 'boot-integrity.sig')]
+    if 'boot_integrity_signer_sha256' in manifest:
+        if any(path.is_symlink() or not path.is_file() for path in sidecars):
+            parser.error('Boot integrity authorization must be installed before image assembly')
+    elif any(path.exists() or path.is_symlink() for path in sidecars + [
+            tree / 'gpu-linux/root.verity', tree / 'gpu-linux/root.verity.json']):
+        parser.error('Boot integrity authorization requires a pinned release signer')
     if manifest.get('shared_registry'):
         if config_tree is None:
             parser.error('shared-registry images require --config-tree')
